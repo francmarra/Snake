@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Jogo da Cobra 3D</title>
+  <style>
+    #menu {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(32, 35, 42, 0.85);
+      padding: 10px;
+      border-radius: 10px;
+      color: white;
+      font-family: sans-serif;
+    }
+
+    #menu button {
+      margin: 5px 0;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      background-color: #4CAF50;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #score {
+      margin-top: 10px;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="levelDisplay">Nível: 1</div>
+  
+  <div id="menu">
+    <button id="startBtn">▶ Começar Jogo</button>
+    <button id="toggleMusic">🎵 Música ON/OFF</button>
+    <div id="score">Pontuação: 0</div>
+    <button id="toggleCamera">Alternar Câmara</button>
+
+  </div>
+
+  <div id="lightControls">
+    <button id="toggleAmbient">🌙 Ambient</button>
+    <button id="toggleDirectional">🔆 Direcional</button>
+    <button id="togglePoint">💡 Pontual</button>
+  </div>
+
+ 
+
+  <!-- SCRIPT NO FIM -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>
