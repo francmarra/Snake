@@ -730,29 +730,10 @@ function unmuteVolume() {
 	gsap.to(audio, { volume: initialVolume, duration: 1 })
 }
 
-const topBar = document.querySelector('.top-bar')
-const topBarItems = document.querySelectorAll('.top-bar__item')
-
-gsap.set(topBarItems, { y: -200, autoAlpha: 0 })
-
-gsap.to(topBar, {
-	opacity: 1,
-	delay: 0.3,
-	onComplete: () => {
-		gsap.to(topBarItems, {
-			duration: 1,
-			y: 0,
-			autoAlpha: 1,
-			ease: `elastic.out(1.2, 0.9)`,
-			stagger: {
-				amount: 0.3,
-			},
-		})
-	},
-})
+const sideBar = document.querySelector('.top-bar')
 
 const paletteSelectors = document.querySelectorAll('[data-color]')
-gsap.to(topBar, {
+gsap.to(sideBar, {
 	opacity: 1,
 	delay: 0.5,
 	onComplete: () => {
