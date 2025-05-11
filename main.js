@@ -101,6 +101,8 @@ function applyPalette(paletteName) {
 	snake.mouthColor = mouthColor
 	snake.mouth.material.color.set(mouthColor)
 
+	updateSnakeSegmentsUI()
+
 	btnPlayImg.src = `/btn-play-bg-${paletteName}.png`
 }
 
@@ -311,6 +313,35 @@ snake.addEventListener('updated', function () {
 		printScore()
 	}
 })
+
+// helper to refresh the HUD
+function updateSnakeSegmentsUI() {
+  const container = document.getElementById('segments-container')
+  const counter   = document.getElementById('segments-counter')
+
+  // clear old cubes
+  container.innerHTML = ''
+
+  // grab snake color from its Three.js material
+  const hex = '#' + snake.body.head.data.mesh.material.color.getHexString()
+
+  // number of segments = [`snake.indexes`](src/Snake.js).length
+  const count = snake.indexes.length
+
+  for (let i = 0; i < count; i++) {
+    const cube = document.createElement('div')
+    // Tailwind‐sized rounded cube without bg-*
+    cube.className = 'w-4 h-4 rounded-sm'
+    cube.style.backgroundColor = hex
+    container.appendChild(cube)
+  }
+
+  counter.textContent = count
+}
+
+// initial draw + update on every move
+updateSnakeSegmentsUI()
+snake.addEventListener('updated', updateSnakeSegmentsUI)
 
 let scoreEntity
 
