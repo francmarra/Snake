@@ -97,6 +97,9 @@ export default class Snake extends EventDispatcher {
 		this.direction = RIGHT
 		this.iMoving = null
 
+		// ◀ reset segment-index history on re-init
+		this.indexes = []
+
 		const head = new ListNode(new SnakeNode(this.resolution))
 
 		head.data.mesh.position.x = this.resolution.x / 2
@@ -105,6 +108,7 @@ export default class Snake extends EventDispatcher {
 
 		this.createHeadMesh()
 
+		// now push exactly one head + three tail nodes
 		this.indexes.push(this.head.data.getIndexByCoord())
 		for (let i = 0; i < 3; i++) {
 			const position = this.end.data.mesh.position.clone()
