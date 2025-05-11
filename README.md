@@ -1,6 +1,6 @@
 # Snake 3D
 
-## Instalação
+## Instalar Dependências
 
 ```bash
 npm install
