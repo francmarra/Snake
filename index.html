@@ -15,15 +15,12 @@
 		<!-- Snake‐segments HUD -->
 		<div
 			id="snake-segments-ui"
-			class="fixed top-4 left-4 flex items-center z-50 space-x-2"
+			class="fixed top-4 left-4 flex items-center z-50 space-x-3"
 		>
-			<div
-				id="segments-container"
-				class="flex space-x-1"
-			></div>
+			<div id="segments-container" class="flex space-x-2"></div>
 			<span
 				id="segments-counter"
-				class="text-white font-bold"
+				class="text-white font-bold text-2xl lg:text-3xl"
 			></span>
 		</div>
 
@@ -39,13 +36,13 @@
 			<!-- <a href="/media/cc0-audio/t-rex-roar.mp3"> Download audio </a> -->
 		</audio>
 		<button
-			style="opacity: 0"
 			id="btn-play"
+			style="opacity: 0"
 			class="fixed w-max drop-shadow-xl top-[75%] lg:top-[60%] left-1/2"
 		>
 			<img
 				id="btn-play-img"
-				class="h-[4rem] lg:h-[6rem]"
+				class="h-[4rem] lg:h-[7rem]"
 				src="/btn-play-bg-green.png"
 				alt=""
 				height="20"
@@ -54,8 +51,8 @@
 		</button>
 
 		<button
-			style="opacity: 1"
 			id="btn-volume"
+			style="opacity: 1"
 			class="fixed w-max drop-shadow-xl hover:bg-white/30 rounded-[7px] right-4 bottom-4 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-14 after:rotate-45 after:absolute after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2"
 		>
 			<div class="absolute animate-ping inset-0 bg-white/30 scale-105"></div>
@@ -78,37 +75,25 @@
 		<ul
 			class="fixed left-4 flex lg:flex-col gap-3 lg:gap-4 bottom-4 lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2 z-50"
 		>
-			<li
-				style="transform: translateX(-200px)"
-				data-color="green"
-				class="cursor-pointer"
-			>
+			<li style="transform: translateX(-200px)" data-color="green" class="cursor-pointer">
 				<img
-					class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full border-2 lg:border-4 border-white w-9 lg:w-11"
+					class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full border-2 lg:border-4 border-white w-12 h-12 lg:w-16 lg:h-16"
 					src="/palette-green.png"
 					height="44"
 					alt=""
 				/>
 			</li>
-			<li
-				style="transform: translateX(-200px)"
-				data-color="orange"
-				class="cursor-pointer"
-			>
+			<li style="transform: translateX(-200px)" data-color="orange" class="cursor-pointer">
 				<img
-					class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full border-2 lg:border-4 border-white w-9 lg:w-11"
+					class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full border-2 lg:border-4 border-white w-12 h-12 lg:w-16 lg:h-16"
 					src="/palette-orange.png"
 					height="44"
 					alt=""
 				/>
 			</li>
-			<li
-				style="transform: translateX(-200px)"
-				data-color="lilac"
-				class="cursor-pointer"
-			>
+			<li style="transform: translateX(-200px)" data-color="lilac" class="cursor-pointer">
 				<img
-					class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full border-2 lg:border-4 border-white w-9 lg:w-11"
+					class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full border-2 lg:border-4 border-white w-12 h-12 lg:w-16 lg:h-16"
 					src="/palette-lilac.png"
 					height="44"
 					alt=""
