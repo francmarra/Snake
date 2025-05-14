@@ -96,36 +96,37 @@ export default class Snake extends EventDispatcher {
 	init() {
 		this.direction = RIGHT
 		this.iMoving = null
-
-		// ◀ reset segment-index history on re-init
 		this.indexes = []
 
 		const head = new ListNode(new SnakeNode(this.resolution))
-
 		head.data.mesh.position.x = this.resolution.x / 2
 		head.data.mesh.position.z = this.resolution.y / 2
 		this.body = new LinkedKList(head)
 
 		this.createHeadMesh()
 
-		// now push exactly one head + three tail nodes
 		this.indexes.push(this.head.data.getIndexByCoord())
 		for (let i = 0; i < 3; i++) {
-			const position = this.end.data.mesh.position.clone()
-			position.sub(this.direction)
+			const position = this.end.data.mesh.position.clone().sub(this.direction)
 			this.addTailNode()
 			this.end.data.mesh.position.copy(position)
-
 			this.indexes.push(this.end.data.getIndexByCoord())
 		}
 
-		// animate only the head
-		head.data.in()
+		// add head to scene & animate it
 		this.scene.add(head.data.mesh)
 
-		// now that the head is animated, lay out + scale tails
+		// apply final scales to all segments
 		this.updateIndexes()
 		this.updateSegmentScales()
+
+		// now animate head + all tail segments
+		head.data.in()
+		let node = this.body.head.next
+		while (node) {
+			node.data.in()
+			node = node.next
+		}
 	}
 
 	// move() {
