@@ -119,8 +119,13 @@ export default class Snake extends EventDispatcher {
 			this.indexes.push(this.end.data.getIndexByCoord())
 		}
 
+		// animate only the head
 		head.data.in()
 		this.scene.add(head.data.mesh)
+
+		// now that the head is animated, lay out + scale tails
+		this.updateIndexes()
+		this.updateSegmentScales()
 	}
 
 	// move() {
@@ -170,14 +175,10 @@ export default class Snake extends EventDispatcher {
 	}
 
 	update() {
-		// console.log('update')
-
 		if (this.newDirection) {
 			this.direction = this.newDirection
 			this.newDirection = null
 		}
-		// const direction =
-		// 	this.directions.length > 1 ? this.directions.shift() : this.directions[0]
 
 		let currentNode = this.end
 
@@ -204,7 +205,6 @@ export default class Snake extends EventDispatcher {
 		}
 		const headPos = currentNode.data.mesh.position
 		headPos.add(this.direction)
-		// currentNode.data.mesh.position.add(this.direction)
 		const headMesh = this.body.head.data.mesh
 		headMesh.lookAt(headMesh.position.clone().add(this.direction))
 
@@ -221,68 +221,7 @@ export default class Snake extends EventDispatcher {
 		}
 
 		this.updateIndexes()
-		// console.log(this.indexes)
-
-		// --- Size gradient for segments ---
-		const HEAD_SCALE = 1
-		const TAIL_SCALE = 0.5
-
-		// Collect all nodes from head to tail
-		let nodes = []
-		let node = this.body.head
-		while (node) {
-			nodes.push(node)
-			node = node.next
-		}
-		const n = nodes.length
-		nodes.forEach((node, i) => {
-			// Linear interpolation between head and tail scale
-			const t = i / (n - 1 || 1)
-			const scale = HEAD_SCALE * (1 - t) + TAIL_SCALE * t
-			node.data.mesh.scale.setScalar(scale)
-		})
-
-		// --- Reposition segments for even spacing ---
-		for (let i = 1; i < nodes.length; i++) {
-			const prevNode = nodes[i - 1]
-			const currentNode = nodes[i]
-			
-			// Compute target gap based on the average scale of the adjacent nodes
-			const prevScale = prevNode.data.mesh.scale.x
-			const currScale = currentNode.data.mesh.scale.x
-			const targetGap = ((prevScale + currScale) / 2) * HEAD_SCALE // espacçamento baseado no tamanho da cabeça
-			
-			const prevPos = prevNode.data.mesh.position
-			const currPos = currentNode.data.mesh.position
-			
-			// Compute the minimal offset between positions on a toroidal grid
-			let dx = currPos.x - prevPos.x
-			let dz = currPos.z - prevPos.z
-			
-			const halfWidth = this.resolution.x / 2
-			const halfHeight = this.resolution.y / 2
-			
-			if (Math.abs(dx) > halfWidth) {
-				dx = dx - Math.sign(dx) * this.resolution.x
-			}
-			
-			if (Math.abs(dz) > halfHeight) {
-				dz = dz - Math.sign(dz) * this.resolution.y
-			}
-			
-			const dir = new Vector3(dx, 0, dz)
-			const currentDistance = dir.length()
-			if (currentDistance === 0) continue
-			
-			dir.normalize()
-			const newPos = prevPos.clone().add(dir.multiplyScalar(targetGap))
-			
-			// Ensure the new position wraps correctly within the grid:
-			newPos.x = (newPos.x + this.resolution.x) % this.resolution.x
-			newPos.z = (newPos.z + this.resolution.y) % this.resolution.y
-			
-			currentNode.data.mesh.position.copy(newPos)
-		}
+		this.updateSegmentScales()
 
 		this.dispatchEvent({ type: 'updated' })
 	}
@@ -338,8 +277,70 @@ export default class Snake extends EventDispatcher {
 		}
 
 		this.body.addNode(node)
-		node.data.in()
+		// ← remove node.data.in()
 		this.scene.add(node.data.mesh)
+	}
+
+	updateSegmentScales() {
+		const HEAD_SCALE = 1
+		const TAIL_SCALE = 0.5
+	
+		// Collect all nodes from head to tail
+		let nodes = []
+		let node = this.body.head
+		while (node) {
+			nodes.push(node)
+			node = node.next
+		}
+		const n = nodes.length
+		nodes.forEach((node, i) => {
+			// Linear interpolation between head and tail scale
+			const t = i / (n - 1 || 1)
+			const scale = HEAD_SCALE * (1 - t) + TAIL_SCALE * t
+			node.data.mesh.scale.setScalar(scale)
+		})
+	
+		// --- Reposition segments for even spacing ---
+		for (let i = 1; i < nodes.length; i++) {
+			const prevNode = nodes[i - 1]
+			const currentNode = nodes[i]
+	
+			// Compute target gap based on the average scale of the adjacent nodes
+			const prevScale = prevNode.data.mesh.scale.x
+			const currScale = currentNode.data.mesh.scale.x
+			const targetGap = ((prevScale + currScale) / 2) * HEAD_SCALE
+	
+			const prevPos = prevNode.data.mesh.position
+			const currPos = currentNode.data.mesh.position
+	
+			// Compute the minimal offset between positions on a toroidal grid
+			let dx = currPos.x - prevPos.x
+			let dz = currPos.z - prevPos.z
+	
+			const halfWidth = this.resolution.x / 2
+			const halfHeight = this.resolution.y / 2
+	
+			if (Math.abs(dx) > halfWidth) {
+				dx = dx - Math.sign(dx) * this.resolution.x
+			}
+	
+			if (Math.abs(dz) > halfHeight) {
+				dz = dz - Math.sign(dz) * this.resolution.y
+			}
+	
+			const dir = new Vector3(dx, 0, dz)
+			const currentDistance = dir.length()
+			if (currentDistance === 0) continue
+	
+			dir.normalize()
+			const newPos = prevPos.clone().add(dir.multiplyScalar(targetGap))
+	
+			// Ensure the new position wraps correctly within the grid:
+			newPos.x = (newPos.x + this.resolution.x) % this.resolution.x
+			newPos.z = (newPos.z + this.resolution.y) % this.resolution.y
+	
+			currentNode.data.mesh.position.copy(newPos)
+		}
 	}
 }
 

@@ -316,27 +316,27 @@ snake.addEventListener('updated', function () {
 
 // helper to refresh the HUD
 function updateSnakeSegmentsUI() {
-  const container = document.getElementById('segments-container')
-  const counter   = document.getElementById('segments-counter')
+	const container = document.getElementById('segments-container')
+	const counter = document.getElementById('segments-counter')
 
-  // clear old cubes
-  container.innerHTML = ''
+	// clear old cubes
+	container.innerHTML = ''
 
-  // grab snake color from its Three.js material
-  const hex = '#' + snake.body.head.data.mesh.material.color.getHexString()
+	// grab snake color from its Three.js material
+	const hex = '#' + snake.body.head.data.mesh.material.color.getHexString()
 
-  // number of segments = [`snake.indexes`](src/Snake.js).length
-  const count = snake.indexes.length
+	// number of segments = [`snake.indexes`](src/Snake.js).length
+	const count = snake.indexes.length
 
-  for (let i = 0; i < count; i++) {
-    const cube = document.createElement('div')
-    // Tailwind‐sized rounded cube without bg-*
-    cube.className = 'w-4 h-4 rounded-sm'
-    cube.style.backgroundColor = hex
-    container.appendChild(cube)
-  }
+	for (let i = 0; i < count; i++) {
+	const cube = document.createElement('div')
+	// Tailwind‐sized rounded cube without bg-*
+	cube.className = 'w-4 h-4 rounded-sm'
+	cube.style.backgroundColor = hex
+	container.appendChild(cube)
+	}
 
-  counter.textContent = count
+	counter.textContent = count
 }
 
 // initial draw + update on every move
@@ -476,8 +476,6 @@ function startGame() {
 		}, 240)
 	}
 }
-
-// startGame()
 
 function stopGame() {
 	clearInterval(isRunning)
