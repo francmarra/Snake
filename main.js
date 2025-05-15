@@ -12,6 +12,7 @@ import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import Entity from './src/Entity'
+import Bomb from './src/Bomb'
 import { MOVEMENT_SPEED, NUM_ENTITIES } from './config/Config.js'
 import { GRID_WIDTH, GRID_HEIGHT, COLOR_PALETTES, TREE_DATA, ROCK_DATA, CAMERA_FOV, CAMERA_NEAR, CAMERA_FAR } from './config/StaticData.js'
 
@@ -28,10 +29,10 @@ loader.load(fontSrc, function (loadedFont) {
 
 let gui
 
-// Use config for grid size
+// Grid
 const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT)
 
-// Replace palettes with config
+// Replace palettes
 const palettes = COLOR_PALETTES
 let paletteName = localStorage.getItem('paletteName') || 'green'
 let selectedPalette = palettes[paletteName]
@@ -253,8 +254,33 @@ snake.addEventListener('updated', function () {
 		candies.splice(fruitIndex, 1)
 		snake.body.head.data.fruit = fruit
 		addFruit()
+		addBomb() // only adds if there is no bomb
 		score += fruit.points
-		// console.log(candies)
+		printScore()
+	}
+
+	const bombIndex = bombs.findIndex(
+		(bomb) => bomb.getIndexByCoord() === headIndex
+	)
+	if (bombIndex >= 0) {
+		const bomb = bombs[bombIndex]
+		scene.remove(bomb.mesh)
+		bombs.splice(bombIndex, 1)
+		// Remove one segment if possible, die if only 2 segments remain
+		if (snake.body.end !== snake.body.head) {
+			const tail = snake.body.end
+			scene.remove(tail.data.mesh)
+			snake.body.end = tail.prev
+			snake.body.end.next = null
+			snake.indexes.pop()
+			if (snake.indexes.length <= 2) {
+				snake.die()
+				resetGame()
+				return
+			}
+		}
+		score = Math.max(0, score - bomb.points)
+		addBomb()
 		printScore()
 	}
 })
@@ -380,6 +406,12 @@ function resetGame() {
 		fruit = candies.pop()
 	}
 
+	let bomb = bombs.pop()
+	while (bomb) {
+		scene.remove(bomb.mesh)
+		bomb = bombs.pop()
+	}
+
 	let entity = entities.pop()
 	while (entity) {
 		scene.remove(entity.mesh)
@@ -387,10 +419,12 @@ function resetGame() {
 	}
 
 	addFruit()
+	addBomb()
 	generateEntities()
 }
 
 const candies = []
+const bombs = []
 const entities = []
 
 function addFruit() {
@@ -409,19 +443,36 @@ function addFruit() {
 	scene.add(fruit.mesh)
 }
 
+// Only add a bomb if there are no bombs on the grid
+function addBomb() {
+	if (bombs.length === 0) {
+		const bomb = new Bomb(resolution)
+		let index = getFreeIndex()
+		bomb.mesh.position.x = index % resolution.x
+		bomb.mesh.position.z = Math.floor(index / resolution.x)
+		bombs.push(bomb)
+		bomb.in()
+		scene.add(bomb.mesh)
+	}
+}
+
+// Add a bomb at the start and after each fruit eaten
 addFruit()
+addBomb()
 
 function getFreeIndex() {
 	let index
 	let fruitIndexes = candies.map((fruit) => fruit.getIndexByCoord())
 	let entityIndexes = entities.map((entity) => entity.getIndexByCoord())
+	let bombIndexes = bombs.map((bomb) => bomb.getIndexByCoord())
 
 	do {
 		index = Math.floor(Math.random() * resolution.x * resolution.y)
 	} while (
 		snake.indexes.includes(index) ||
 		fruitIndexes.includes(index) ||
-		entityIndexes.includes(index)
+		entityIndexes.includes(index) ||
+		bombIndexes.includes(index)
 	)
 
 	return index
