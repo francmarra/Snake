@@ -10,6 +10,7 @@ import LinkedKList from './LinkedList'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry'
 import ListNode from './ListNode'
 import Entity from './Entity'
+import { INITIAL_SNAKE_LENGTH } from '../config/Config.js'
 
 const NODE_GEOMETRY = new RoundedBoxGeometry(0.9, 0.9, 0.9, 5, 0.1)
 const NODE_MATERIAL = new MeshStandardMaterial({
@@ -105,7 +106,7 @@ export default class Snake extends EventDispatcher {
 		this.createHeadMesh()
 
 		this.indexes.push(this.head.data.getIndexByCoord())
-		for (let i = 0; i < 3; i++) {
+		for (let i = 0; i < INITIAL_SNAKE_LENGTH - 1; i++) {
 			const position = this.end.data.mesh.position.clone().sub(this.direction)
 			this.addTailNode()
 			this.end.data.mesh.position.copy(position)

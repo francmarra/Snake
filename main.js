@@ -7,14 +7,14 @@ import Fruit from './src/Fruit'
 import Rock from './src/Rock'
 import Tree from './src/Tree'
 import lights from './src/Lights'
-import { resolution } from './src/Params'
 import gsap from 'gsap'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import Entity from './src/Entity'
+import { MOVEMENT_SPEED, NUM_ENTITIES } from './config/Config.js'
+import { GRID_WIDTH, GRID_HEIGHT, COLOR_PALETTES, TREE_DATA, ROCK_DATA, CAMERA_FOV, CAMERA_NEAR, CAMERA_FAR } from './config/StaticData.js'
 
-const isMobile = window.innerWidth <= 768
 const loader = new FontLoader()
 let font
 
@@ -24,41 +24,15 @@ loader.load(fontSrc, function (loadedFont) {
 	printScore()
 })
 
-/**
- * Debug
- */
-let gui //= new dat.GUI()
+// Debug
 
-const palettes = {
-	green: {
-		groundColor: 0x56f854,
-		fogColor: 0x39c09f,
-		rockColor: 0xebebeb, //0x7a95ff,
-		treeColor: 0x639541, //0x1d5846,
-		fruitColor: 0x1d5846, //0x614bdd,
-		snakeColor: 0x1d5846, //0xff470a,
-		mouthColor: 0x39c09f,
-	},
-	orange: {
-		groundColor: 0xd68a4c,
-		fogColor: 0xffac38,
-		rockColor: 0xacacac,
-		treeColor: 0xa2d109,
-		fruitColor: 0x614bdd,
-		snakeColor: 0xff470a,
-		mouthColor: 0x614bdd,
-	},
-	lilac: {
-		groundColor: 0xd199ff,
-		fogColor: 0xb04ce6,
-		rockColor: 0xebebeb,
-		treeColor: 0x53d0c1,
-		fruitColor: 0x9900ff,
-		snakeColor: 0xff2ed2,
-		mouthColor: 0x614bdd,
-	},
-}
+let gui
 
+// Use config for grid size
+const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT)
+
+// Replace palettes with config
+const palettes = COLOR_PALETTES
 let paletteName = localStorage.getItem('paletteName') || 'green'
 let selectedPalette = palettes[paletteName]
 
@@ -164,10 +138,9 @@ const gridHelper = new THREE.GridHelper(
 )
 gridHelper.position.set(resolution.x / 2 - 0.5, -0.49, resolution.y / 2 - 0.5)
 gridHelper.material.transparent = true
-gridHelper.material.opacity = isMobile ? 0.75 : 0.3
-/**
- * Scene
- */
+gridHelper.material.opacity = 0.3
+// Scene
+
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(params.fogColor)
 
@@ -175,35 +148,22 @@ scene.fog = new THREE.Fog(params.fogColor, 5, 40)
 
 scene.add(gridHelper)
 
-/**
- * Cube
- */
-// const material = new THREE.MeshNormalMaterial()
-// const geometry = new THREE.BoxGeometry(1, 1, 1)
+// render sizes
 
-// const mesh = new THREE.Mesh(geometry, material)
-// scene.add(mesh)
-
-/**
- * render sizes
- */
 const sizes = {
 	width: window.innerWidth,
 	height: window.innerHeight,
 }
-/**
- * Camera
- */
-const fov = 60
-const camera = new THREE.PerspectiveCamera(fov, sizes.width / sizes.height, 0.1)
+// Camera
 
-const finalPosition = isMobile
-	? new THREE.Vector3(resolution.x / 2 - 0.5, resolution.x + 15, resolution.y)
-	: new THREE.Vector3(
-			-8 + resolution.x / 2,
-			resolution.x / 2 + 4,
-			resolution.y + 6
-	  )
+const fov = 60
+const camera = new THREE.PerspectiveCamera(CAMERA_FOV, sizes.width / sizes.height, CAMERA_NEAR)
+
+const finalPosition = new THREE.Vector3(
+	-8 + resolution.x / 2,
+	resolution.x / 2 + 4,
+	resolution.y + 6
+)
 const initialPosition = new THREE.Vector3(
 	resolution.x / 2 + 5,
 	4,
@@ -212,22 +172,18 @@ const initialPosition = new THREE.Vector3(
 camera.position.copy(initialPosition)
 
 // Create a topdown camera centered on the scene
-const topCamera = new THREE.PerspectiveCamera(fov, sizes.width / sizes.height, 0.1, 1000);
+const topCamera = new THREE.PerspectiveCamera(CAMERA_FOV, sizes.width / sizes.height, CAMERA_NEAR, CAMERA_FAR);
 topCamera.position.set(resolution.x / 2, 22, resolution.y / 2);
 topCamera.lookAt(new THREE.Vector3(resolution.x / 2, 0, resolution.y / 2));
 
 // Set the activeCamera to start with the default camera
 let activeCamera = camera
 
-/**
- * Show the axes of coordinates system
- */
+// Show the axes of coordinates system
 const axesHelper = new THREE.AxesHelper(3)
 // scene.add(axesHelper)
 
-/**
- * renderer
- */
+// renderer
 const renderer = new THREE.WebGLRenderer({
 	antialias: window.devicePixelRatio < 2,
 	logarithmicDepthBuffer: true,
@@ -240,9 +196,7 @@ renderer.toneMappingExposure = 1.2
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.VSMShadowMap
 
-/**
- * OrbitControls
- */
+// OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement)
 controls.enableDamping = true
 controls.enableZoom = false
@@ -251,18 +205,10 @@ controls.enableRotate = false
 controls.target.set(
 	resolution.x / 2 - 2,
 	0,
-	resolution.y / 2 + (isMobile ? 0 : 2)
+	resolution.y / 2 + 2
 )
 
-/**
- * Three js Clock
- */
-// const clock = new THREE.Clock()
-
-/**
- * Grid
- */
-
+// Grid
 const planeGeometry = new THREE.PlaneGeometry(
 	resolution.x * 50,
 	resolution.y * 50
@@ -372,9 +318,6 @@ function printScore() {
 	})
 
 	geometry.center()
-	if (isMobile) {
-		geometry.rotateX(-Math.PI * 0.5)
-	}
 
 	const mesh = new THREE.Mesh(geometry, snake.body.head.data.mesh.material)
 
@@ -397,73 +340,18 @@ function printScore() {
 // 	// console.log(isRunning)
 // })
 
-const mobileArrows = document.getElementById('mobile-arrows')
-
 function registerEventListener() {
-	if (isMobile) {
-		//mobile
-		const prevTouch = new THREE.Vector2()
-		let middle = 1.55
-		let scale = 1
+	window.addEventListener('keydown', function (e) {
+		const keyCode = e.code
 
-		window.addEventListener('touchstart', (event) => {
-			const touch = event.targetTouches[0]
+		snake.setDirection(keyCode)
 
-			middle = THREE.MathUtils.clamp(middle, 1.45, 1.65)
-
-			// console.log(event)
-			let x, y
-			x = (2 * touch.clientX) / window.innerWidth - 1
-			y = (2 * touch.clientY) / window.innerHeight - middle
-
-			// if (Math.abs(x) < 0.15 && Math.abs(y) < 0.15) {
-			// 	return
-			// }
-
-			if (!isRunning) {
-				startGame()
-			}
-
-			// console.log('click', x, y)
-
-			if (x * scale > y) {
-				if (x * scale < -y) {
-					snake.setDirection('ArrowUp')
-					scale = 3
-				} else {
-					snake.setDirection('ArrowRight')
-					middle += y
-					scale = 0.33
-				}
-			} else {
-				if (-x * scale > y) {
-					snake.setDirection('ArrowLeft')
-					middle += y
-					scale = 0.33
-				} else {
-					snake.setDirection('ArrowDown')
-					scale = 3
-				}
-			}
-
-			prevTouch.x = x
-			prevTouch.y = y
-		})
-	} else {
-		// keyboard
-		window.addEventListener('keydown', function (e) {
-			// console.log(e.code)
-			const keyCode = e.code
-
-			snake.setDirection(keyCode)
-
-			if (keyCode === 'Space') {
-				!isRunning ? startGame() : stopGame()
-			} else if (!isRunning) {
-				startGame()
-			}
-		})
-	}
+		if (keyCode === 'Space') {
+			!isRunning ? startGame() : stopGame()
+		} else if (!isRunning) {
+			startGame()
+		}
+	})
 }
 
 let isRunning
@@ -472,7 +360,7 @@ function startGame() {
 	if (!snake.isMoving) {
 		isRunning = setInterval(() => {
 			snake.update()
-		}, 240)
+		}, MOVEMENT_SPEED)
 	}
 }
 
@@ -558,7 +446,7 @@ function addEntity() {
 }
 
 function generateEntities() {
-	for (let i = 0; i < 20; i++) {
+	for (let i = 0; i < NUM_ENTITIES; i++) {
 		addEntity()
 	}
 
@@ -597,36 +485,9 @@ scene.add(...lights)
 
 // snake.addTailNode()
 
-// add entities out of the grid
-const treeData = [
-	new THREE.Vector4(-5, 0, 10, 1),
-	new THREE.Vector4(-6, 0, 15, 1.2),
-	new THREE.Vector4(-5, 0, 16, 0.8),
-	new THREE.Vector4(-10, 0, 4, 1.3),
-	new THREE.Vector4(-5, 0, -3, 2),
-	new THREE.Vector4(-4, 0, -4, 1.5),
-	new THREE.Vector4(-2, 0, -15, 1),
-	new THREE.Vector4(5, 0, -20, 1.2),
-	new THREE.Vector4(24, 0, -12, 1.2),
-	new THREE.Vector4(2, 0, -6, 1.2),
-	new THREE.Vector4(3, 0, -7, 1.8),
-	new THREE.Vector4(1, 0, -9, 1.0),
-	new THREE.Vector4(15, 0, -8, 1.8),
-	new THREE.Vector4(17, 0, -9, 1.1),
-	new THREE.Vector4(18, 0, -7, 1.3),
-	new THREE.Vector4(24, 0, -1, 1.3),
-	new THREE.Vector4(26, 0, 0, 1.8),
-	new THREE.Vector4(32, 0, 0, 1),
-	new THREE.Vector4(28, 0, 6, 1.7),
-	new THREE.Vector4(24, 0, 15, 1.1),
-	new THREE.Vector4(16, 0, 23, 1.1),
-	new THREE.Vector4(12, 0, 24, 0.9),
-	new THREE.Vector4(-13, 0, -13, 0.7),
-	new THREE.Vector4(35, 0, 10, 0.7),
-]
+// Place trees outside the grid
 const tree = new Tree(resolution)
-
-treeData.forEach(({ x, y, z, w }) => {
+TREE_DATA.forEach(([x, y, z, w]) => {
 	let clone = tree.mesh.clone()
 	clone.position.set(x, y, z)
 	clone.scale.setScalar(w)
@@ -634,41 +495,11 @@ treeData.forEach(({ x, y, z, w }) => {
 })
 
 const rock = new Rock(resolution)
-const resX = resolution.x
-const rexY = resolution.y
-
-const rockData = [
-	[new THREE.Vector3(-7, -0.5, 2), new THREE.Vector4(2, 8, 3, 2.8)],
-	[new THREE.Vector3(-3, -0.5, -10), new THREE.Vector4(3, 2, 2.5, 1.5)],
-	[new THREE.Vector3(-5, -0.5, 3), new THREE.Vector4(1, 1.5, 2, 0.8)],
-	[new THREE.Vector3(resX + 5, -0.5, 3), new THREE.Vector4(4, 1, 3, 1)],
-	[new THREE.Vector3(resX + 4, -0.5, 2), new THREE.Vector4(2, 2, 1, 1)],
-	[new THREE.Vector3(resX + 8, -0.5, 16), new THREE.Vector4(6, 2, 4, 4)],
-	[new THREE.Vector3(resX + 6, -0.5, 13), new THREE.Vector4(3, 2, 2.5, 3.2)],
-	[new THREE.Vector3(resX + 5, -0.5, -8), new THREE.Vector4(1, 1, 1, 0)],
-	[new THREE.Vector3(resX + 6, -0.5, -7), new THREE.Vector4(2, 4, 1.5, 0.5)],
-	[new THREE.Vector3(-5, -0.5, 14), new THREE.Vector4(1, 3, 2, 0)],
-	[new THREE.Vector3(-4, -0.5, 15), new THREE.Vector4(0.8, 0.6, 0.7, 0)],
-	[
-		new THREE.Vector3(resX / 2 + 5, -0.5, 25),
-		new THREE.Vector4(2.5, 0.8, 4, 2),
-	],
-	[
-		new THREE.Vector3(resX / 2 + 9, -0.5, 22),
-		new THREE.Vector4(1.2, 2, 1.2, 1),
-	],
-	[
-		new THREE.Vector3(resX / 2 + 8, -0.5, 21.5),
-		new THREE.Vector4(0.8, 1, 0.8, 2),
-	],
-	// [new THREE.Vector3(0, -0.5, 0), new THREE.Vector4(1, 1, 1, 0)],
-]
-
-rockData.forEach(([position, { x, y, z, w }]) => {
+ROCK_DATA.forEach(([posArr, scaleArr]) => {
 	let clone = new Rock(resolution).mesh
-	clone.position.copy(position)
-	clone.scale.set(x, y, z)
-	clone.rotation.y = w
+	clone.position.set(...posArr)
+	clone.scale.set(...scaleArr.slice(0, 3))
+	clone.rotation.y = scaleArr[3]
 	scene.add(clone)
 })
 
@@ -699,14 +530,7 @@ btnPlay.addEventListener('click', function () {
         gameStarted = true;
         audio.play();
         gsap.to(camera.position, { ...finalPosition, duration: 2 });
-        if (isMobile) {
-            gsap.to(controls.target, {
-                x: resolution.x / 2 - 0.5,
-                y: 0,
-                z: resolution.y / 2 - 0.5,
-            });
-        }
-        gsap.to(scene.fog, { duration: 2, near: isMobile ? 30 : 20, far: 55 });
+        gsap.to(scene.fog, { duration: 2, near: 20, far: 55 });
         gsap.to(this, {
             duration: 1,
             scale: 0,
@@ -798,7 +622,7 @@ const planeWasd = new THREE.Mesh(
 	new THREE.MeshStandardMaterial({
 		transparent: true,
 		map: wasd,
-		opacity: isMobile ? 0 : 0.5,
+		opacity: 0.5,
 	})
 )
 
@@ -807,7 +631,7 @@ const planeArrows = new THREE.Mesh(
 	new THREE.MeshStandardMaterial({
 		transparent: true,
 		map: arrows,
-		opacity: isMobile ? 0 : 0.5,
+		opacity: 0.5,
 	})
 )
 
@@ -829,9 +653,8 @@ btnToggleCamera.addEventListener('click', () => {
     activeCamera = activeCamera === camera ? topCamera : camera;
 });
 
-/**
- * frame loop
- */
+// frame loop
+
 function tic() {
 	controls.update()
 	renderer.render(scene, activeCamera)
