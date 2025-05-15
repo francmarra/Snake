@@ -1,3 +1,7 @@
+// --- Ficheiro principal do jogo Snake 3D ---
+// Inicializa a cena, câmara, luzes, entidades e lógica principal do jogo
+
+
 import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
@@ -16,31 +20,25 @@ import Bomb from './src/Bomb'
 import { MOVEMENT_SPEED, NUM_ENTITIES } from './config/Config.js'
 import { GRID_WIDTH, GRID_HEIGHT, COLOR_PALETTES, TREE_DATA, ROCK_DATA, CAMERA_FOV, CAMERA_NEAR, CAMERA_FAR } from './config/StaticData.js'
 
+// Carrega a fonte para o texto da pontuação
 const loader = new FontLoader()
 let font
 
 loader.load(fontSrc, function (loadedFont) {
 	font = loadedFont
-
 	printScore()
 })
 
-// Debug
-
-let gui
-
-// Grid
+// --- Paletas de cores e seleção ---
 const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT)
-
-// Replace palettes
 const palettes = COLOR_PALETTES
 let paletteName = localStorage.getItem('paletteName') || 'green'
 let selectedPalette = palettes[paletteName]
-
 const params = {
 	...selectedPalette,
 }
 
+// Aplica a paleta de cores selecionada a todos os elementos visuais
 function applyPalette(paletteName) {
 	const palette = palettes[paletteName]
 	localStorage.setItem('paletteName', paletteName)
@@ -81,56 +79,7 @@ function applyPalette(paletteName) {
 	btnPlayImg.src = `/btn-play-bg-${paletteName}.png`
 }
 
-if (gui) {
-	gui
-		.addColor(params, 'groundColor')
-		.name('Ground color')
-		.onChange((val) => planeMaterial.color.set(val))
-
-	gui
-		.addColor(params, 'fogColor')
-		.name('Fog color')
-		.onChange((val) => {
-			scene.fog.color.set(val)
-			scene.background.color.set(val)
-		})
-
-	gui
-		.addColor(params, 'rockColor')
-		.name('Rock color')
-		.onChange((val) => {
-			entities
-				.find((entity) => entity instanceof Rock)
-				?.mesh.material.color.set(val)
-		})
-
-	gui
-		.addColor(params, 'treeColor')
-		.name('Tree color')
-		.onChange((val) => {
-			entities
-				.find((entity) => entity instanceof Tree)
-				?.mesh.material.color.set(val)
-		})
-
-	gui
-		.addColor(params, 'fruitColor')
-		.name('Fruit color')
-		.onChange((val) => {
-			candies[0].mesh.material.color.set(val)
-		})
-
-	gui
-		.addColor(params, 'snakeColor')
-		.name('Snake color')
-		.onChange((val) => {
-			snake.body.head.data.mesh.material.color.set(val)
-		})
-}
-
-let score = 0
-
-// const resolution = new THREE.Vector2(20, 20)
+// --- Inicialização da cena, grelha e câmara ---
 const gridHelper = new THREE.GridHelper(
 	resolution.x,
 	resolution.y,
@@ -140,26 +89,20 @@ const gridHelper = new THREE.GridHelper(
 gridHelper.position.set(resolution.x / 2 - 0.5, -0.49, resolution.y / 2 - 0.5)
 gridHelper.material.transparent = true
 gridHelper.material.opacity = 0.3
-// Scene
 
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(params.fogColor)
-
 scene.fog = new THREE.Fog(params.fogColor, 5, 40)
-
 scene.add(gridHelper)
 
-// render sizes
-
+// --- Tamanhos de renderização ---
 const sizes = {
 	width: window.innerWidth,
 	height: window.innerHeight,
 }
-// Camera
 
-const fov = 60
+// --- Câmara principal e câmara de topo ---
 const camera = new THREE.PerspectiveCamera(CAMERA_FOV, sizes.width / sizes.height, CAMERA_NEAR)
-
 const finalPosition = new THREE.Vector3(
 	-8 + resolution.x / 2,
 	resolution.x / 2 + 4,
@@ -172,19 +115,12 @@ const initialPosition = new THREE.Vector3(
 )
 camera.position.copy(initialPosition)
 
-// Create a topdown camera centered on the scene
 const topCamera = new THREE.PerspectiveCamera(CAMERA_FOV, sizes.width / sizes.height, CAMERA_NEAR, CAMERA_FAR);
 topCamera.position.set(resolution.x / 2, 22, resolution.y / 2);
 topCamera.lookAt(new THREE.Vector3(resolution.x / 2, 0, resolution.y / 2));
-
-// Set the activeCamera to start with the default camera
 let activeCamera = camera
 
-// Show the axes of coordinates system
-const axesHelper = new THREE.AxesHelper(3)
-// scene.add(axesHelper)
-
-// renderer
+// --- Renderer e controlos de órbita ---
 const renderer = new THREE.WebGLRenderer({
 	antialias: window.devicePixelRatio < 2,
 	logarithmicDepthBuffer: true,
@@ -197,7 +133,6 @@ renderer.toneMappingExposure = 1.2
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.VSMShadowMap
 
-// OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement)
 controls.enableDamping = true
 controls.enableZoom = false
@@ -209,7 +144,7 @@ controls.target.set(
 	resolution.y / 2 + 2
 )
 
-// Grid
+// --- Plano do chão ---
 const planeGeometry = new THREE.PlaneGeometry(
 	resolution.x * 50,
 	resolution.y * 50
@@ -223,21 +158,19 @@ plane.position.x = resolution.x / 2 - 0.5
 plane.position.z = resolution.y / 2 - 0.5
 plane.position.y = -0.5
 scene.add(plane)
-
 plane.receiveShadow = true
 
-// create snake
+// --- Criação da cobra ---
 const snake = new Snake({
 	scene,
 	resolution,
 	color: selectedPalette.snakeColor,
 	mouthColor: selectedPalette.mouthColor,
 })
-// console.log(snake)
 
+// Evento: sempre que a cobra se move, verifica colisões e atualiza o jogo
 snake.addEventListener('updated', function () {
-	// constrolla le self collision
-
+	// Colisão com o próprio corpo ou com entidades
 	if (snake.checkSelfCollision() || snake.checkEntitiesCollision(entities)) {
 		snake.die()
 		resetGame()
@@ -254,7 +187,7 @@ snake.addEventListener('updated', function () {
 		candies.splice(fruitIndex, 1)
 		snake.body.head.data.fruit = fruit
 		addFruit()
-		addBomb() // only adds if there is no bomb
+		addBomb() // só adiciona se não houver bomba
 		score += fruit.points
 		printScore()
 	}
@@ -266,7 +199,7 @@ snake.addEventListener('updated', function () {
 		const bomb = bombs[bombIndex]
 		scene.remove(bomb.mesh)
 		bombs.splice(bombIndex, 1)
-		// Remove one segment if possible, die if only 2 segments remain
+		// Remove um segmento, termina o jogo se só restarem 2
 		if (snake.body.end !== snake.body.head) {
 			const tail = snake.body.end
 			scene.remove(tail.data.mesh)
@@ -285,37 +218,31 @@ snake.addEventListener('updated', function () {
 	}
 })
 
-// helper to refresh the HUD
+// Atualiza o HUD dos segmentos da cobra
 function updateSnakeSegmentsUI() {
 	const container = document.getElementById('segments-container')
 	const counter = document.getElementById('segments-counter')
 
-	// clear old cubes
 	container.innerHTML = ''
-
-	// grab snake color from its Three.js material
 	const hex = '#' + snake.body.head.data.mesh.material.color.getHexString()
-
-	// number of segments = [`snake.indexes`](src/Snake.js).length
 	const count = snake.indexes.length
 
 	for (let i = 0; i < count; i++) {
-	const cube = document.createElement('div')
-	// Tailwind‐sized rounded cube without bg-*
-	cube.className = 'w-4 h-4 rounded-sm'
-	cube.style.backgroundColor = hex
-	container.appendChild(cube)
+		const cube = document.createElement('div')
+		cube.className = 'w-4 h-4 rounded-sm'
+		cube.style.backgroundColor = hex
+		container.appendChild(cube)
 	}
-
 	counter.textContent = count
 }
 
-// initial draw + update on every move
 updateSnakeSegmentsUI()
 snake.addEventListener('updated', updateSnakeSegmentsUI)
 
+let score = 0
 let scoreEntity
 
+// Mostra a pontuação atual na cena
 function printScore() {
 	if (!font) {
 		return
@@ -354,24 +281,15 @@ function printScore() {
 	mesh.castShadow = true
 
 	scoreEntity = new Entity(mesh, resolution, { size: 0.8, number: 0.3 })
-
-	// console.log('font mesh:', mesh)
-
 	scoreEntity.in()
 	scene.add(scoreEntity.mesh)
 }
 
-// window.addEventListener('click', function () {
-// 	!isRunning ? startGame() : stopGame()
-// 	// console.log(isRunning)
-// })
-
+// Regista o evento de teclado para controlar a cobra e iniciar/parar o jogo
 function registerEventListener() {
 	window.addEventListener('keydown', function (e) {
 		const keyCode = e.code
-
 		snake.setDirection(keyCode)
-
 		if (keyCode === 'Space') {
 			!isRunning ? startGame() : stopGame()
 		} else if (!isRunning) {
@@ -382,6 +300,7 @@ function registerEventListener() {
 
 let isRunning
 
+// Inicia o ciclo de movimento da cobra
 function startGame() {
 	if (!snake.isMoving) {
 		isRunning = setInterval(() => {
@@ -390,12 +309,13 @@ function startGame() {
 	}
 }
 
+// Para o ciclo de movimento da cobra
 function stopGame() {
 	clearInterval(isRunning)
 	isRunning = null
-	// this.snake.stop()
 }
 
+// Reinicia o jogo, removendo entidades e reiniciando pontuação
 function resetGame() {
 	stopGame()
 	score = 0
@@ -423,27 +343,23 @@ function resetGame() {
 	generateEntities()
 }
 
+// --- Gestão de entidades, frutas e bombas ---
 const candies = []
 const bombs = []
 const entities = []
 
+// Adiciona uma nova fruta numa posição livre
 function addFruit() {
 	const fruit = new Fruit(resolution, selectedPalette.fruitColor)
-
 	let index = getFreeIndex()
-
 	fruit.mesh.position.x = index % resolution.x
 	fruit.mesh.position.z = Math.floor(index / resolution.x)
-
 	candies.push(fruit)
-
-	// console.log(index, fruit.getIndexByCoord())
 	fruit.in()
-
 	scene.add(fruit.mesh)
 }
 
-// Only add a bomb if there are no bombs on the grid
+// Adiciona uma bomba se não existir nenhuma
 function addBomb() {
 	if (bombs.length === 0) {
 		const bomb = new Bomb(resolution)
@@ -456,10 +372,10 @@ function addBomb() {
 	}
 }
 
-// Add a bomb at the start and after each fruit eaten
 addFruit()
 addBomb()
 
+// Devolve um índice livre na grelha para colocar entidades
 function getFreeIndex() {
 	let index
 	let fruitIndexes = candies.map((fruit) => fruit.getIndexByCoord())
@@ -478,6 +394,7 @@ function getFreeIndex() {
 	return index
 }
 
+// Adiciona uma entidade (rocha ou árvore) numa posição livre
 function addEntity() {
 	const entity =
 		Math.random() > 0.5
@@ -490,12 +407,10 @@ function addEntity() {
 	entity.mesh.position.z = Math.floor(index / resolution.x)
 
 	entities.push(entity)
-
-	// console.log(index, entity.getIndexByCoord())
-
 	scene.add(entity.mesh)
 }
 
+// Gera todas as entidades iniciais
 function generateEntities() {
 	for (let i = 0; i < NUM_ENTITIES; i++) {
 		addEntity()
@@ -534,9 +449,7 @@ generateEntities()
 
 scene.add(...lights)
 
-// snake.addTailNode()
-
-// Place trees outside the grid
+// --- Coloca árvores e rochas decorativas fora da grelha ---
 const tree = new Tree(resolution)
 TREE_DATA.forEach(([x, y, z, w]) => {
 	let clone = tree.mesh.clone()
@@ -554,6 +467,7 @@ ROCK_DATA.forEach(([posArr, scaleArr]) => {
 	scene.add(clone)
 })
 
+// --- Áudio e controlos de volume ---
 const audio = document.getElementById('audio')
 const btnVolume = document.getElementById('btn-volume')
 const btnPlay = document.getElementById('btn-play')
@@ -573,7 +487,7 @@ gsap.fromTo(
 	}
 )
 
-// Adicione uma nova variável global para registrar se o jogo já começou
+// Variável global para registar se o jogo já começou
 let gameStarted = false;
 
 btnPlay.addEventListener('click', function () {
@@ -590,7 +504,7 @@ btnPlay.addEventListener('click', function () {
                 this.style.visibility = 'hidden';
             },
         });
-        // Exibe e anima o botão de trocar a câmera (pop-up)
+        // Exibe e anima o botão de trocar a câmara
         btnToggleCamera.style.display = 'block';
         gsap.fromTo(
             btnToggleCamera, 
@@ -602,7 +516,6 @@ btnPlay.addEventListener('click', function () {
 });
 
 const userVolume = localStorage.getItem('volume')
-// console.log('user volume', userVolume)
 if (userVolume === 'off') {
 	muteVolume()
 }
@@ -633,8 +546,8 @@ function unmuteVolume() {
 	gsap.to(audio, { volume: initialVolume, duration: 1 })
 }
 
+// --- Paletas de seleção visual ---
 const sideBar = document.querySelector('.top-bar')
-
 const paletteSelectors = document.querySelectorAll('[data-color]')
 gsap.to(sideBar, {
 	opacity: 1,
@@ -659,15 +572,13 @@ paletteSelectors.forEach((selector) =>
 	})
 )
 
+// --- Carregamento de texturas para teclas de controlo ---
 const manager = new THREE.LoadingManager()
 const textureLoader = new THREE.TextureLoader(manager)
-
 const wasd = textureLoader.load('/wasd.png')
 const arrows = textureLoader.load('/arrows.png')
-
 const wasdGeometry = new THREE.PlaneGeometry(3.5, 2)
 wasdGeometry.rotateX(-Math.PI * 0.5)
-
 const planeWasd = new THREE.Mesh(
 	wasdGeometry,
 	new THREE.MeshStandardMaterial({
@@ -676,7 +587,6 @@ const planeWasd = new THREE.Mesh(
 		opacity: 0.5,
 	})
 )
-
 const planeArrows = new THREE.Mesh(
 	wasdGeometry,
 	new THREE.MeshStandardMaterial({
@@ -685,27 +595,21 @@ const planeArrows = new THREE.Mesh(
 		opacity: 0.5,
 	})
 )
-
 planeArrows.position.set(8.7, 0, 21)
 planeWasd.position.set(13, 0, 21)
-
 scene.add(planeArrows, planeWasd)
-
-manager.onLoad = () => {
-	// console.log('texture caricate')
-}
+manager.onLoad = () => {}
 
 applyPalette(paletteName)
 
-// Toggle camera button event listener
+// --- Botão para alternar entre câmaras ---
 const btnToggleCamera = document.getElementById('btn-toggle-camera');
 btnToggleCamera.addEventListener('click', () => {
-    if (!gameStarted) return; // só permite alternar a câmera se o botão play tiver sido clicado
+    if (!gameStarted) return; // só permite alternar a câmara se o jogo já começou
     activeCamera = activeCamera === camera ? topCamera : camera;
 });
 
-// frame loop
-
+// --- Ciclo principal de renderização ---
 function tic() {
 	controls.update()
 	renderer.render(scene, activeCamera)
@@ -716,6 +620,7 @@ requestAnimationFrame(tic)
 
 window.addEventListener('resize', handleResize)
 
+// Atualiza tamanhos e proporções ao redimensionar a janela
 function handleResize() {
 	sizes.width = window.innerWidth
 	sizes.height = window.innerHeight

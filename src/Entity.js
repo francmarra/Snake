@@ -1,25 +1,29 @@
+// --- Classe base Entity: representa qualquer entidade na grelha ---
+
+
 import gsap from 'gsap'
 
 export default class Entity {
 	constructor(mesh, resolution, option = { size: 1.5, number: 0.5 }) {
 		this.mesh = mesh
-
 		mesh.castShadow = true
 		mesh.receiveShadow = true
-
 		this.resolution = resolution
 		this.option = option
 	}
 
+	// Devolve a posição da entidade
 	get position() {
 		return this.mesh.position
 	}
 
+	// Calcula o índice da grelha com base na posição
 	getIndexByCoord() {
 		const { x, y } = this.resolution
 		return this.position.z * x + this.position.x
 	}
 
+	// Animação de entrada da entidade
 	in() {
 		gsap.from(this.mesh.scale, {
 			duration: 1,
@@ -30,5 +34,6 @@ export default class Entity {
 		})
 	}
 
+	// Placeholder para animação de saída
 	out() {}
 }

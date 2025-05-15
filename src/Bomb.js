@@ -1,3 +1,6 @@
+// --- Classe Bomb: representa uma bomba negativa na grelha ---
+
+
 import {
     Group,
     Mesh,
@@ -12,14 +15,14 @@ const FUSE_GEOMETRY = new CylinderGeometry(0.05, 0.05, 0.2, 8)
 
 export default class Bomb extends Entity {
     constructor(resolution, color) {
-        // cria um grupo para conter corpo + o pavio
+        // Cria um grupo para conter o corpo e o pavio da bomba
         const bomb = new Group()
 
-        // corpo da bomba
+        // Corpo da bomba
         const bodyMat = new MeshStandardMaterial({ color: color || 0x111111 })
         const bombBody = new Mesh(BODY_GEOMETRY, bodyMat)
 
-        // pavio
+        // Pavio
         const fuseMesh = new MeshStandardMaterial({ color: 0xff0000 })
         const fuse = new Mesh(FUSE_GEOMETRY, fuseMesh)
         fuse.position.y = 0.35 + 0.1  // levanta o pavio acima do corpo
@@ -27,10 +30,10 @@ export default class Bomb extends Entity {
         bomb.add(bombBody, fuse)
         super(bomb, resolution)
 
-        // expose the body material on the group itself
+        // Expõe o material do corpo no grupo
         this.mesh.material = bodyMat
 
-        // scale based on points
+        // Define pontos negativos aleatórios para a bomba
         this.points = Math.floor(Math.random() * 3) + 1
         bomb.scale.setScalar(0.5 + (this.points * 0.5) / 3)
     }
