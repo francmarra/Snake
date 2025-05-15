@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import * as dat from 'lil-gui'
 import Snake from './src/Snake'
-import Candy from './src/Candy'
+import Fruit from './src/Fruit'
 import Rock from './src/Rock'
 import Tree from './src/Tree'
 import lights from './src/Lights'
@@ -35,7 +35,7 @@ const palettes = {
 		fogColor: 0x39c09f,
 		rockColor: 0xebebeb, //0x7a95ff,
 		treeColor: 0x639541, //0x1d5846,
-		candyColor: 0x1d5846, //0x614bdd,
+		fruitColor: 0x1d5846, //0x614bdd,
 		snakeColor: 0x1d5846, //0xff470a,
 		mouthColor: 0x39c09f,
 	},
@@ -44,7 +44,7 @@ const palettes = {
 		fogColor: 0xffac38,
 		rockColor: 0xacacac,
 		treeColor: 0xa2d109,
-		candyColor: 0x614bdd,
+		fruitColor: 0x614bdd,
 		snakeColor: 0xff470a,
 		mouthColor: 0x614bdd,
 	},
@@ -53,7 +53,7 @@ const palettes = {
 		fogColor: 0xb04ce6,
 		rockColor: 0xebebeb,
 		treeColor: 0x53d0c1,
-		candyColor: 0x9900ff,
+		fruitColor: 0x9900ff,
 		snakeColor: 0xff2ed2,
 		mouthColor: 0x614bdd,
 	},
@@ -79,7 +79,7 @@ function applyPalette(paletteName) {
 		fogColor,
 		rockColor,
 		treeColor,
-		candyColor,
+		fruitColor,
 		snakeColor,
 		mouthColor,
 	} = palette
@@ -94,7 +94,7 @@ function applyPalette(paletteName) {
 	entities
 		.find((entity) => entity instanceof Tree)
 		?.mesh.material.color.set(treeColor)
-	candies[0].mesh.material.color.set(candyColor)
+	candies[0].mesh.material.color.set(fruitColor)
 	snake.body.head.data.mesh.material.color.set(snakeColor)
 
 	snake.body.head.data.mesh.material.color.set(snakeColor)
@@ -139,8 +139,8 @@ if (gui) {
 		})
 
 	gui
-		.addColor(params, 'candyColor')
-		.name('Candy color')
+		.addColor(params, 'fruitColor')
+		.name('Fruit color')
 		.onChange((val) => {
 			candies[0].mesh.material.color.set(val)
 		})
@@ -296,19 +296,18 @@ snake.addEventListener('updated', function () {
 		resetGame()
 	}
 
-	// controllo se mangia
 	const headIndex = snake.indexes.at(-1)
-	const candyIndex = candies.findIndex(
-		(candy) => candy.getIndexByCoord() === headIndex
+	const fruitIndex = candies.findIndex(
+		(fruit) => fruit.getIndexByCoord() === headIndex
 	)
-	// console.log(headIndex, candyIndex)
-	if (candyIndex >= 0) {
-		const candy = candies[candyIndex]
-		scene.remove(candy.mesh)
-		candies.splice(candyIndex, 1)
-		snake.body.head.data.candy = candy
-		addCandy()
-		score += candy.points
+
+	if (fruitIndex >= 0) {
+		const fruit = candies[fruitIndex]
+		scene.remove(fruit.mesh)
+		candies.splice(fruitIndex, 1)
+		snake.body.head.data.fruit = fruit
+		addFruit()
+		score += fruit.points
 		// console.log(candies)
 		printScore()
 	}
@@ -487,10 +486,10 @@ function resetGame() {
 	stopGame()
 	score = 0
 
-	let candy = candies.pop()
-	while (candy) {
-		scene.remove(candy.mesh)
-		candy = candies.pop()
+	let fruit = candies.pop()
+	while (fruit) {
+		scene.remove(fruit.mesh)
+		fruit = candies.pop()
 	}
 
 	let entity = entities.pop()
@@ -499,41 +498,41 @@ function resetGame() {
 		entity = entities.pop()
 	}
 
-	addCandy()
+	addFruit()
 	generateEntities()
 }
 
 const candies = []
 const entities = []
 
-function addCandy() {
-	const candy = new Candy(resolution, selectedPalette.candyColor)
+function addFruit() {
+	const fruit = new Fruit(resolution, selectedPalette.fruitColor)
 
 	let index = getFreeIndex()
 
-	candy.mesh.position.x = index % resolution.x
-	candy.mesh.position.z = Math.floor(index / resolution.x)
+	fruit.mesh.position.x = index % resolution.x
+	fruit.mesh.position.z = Math.floor(index / resolution.x)
 
-	candies.push(candy)
+	candies.push(fruit)
 
-	// console.log(index, candy.getIndexByCoord())
-	candy.in()
+	// console.log(index, fruit.getIndexByCoord())
+	fruit.in()
 
-	scene.add(candy.mesh)
+	scene.add(fruit.mesh)
 }
 
-addCandy()
+addFruit()
 
 function getFreeIndex() {
 	let index
-	let candyIndexes = candies.map((candy) => candy.getIndexByCoord())
+	let fruitIndexes = candies.map((fruit) => fruit.getIndexByCoord())
 	let entityIndexes = entities.map((entity) => entity.getIndexByCoord())
 
 	do {
 		index = Math.floor(Math.random() * resolution.x * resolution.y)
 	} while (
 		snake.indexes.includes(index) ||
-		candyIndexes.includes(index) ||
+		fruitIndexes.includes(index) ||
 		entityIndexes.includes(index)
 	)
 

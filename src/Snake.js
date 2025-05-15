@@ -1,7 +1,6 @@
 import {
 	EventDispatcher,
 	Mesh,
-	MeshNormalMaterial,
 	MeshStandardMaterial,
 	SphereGeometry,
 	Vector2,
@@ -183,19 +182,19 @@ export default class Snake extends EventDispatcher {
 
 		let currentNode = this.end
 
-		if (this.end.data.candy) {
-			this.end.data.candy = null
+		if (this.end.data.fruit) {
+			this.end.data.fruit = null
 			this.end.data.mesh.scale.setScalar(1)
 
 			this.addTailNode()
 		}
 
 		while (currentNode.prev) {
-			const candy = currentNode.prev.data.candy
-			if (candy) {
-				currentNode.data.candy = candy
+			const fruit = currentNode.prev.data.fruit
+			if (fruit) {
+				currentNode.data.fruit = fruit
 				currentNode.data.mesh.scale.setScalar(1.15)
-				currentNode.prev.data.candy = null
+				currentNode.prev.data.fruit = null
 				currentNode.prev.data.mesh.scale.setScalar(1)
 			}
 

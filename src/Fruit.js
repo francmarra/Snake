@@ -3,14 +3,14 @@ import {
     Mesh,
     MeshStandardMaterial,
     SphereGeometry,
-    CylinderGeometry,
+    CylinderGeometry
 } from 'three'
 import Entity from './Entity'
 
 const BODY_GEOMETRY = new SphereGeometry(0.35, 20, 20)
 const STEM_GEOMETRY = new CylinderGeometry(0.05, 0.05, 0.2, 8)
 
-export default class Candy extends Entity {
+export default class Fruit extends Entity {
     constructor(resolution, color) {
         // create a group to hold body + stem
         const fruit = new Group()
