@@ -76,7 +76,11 @@ function applyPalette(paletteName) {
 
 	updateSnakeSegmentsUI()
 
-	btnPlayImg.src = `/btn-play-bg-${paletteName}.png`
+	btnPlayImg.src = `/GreenButton.svg`
+	// Define o SVG correspondente ao tema selecionado
+	if (paletteName === 'green') btnPlayImg.src = '/GreenButton.svg'
+	else if (paletteName === 'orange') btnPlayImg.src = '/Orange.svg'
+	else if (paletteName === 'lilac') btnPlayImg.src = '/LilacButton.svg'
 }
 
 // --- Inicialização da cena, grelha e câmara ---
