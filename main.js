@@ -76,11 +76,11 @@ function applyPalette(paletteName) {
 
 	updateSnakeSegmentsUI()
 
-	btnPlayImg.src = `/GreenButton.svg`
+	btnPlayImg.src = `/ThemeBtn/GreenButton.svg`
 	// Define o SVG correspondente ao tema selecionado
-	if (paletteName === 'green') btnPlayImg.src = '/GreenButton.svg'
-	else if (paletteName === 'orange') btnPlayImg.src = '/Orange.svg'
-	else if (paletteName === 'lilac') btnPlayImg.src = '/LilacButton.svg'
+	if (paletteName === 'green') btnPlayImg.src = '/ThemeBtn/GreenButton.svg'
+	else if (paletteName === 'orange') btnPlayImg.src = '/ThemeBtn/Orange.svg'
+	else if (paletteName === 'lilac') btnPlayImg.src = '/ThemeBtn/LilacButton.svg'
 }
 
 // --- Inicialização da cena, grelha e câmara ---
