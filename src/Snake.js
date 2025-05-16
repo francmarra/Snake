@@ -203,10 +203,8 @@ export default class Snake extends EventDispatcher {
 
 	// Verifica colisão da cabeça com o corpo
 	checkSelfCollision() {
-		const headIndex = this.indexes.pop()
-		const collide = this.indexes.includes(headIndex)
-		this.indexes.push(headIndex)
-		return collide
+		const headIndex = this.indexes[this.indexes.length - 1]
+		return this.indexes.slice(0, -1).includes(headIndex)
 	}
 
 	// Verifica colisão da cabeça com entidades

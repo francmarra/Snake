@@ -19,8 +19,8 @@ export default class Entity {
 
 	// Calcula o índice da grelha com base na posição
 	getIndexByCoord() {
-		const { x, y } = this.resolution
-		return this.position.z * x + this.position.x
+		const { x } = this.resolution
+		return Math.round(this.position.z) * x + Math.round(this.position.x)
 	}
 
 	// Animação de entrada da entidade
