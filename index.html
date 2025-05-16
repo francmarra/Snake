@@ -43,7 +43,7 @@
 			<img
 				id="btn-play-img"
 				class="h-[4rem] lg:h-[7rem]"
-				src="/ThemeBtn/GreenButton.svg"
+				src="/ThemeBtn/GreenPlay.svg"
 				alt=""
 				height="20"
 			/>
@@ -53,14 +53,15 @@
 		<button
 			id="btn-volume"
 			style="opacity: 1"
-			class="fixed w-max drop-shadow-xl hover:bg-white/30 rounded-[7px] right-4 bottom-4 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-14 after:rotate-45 after:absolute after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2"
+			class="fixed w-max drop-shadow-xl hover:bg-black/30 rounded-[7px] right-4 bottom-4 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-20 after:rotate-45 after:absolute after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2"
 		>
-			<div class="absolute animate-ping inset-0 bg-white/30 scale-105"></div>
+			<div class="absolute animate-ping inset-0 bg-black/30 scale-125"></div>
 			<img
-				class="aspect-square w-14"
+				id="btn-volume-img"
+				class="aspect-square w-20"
 				src="/ThemeBtn/GreenAudio.svg"
-				alt=""
-				height="56"
+				alt="Toggle Audio"
+				height="80"
 			/>
 			<span class="absolute" style="opacity: 0">mute</span>
 		</button>
@@ -69,7 +70,13 @@
 			id="btn-toggle-camera"
 			style="display: none; position: fixed; top: 10px; right: 10px; z-index: 60; padding: 0.5rem 1rem; background: #fff; border: none; border-radius: 4px; cursor: pointer;"
 		>
-			Toggle Camera
+			<img
+				id="btn-toggle-camera-img"
+				class="aspect-square w-14"
+				src="/ThemeBtn/GreenCamera.svg"
+				alt="Toggle Camera"
+				height="56"
+			/>
 		</button>
 
 		<ul
