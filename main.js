@@ -16,10 +16,7 @@ import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import Entity from './src/Entity'
 import Bomb from './src/Bomb'
-import {
-  MOVEMENT_SPEED,
-  NUM_ENTITIES
-} from './config/Config.js'
+import { MOVEMENT_SPEED, NUM_ENTITIES } from './config/Config.js'
 import {
   GRID_WIDTH,
   GRID_HEIGHT,
