@@ -40,6 +40,7 @@ const params = {
 
 // Aplica a paleta de cores selecionada a todos os elementos visuais
 function applyPalette(paletteName) {
+	paletteName = paletteName; // Ensure global paletteName is updated
 	const palette = palettes[paletteName]
 	localStorage.setItem('paletteName', paletteName)
 
@@ -76,11 +77,17 @@ function applyPalette(paletteName) {
 
 	updateSnakeSegmentsUI()
 
-	btnPlayImg.src = `/ThemeBtn/GreenButton.svg`
-	// Define o SVG correspondente ao tema selecionado
-	if (paletteName === 'green') btnPlayImg.src = '/ThemeBtn/GreenButton.svg'
-	else if (paletteName === 'orange') btnPlayImg.src = '/ThemeBtn/Orange.svg'
-	else if (paletteName === 'lilac') btnPlayImg.src = '/ThemeBtn/LilacButton.svg'
+	btnPlayImg.src = `/ThemeBtn/${paletteName.charAt(0).toUpperCase() + paletteName.slice(1)}Play.svg`
+	document.getElementById('btn-toggle-camera-img').src = `/ThemeBtn/${paletteName.charAt(0).toUpperCase() + paletteName.slice(1)}Camera.svg`
+	document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.charAt(0).toUpperCase() + paletteName.slice(1)}Audio.svg`
+
+	// Set audio icon based on current audio state
+	const userVolume = localStorage.getItem('volume')
+	if (userVolume === 'off' || audio.volume === 0) {
+		document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.charAt(0).toUpperCase() + paletteName.slice(1)}NoAudio.svg`
+	} else {
+		document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.charAt(0).toUpperCase() + paletteName.slice(1)}Audio.svg`
+	}
 }
 
 // --- Inicialização da cena, grelha e câmara ---
@@ -537,17 +544,19 @@ btnVolume.addEventListener('click', function () {
 function muteVolume() {
 	localStorage.setItem('volume', 'off')
 	gsap.to(audio, { volume: 0, duration: 1 })
-	btnVolume.classList.remove('after:hidden')
+	btnVolume.classList.remove('after:block')
 	btnVolume.querySelector(':first-child').classList.remove('animate-ping')
-	btnVolume.classList.add('after:block')
+	btnVolume.querySelector(':first-child').style.background = 'none'; // Remove the light-colored square
+	document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.charAt(0).toUpperCase() + paletteName.slice(1)}NoAudio.svg`
 }
 
 function unmuteVolume() {
 	localStorage.setItem('volume', 'on')
 	btnVolume.classList.add('after:hidden')
 	btnVolume.querySelector(':first-child').classList.add('animate-ping')
-	btnVolume.classList.remove('after:block')
+	btnVolume.querySelector(':first-child').style.background = '';
 	gsap.to(audio, { volume: initialVolume, duration: 1 })
+	document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.charAt(0).toUpperCase() + paletteName.slice(1)}Audio.svg`
 }
 
 // --- Paletas de seleção visual ---
