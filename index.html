@@ -1,62 +1,129 @@
 <!DOCTYPE html>
-<html lang="pt">
-<head>
-  <meta charset="UTF-8">
-  <title>Jogo da Cobra 3D</title>
-  <style>
-    #menu {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background: rgba(32, 35, 42, 0.85);
-      padding: 10px;
-      border-radius: 10px;
-      color: white;
-      font-family: sans-serif;
-    }
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta property="og:title" content="Snake 3D" />
+    <meta name="description" content="A simple 3D snake indie game!" />
+    <meta property="og:description" content="A simple 3D snake indie game!" />
+    <meta property="og:url" content="https://snake3d.vercel.app/" />
+    <meta property="og:image" content="/og-preview.png" />
+    <title>Snake 3D Game</title>
+  </head>
+  <body>
+    <!-- Snake‐segments HUD -->
+    <div
+      id="snake-segments-ui"
+      class="fixed top-4 left-4 flex items-center z-50 space-x-3"
+    >
+      <div id="segments-container" class="flex space-x-2"></div>
+      <span
+        id="segments-counter"
+        class="text-white font-bold text-2xl lg:text-3xl"
+      ></span>
+    </div>
 
-    #menu button {
-      margin: 5px 0;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 6px;
-      background-color: #4CAF50;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
+    <script type="module" src="/main.js"></script>
+    <audio
+      style="opacity: 0"
+      id="audio"
+      class="fixed top-0 left-0 z-50"
+      controls
+      loop="true"
+      src="/short-audio.mp3"
+    ></audio>
 
-    #score {
-      margin-top: 10px;
-    }
+    <button
+      id="btn-play"
+      style="opacity: 0"
+      class="fixed w-max drop-shadow-xl top-[75%] lg:top-[60%] left-1/2"
+    >
+      <img
+        id="btn-play-img"
+        class="h-[4rem] lg:h-[7rem]"
+        src="/ThemeBtn/GreenPlay.svg"
+        alt=""
+      />
+      <span class="absolute" style="opacity: 0">play</span>
+    </button>
 
-    body {
-      margin: 0;
-      overflow: hidden;
-    }
-  </style>
-</head>
-<body>
+    <button
+      id="btn-volume"
+      style="opacity: 1; background: #1E1E1E; right: 50px;"
+      class="fixed w-max drop-shadow-xl hover:bg-black/30 rounded-[7px] right-4 bottom-4 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-20 after:rotate-45 after:absolute after:top-1/2"
+    >
+      <div class="absolute animate-ping inset-0 bg-black/30 scale-125"></div>
+      <img
+        id="btn-volume-img"
+        class="aspect-square w-20"
+        src="/ThemeBtn/GreenAudio.svg"
+        alt="Toggle Audio"
+      />
+      <span class="absolute" style="opacity: 0">mute</span>
+    </button>
 
-  <div id="levelDisplay">Nível: 1</div>
-  
-  <div id="menu">
-    <button id="startBtn">▶ Começar Jogo</button>
-    <button id="toggleMusic">🎵 Música ON/OFF</button>
-    <div id="score">Pontuação: 0</div>
-    <button id="toggleCamera">Alternar Câmara</button>
+    <!-- Updated Toggle Camera Button -->
+    <button
+      id="btn-toggle-camera"
+      style="
+        display: none;
+        position: fixed;
+        top: 25px;
+        right: 50px;
+        z-index: 60;
+        width: 110px;
+        height: 40px;
+        background: #1E1E1E;
+        border: none;
+        padding: 0;
+        border-radius: 10px;
+      "
+    >
+      <img
+        id="btn-toggle-camera-img"
+        style="width: 100%; height: 100%; border-radius: 0px;"
+        src="/ThemeBtn/GreenCamera.svg"
+        alt="Toggle Camera"
+      />
+    </button>
 
-  </div>
-
-  <div id="lightControls">
-    <button id="toggleAmbient">🌙 Ambient</button>
-    <button id="toggleDirectional">🔆 Direcional</button>
-    <button id="togglePoint">💡 Pontual</button>
-  </div>
-
- 
-
-  <!-- SCRIPT NO FIM -->
-  <script type="module" src="script.js"></script>
-</body>
+    <ul
+      class="fixed left-4 flex lg:flex-col gap-3 lg:gap-4 bottom-4 lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2 z-50"
+    >
+      <li
+        style="transform: translateX(-200px); background: #1E1E1E; border-radius: 9999px;"
+        data-color="green"
+        class="cursor-pointer"
+      >
+        <img
+          class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full w-14 h-14 lg:w-20 lg:h-20"
+          src="/ThemeBtn/GreenTheme.svg"
+          alt=""
+        />
+      </li>
+      <li
+        style="transform: translateX(-200px); background: #1E1E1E; border-radius: 9999px;"
+        data-color="orange"
+        class="cursor-pointer"
+      >
+        <img
+          class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full w-14 h-14 lg:w-20 lg:h-20"
+          src="/ThemeBtn/OrangeTheme.svg"
+          alt=""
+        />
+      </li>
+      <li
+        style="transform: translateX(-200px); background: #1E1E1E; border-radius: 9999px;"
+        data-color="lilac"
+        class="cursor-pointer"
+      >
+        <img
+          class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full w-14 h-14 lg:w-20 lg:h-20"
+          src="/ThemeBtn/LilacTheme.svg"
+          alt=""
+        />
+      </li>
+    </ul>
+  </body>
 </html>
