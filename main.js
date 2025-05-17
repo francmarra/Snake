@@ -70,10 +70,14 @@ function applyPalette(name) {
   scene.fog.color.set(fogColor)
   scene.background.set(fogColor)
 
-  entities.find((e) => e instanceof Rock)
-    ?.mesh.material.color.set(rockColor)
-  entities.find((e) => e instanceof Tree)
-    ?.mesh.material.color.set(treeColor)
+  // Atualiza cor de rochas
+  entities.filter((e) => e instanceof Rock).forEach((rock) => {
+    rock.mesh.material.color.set(rockColor)
+  })
+  // Atualiza cor de árvores (folhagem apenas)
+  entities.filter((e) => e instanceof Tree).forEach((tree) => {
+    tree.foliage.material.color.set(treeColor)
+  })
   candies[0].mesh.material.color.set(fruitColor)
   snake.body.head.data.mesh.material.color.set(snakeColor)
   snake.mouth.material.color.set(mouthColor)
