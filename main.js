@@ -27,6 +27,7 @@ import {
   CAMERA_NEAR,
   CAMERA_FAR
 } from './config/StaticData.js'
+import { animateButtonIn, animateButtonOut, animateCameraButtonIn } from './src/Animations.js';
 
 // Carrega a fonte para o texto da pontuação
 const loader = new FontLoader()
@@ -84,16 +85,16 @@ function applyPalette(name) {
 
   updateSnakeSegmentsUI()
 
-  btnPlayImg.src = `/ThemeBtn/${capitalize(name)}Play.svg`
+  btnPlayImg.src = `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Play.svg`
   document.getElementById('btn-toggle-camera-img').src =
-    `/ThemeBtn/${capitalize(name)}Camera.svg`
+    `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Camera.svg`
   document.getElementById('btn-volume-img').src =
-    `/ThemeBtn/${capitalize(name)}Audio.svg`
+    `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Audio.svg`
 
   const vol = localStorage.getItem('volume')
   if (vol === 'off' || audio.volume === 0) {
     document.getElementById('btn-volume-img').src =
-      `/ThemeBtn/${capitalize(name)}NoAudio.svg`
+      `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}NoAudio.svg`
   }
 }
 
@@ -473,35 +474,10 @@ const btnSettings = document.getElementById('btn-settings')
 const btnSettingsImg = document.getElementById('btn-settings-img')
 
 // Play button animation
-gsap.fromTo(
-  btnPlay,
-  { autoAlpha: 0, scale: 0, yPercent: -50, xPercent: -50 },
-  {
-    duration: 0.8,
-    autoAlpha: 1,
-    scale: 1,
-    yPercent: -50,
-    xPercent: -50,
-    delay: 0.3,
-    ease: `elastic.out(1.2, 0.7)`,
-  }
-)
-
+animateButtonIn(btnPlay);
 // Animate settings button in sync with play button
 if (btnSettings) {
-  gsap.fromTo(
-    btnSettings,
-    { autoAlpha: 0, scale: 0, yPercent: -50, xPercent: -50 },
-    {
-      duration: 0.8,
-      autoAlpha: 1,
-      scale: 1,
-      yPercent: -50,
-      xPercent: -50,
-      delay: 0.3,
-      ease: `elastic.out(1.2, 0.7)`,
-    }
-  )
+  animateButtonIn(btnSettings);
 }
 
 let gameStarted = false
@@ -512,23 +488,33 @@ btnPlay.addEventListener('click', function () {
     audio.play()
     gsap.to(camera.position, { ...finalPosition, duration: 2 })
     gsap.to(scene.fog, { duration: 2, near: 20, far: 55 })
-    gsap.to(this, {
-      duration: 1,
-      scale: 0,
-      ease: `elastic.in(1.2, 0.7)`,
-      onComplete: () => {
-        this.style.visibility = 'hidden'
-      },
-    })
+    animateButtonOut(this)
+    if (btnSettings) {
+      animateButtonOut(btnSettings)
+    }
     btnToggleCamera.style.display = 'block'
-    gsap.fromTo(
-      btnToggleCamera,
-      { autoAlpha: 0, scale: 0 },
-      { duration: 0.8, autoAlpha: 1, scale: 1, ease: 'elastic.out(1.2, 0.7)', delay: 0.3 }
-    )
+    animateCameraButtonIn(btnToggleCamera)
     registerEventListener()
   }
 })
+
+btnPlay.addEventListener('mouseenter', function () {
+  this.style.transform = 'translate(-50%, -50%) scale(1.15)';
+  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
+});
+btnPlay.addEventListener('mouseleave', function () {
+  this.style.transform = 'translate(-50%, -50%) scale(1)';
+  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
+});
+
+btnSettings.addEventListener('mouseenter', function () {
+  this.style.transform = 'translate(-50%, -50%) scale(1.15)';
+  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
+});
+btnSettings.addEventListener('mouseleave', function () {
+  this.style.transform = 'translate(-50%, -50%) scale(1)';
+  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
+});
 
 const userVolume = localStorage.getItem('volume')
 if (userVolume === 'off') {
@@ -545,13 +531,22 @@ btnVolume.addEventListener('click', function () {
   }
 })
 
+btnVolume.addEventListener('mouseenter', function () {
+  this.style.transform = 'scale(1.15)';
+  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
+});
+btnVolume.addEventListener('mouseleave', function () {
+  this.style.transform = 'scale(1)';
+  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
+});
+
 function muteVolume() {
   localStorage.setItem('volume', 'off')
   gsap.to(audio, { volume: 0, duration: 1 })
   btnVolume.classList.remove('after:block')
   btnVolume.querySelector(':first-child').classList.remove('animate-ping')
   btnVolume.querySelector(':first-child').style.background = 'none'
-  document.getElementById('btn-volume-img').src = `/ThemeBtn/${capitalize(paletteName)}NoAudio.svg`
+  document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
 }
 
 function unmuteVolume() {
@@ -560,7 +555,7 @@ function unmuteVolume() {
   btnVolume.querySelector(':first-child').classList.add('animate-ping')
   btnVolume.querySelector(':first-child').style.background = ''
   gsap.to(audio, { volume: initialVolume, duration: 1 })
-  document.getElementById('btn-volume-img').src = `/ThemeBtn/${capitalize(paletteName)}Audio.svg`
+  document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`
 }
 
 const sideBar = document.querySelector('.top-bar')
@@ -618,7 +613,7 @@ manager.onLoad = () => {}
 // Palette-aware settings icon
 function updateSettingsIcon(name) {
   if (!btnSettingsImg) return;
-  btnSettingsImg.src = `/ThemeBtn/${capitalize(name)}Settings.svg`;
+  btnSettingsImg.src = `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Settings.svg`;
 }
 
 // Update settings icon when palette changes
