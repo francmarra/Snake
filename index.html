@@ -25,6 +25,110 @@
           11.22% 0.36%, 13.34% 0.06%, 62.30% 0.06%, 62.62% 0.89%, 97.63% 96.65%, 98.88% 99.94%
         );
       }
+      /* Settings sidebar styles */      
+      .settings-sidebar {
+        position: fixed;
+        right: -16rem; /* Start offscreen */
+        left: auto;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 16rem;
+        height: auto;
+        max-height: calc(100% - 5rem);
+        background: #1D5846; /* Default green theme */
+        padding: 1rem 0.75rem;
+        border-radius: 1rem 0 0 1rem;
+        box-shadow: -2px 0 8px rgba(0,0,0,0.5);
+        transition: right 0.3s cubic-bezier(0.42,0,0.58,1);
+        z-index: 100;
+        overflow-y: auto;
+      }
+      .settings-sidebar.open {
+        right: 0;
+        left: auto;
+      }
+      /* Theme-specific sidebar colors */
+      .settings-sidebar.theme-green {
+        background: #1D5846;
+      }
+      .settings-sidebar.theme-lilac {
+        background: #5A189A;
+      }
+      .settings-sidebar.theme-orange {
+        background: #DC2F02;
+      }
+      /* Theme-specific input colors */
+      .theme-green input[type="range"]::-webkit-slider-thumb {
+        background: #39C09F;
+      }
+      .theme-lilac input[type="range"]::-webkit-slider-thumb {
+        background: #9D4EDD;
+      }
+      .theme-orange input[type="range"]::-webkit-slider-thumb {
+        background: #F48C06;
+      }
+      /* Basic slider styling */
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        height: 5px;
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.3);
+        outline: none;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: #39C09F; /* Default green */
+        cursor: pointer;
+      }
+      /* Checkbox styling */
+      input[type="checkbox"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+        border: 2px solid #39C09F; /* Default green */
+        outline: none;
+        cursor: pointer;
+        position: relative;
+      }
+      input[type="checkbox"]:checked {
+        background: #39C09F; /* Default green */
+      }
+      input[type="checkbox"]:checked:after {
+        content: '';
+        position: absolute;
+        width: 6px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+        top: 1px;
+        left: 5px;
+      }
+      .theme-green input[type="checkbox"] {
+        border-color: #39C09F;
+      }
+      .theme-green input[type="checkbox"]:checked {
+        background: #39C09F;
+      }
+      .theme-lilac input[type="checkbox"] {
+        border-color: #9D4EDD;
+      }
+      .theme-lilac input[type="checkbox"]:checked {
+        background: #9D4EDD;
+      }
+      .theme-orange input[type="checkbox"] {
+        border-color: #F48C06;
+      }
+      .theme-orange input[type="checkbox"]:checked {
+        background: #F48C06;
+      }
     </style>
   </head>
   <body>
@@ -150,5 +254,31 @@
         />
       </li>
     </ul>
+
+    <!-- Settings Sidebar -->
+    <div id="settings-sidebar" class="settings-sidebar">
+      <h2 class="text-xl font-bold text-white mb-4">Settings</h2>
+      <div class="setting-item mb-4">
+        <label for="fruits-range" class="text-white">Nº of fruits: <span id="fruits-value">5</span></label>
+        <input id="fruits-range" type="range" min="1" max="10" value="5" class="w-full" />
+      </div>
+      <div class="setting-item mb-4">
+        <label for="bombs-range" class="text-white">Nº of bombs: <span id="bombs-value">0</span></label>
+        <input id="bombs-range" type="range" min="0" max="10" value="0" class="w-full" />
+      </div>
+      <div class="setting-item mb-4">
+        <label for="objects-range" class="text-white">Nº of objects: <span id="objects-value">0</span></label>
+        <input id="objects-range" type="range" min="0" max="50" value="0" class="w-full" />
+      </div>
+      <div class="setting-item mb-4">
+        <label for="speed-range" class="text-white">Snake speed: <span id="speed-value">5</span></label>
+        <input id="speed-range" type="range" min="1" max="10" value="5" class="w-full" />
+      </div>
+      <div class="setting-item">
+        <label class="text-white inline-flex items-center">
+          <input id="kill-borders" type="checkbox" class="mr-2" /> Kill after trespassing borders
+        </label>
+      </div>
+    </div>
   </body>
 </html>

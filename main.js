@@ -491,6 +491,11 @@ btnPlay.addEventListener('click', function () {
     animateButtonOut(this)
     if (btnSettings) {
       animateButtonOut(btnSettings)
+      // Close settings sidebar if it's open
+      const settingsSidebar = document.getElementById('settings-sidebar');
+      if (settingsSidebar && settingsSidebar.classList.contains('open')) {
+        settingsSidebar.classList.remove('open');
+      }
     }
     btnToggleCamera.style.display = 'block'
     animateCameraButtonIn(btnToggleCamera)
@@ -621,7 +626,17 @@ const originalApplyPalette = applyPalette;
 applyPalette = function(name) {
   originalApplyPalette(name);
   updateSettingsIcon(name);
+  
+  // Update settings sidebar theme
+  const settingsSidebar = document.getElementById('settings-sidebar');
+  if (settingsSidebar) {
+    // Remove all theme classes
+    settingsSidebar.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
+    // Add the current theme class
+    settingsSidebar.classList.add(`theme-${name.toLowerCase()}`);
+  }
 };
+
 updateSettingsIcon(paletteName);
 
 // Placeholder click event for settings
@@ -634,7 +649,34 @@ btnSettings.addEventListener('click', function () {
       ease: "power2.inOut"
     });
   }
-})
+  // Toggle settings sidebar
+  document.getElementById('settings-sidebar').classList.toggle('open');
+});
+
+// Initialize settings controls
+(() => {
+  const controls = [
+    {rangeId: 'fruits-range', valueId: 'fruits-value'},
+    {rangeId: 'bombs-range', valueId: 'bombs-value'},
+    {rangeId: 'objects-range', valueId: 'objects-value'},
+    {rangeId: 'speed-range', valueId: 'speed-value'}
+  ];
+  controls.forEach(({rangeId, valueId}) => {
+    const range = document.getElementById(rangeId);
+    const display = document.getElementById(valueId);
+    if (range && display) {
+      // set initial display
+      display.textContent = range.value;
+      range.addEventListener('input', () => display.textContent = range.value);
+    }
+  });
+  
+  // Set initial theme on the settings sidebar
+  const settingsSidebar = document.getElementById('settings-sidebar');
+  if (settingsSidebar) {
+    settingsSidebar.classList.add(`theme-${paletteName.toLowerCase()}`);
+  }
+})();
 
 applyPalette(paletteName)
 
