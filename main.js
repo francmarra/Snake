@@ -626,7 +626,14 @@ updateSettingsIcon(paletteName);
 
 // Placeholder click event for settings
 btnSettings.addEventListener('click', function () {
-  alert('Settings will be available soon!')
+  const gear = btnSettings.querySelector('img[alt="Settings Gear"]');
+  if (gear) {
+    gsap.to(gear, {
+      rotation: "+=360",
+      duration: 1,
+      ease: "power2.inOut"
+    });
+  }
 })
 
 applyPalette(paletteName)
