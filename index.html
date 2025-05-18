@@ -2,12 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="/Favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta property="og:title" content="Snake 3D" />
     <title>Snake 3D Game</title>
-    <style>      #btn-settings {
-        /* Slightly expanded all points by about 1-2% horizontally and vertically for a few pixels of margin */
+    <style>      
+      #btn-settings {
         clip-path: polygon(
           89.50% 0.14%, 92.53% 0.47%, 94.45% 1.22%, 96.21% 3.67%, 97.80% 5.62%,
           99.21% 8.00%, 100.40% 11.84%, 101.37% 15.01%, 102.08% 18.84%, 102.52% 22.50%,
@@ -17,7 +17,6 @@
         );
       }
       #btn-play {
-        /* Similarly expanded for consistent margin */
         clip-path: polygon(
           13.34% 99.94%, 11.22% 99.64%, 9.19% 98.78%, 7.29% 97.39%, 5.55% 95.52%, 
           3.99% 93.22%, 2.65% 90.53%, 1.56% 87.48%, 0.74% 84.14%, 0.23% 80.53%, 
@@ -90,7 +89,6 @@
       style="opacity: 1; background: #1E1E1E;"
       class="fixed w-max drop-shadow-xl hover:bg-black/30 rounded-[7px] left-4 bottom-20 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-20 after:rotate-45 after:absolute after:top-1/2"
     >
-      <div class="absolute animate-ping inset-0 bg-black/30 scale-125"></div>
       <img
         id="btn-volume-img"
         class="aspect-square w-20"
@@ -106,7 +104,6 @@
       style="display: none; background: #1E1E1E;"
       class="fixed w-max drop-shadow-xl hover:bg-black/30 rounded-[7px] left-4 bottom-40 mb-6 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-20 after:rotate-45 after:absolute after:top-1/2"
     >
-      <div class="absolute animate-ping inset-0 bg-black/30 scale-125"></div>
       <img
         id="btn-toggle-camera-img"
         class="aspect-square w-20"
