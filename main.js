@@ -469,6 +469,8 @@ const audio = document.getElementById('audio')
 const btnVolume = document.getElementById('btn-volume')
 const btnPlay = document.getElementById('btn-play')
 const btnPlayImg = document.getElementById('btn-play-img')
+const btnSettings = document.getElementById('btn-settings')
+const btnSettingsImg = document.getElementById('btn-settings-img')
 
 // Play button animation
 gsap.fromTo(
@@ -484,6 +486,23 @@ gsap.fromTo(
     ease: `elastic.out(1.2, 0.7)`,
   }
 )
+
+// Animate settings button in sync with play button
+if (btnSettings) {
+  gsap.fromTo(
+    btnSettings,
+    { autoAlpha: 0, scale: 0, yPercent: -50, xPercent: -50 },
+    {
+      duration: 0.8,
+      autoAlpha: 1,
+      scale: 1,
+      yPercent: -50,
+      xPercent: -50,
+      delay: 0.3,
+      ease: `elastic.out(1.2, 0.7)`,
+    }
+  )
+}
 
 let gameStarted = false
 
@@ -595,6 +614,25 @@ planeArrows.position.set(8.7, 0, 21)
 planeWasd.position.set(13, 0, 21)
 scene.add(planeArrows, planeWasd)
 manager.onLoad = () => {}
+
+// Palette-aware settings icon
+function updateSettingsIcon(name) {
+  if (!btnSettingsImg) return;
+  btnSettingsImg.src = `/ThemeBtn/${capitalize(name)}Settings.svg`;
+}
+
+// Update settings icon when palette changes
+const originalApplyPalette = applyPalette;
+applyPalette = function(name) {
+  originalApplyPalette(name);
+  updateSettingsIcon(name);
+};
+updateSettingsIcon(paletteName);
+
+// Placeholder click event for settings
+btnSettings.addEventListener('click', function () {
+  alert('Settings will be available soon!')
+})
 
 applyPalette(paletteName)
 
