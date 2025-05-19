@@ -9,7 +9,7 @@ import Snake from './src/Snake'
 import Fruit from './src/Fruit'
 import Rock from './src/Rock'
 import Tree from './src/Tree'
-import lights, { toggleAmbientLight, toggleDirectionalLight } from './src/Lights'
+import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from './src/Lights'
 import gsap from 'gsap'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
@@ -860,10 +860,20 @@ btnSettings.addEventListener('click', function () {
   if (directionalLightCheckbox) {
     // Set initial state based on default settings
     directionalLightCheckbox.checked = DEFAULT_SETTINGS.directionalLightEnabled;
-    
-    directionalLightCheckbox.addEventListener('change', () => {
+      directionalLightCheckbox.addEventListener('change', () => {
       // Toggle directional light based on checkbox state
       toggleDirectionalLight(directionalLightCheckbox.checked);
+    });
+  }
+  
+  const pointLightCheckbox = document.getElementById('point-light');
+  if (pointLightCheckbox) {
+    // Set initial state based on default settings
+    pointLightCheckbox.checked = DEFAULT_SETTINGS.pointLightEnabled;
+    
+    pointLightCheckbox.addEventListener('change', () => {
+      // Toggle point light based on checkbox state
+      togglePointLight(pointLightCheckbox.checked);
     });
   }
   

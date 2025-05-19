@@ -8,7 +8,8 @@ export const DEFAULT_SETTINGS = {
     snakeSpeed: 140,
     killOnBorderTrespass: false,
     ambientLightEnabled: true,
-    directionalLightEnabled: true
+    directionalLightEnabled: true,
+    pointLightEnabled: true
 }
 
 // Get current setting value - always returns the default value
