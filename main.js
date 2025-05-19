@@ -16,7 +16,7 @@ import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import Entity from './src/Entity'
 import Bomb from './src/Bomb'
-import { MOVEMENT_SPEED, NUM_ENTITIES } from './config/Config.js'
+import { MOVEMENT_SPEED, NUM_ENTITIES, DEFAULT_SETTINGS } from './config/Config.js'
 import {
   GRID_WIDTH,
   GRID_HEIGHT,
@@ -192,14 +192,19 @@ snake.addEventListener('updated', function () {
   const fruitIndex = candies.findIndex(
     (fruit) => fruit.getIndexByCoord() === headIndex
   )
-
   if (fruitIndex >= 0) {
     const fruit = candies[fruitIndex]
     scene.remove(fruit.mesh)
     candies.splice(fruitIndex, 1)
     snake.body.head.data.fruit = fruit
     addFruit()
-    addBomb()
+    
+    // Only add a bomb if we're below the bombs setting
+    const bombsSetting = parseInt(localStorage.getItem('setting_numBombs') || '1');
+    if (bombs.length < bombsSetting) {
+      addBomb();
+    }
+    
     score += fruit.points
     printScore()
   }
@@ -221,10 +226,15 @@ snake.addEventListener('updated', function () {
         snake.die()
         resetGame()
         return
-      }
-    }
+      }    }
     score = Math.max(0, score - bomb.points)
-    addBomb()
+    
+    // Only add a new bomb if we're below the bombs setting
+    const bombsSetting = parseInt(localStorage.getItem('setting_numBombs') || '1');
+    if (bombs.length < bombsSetting) {
+      addBomb();
+    }
+    
     printScore()
   }
 })
@@ -302,11 +312,14 @@ function registerEventListener() {
       !isRunning ? startGame() : stopGame()
     } else if (!isRunning) {
       startGame()
-    }
-    // Hide settings tab when snake moves
+    }    // Hide settings tab and sidebar when snake moves
     const settingsTab = document.getElementById('settings-tab');
+    const settingsSidebar = document.getElementById('settings-sidebar');
     if (settingsTab) {
       animateSettingsTab(settingsTab, false);
+    }
+    if (settingsSidebar && settingsSidebar.classList.contains('open')) {
+      settingsSidebar.classList.remove('open');
     }
   })
 }
@@ -320,10 +333,13 @@ function startGame() {
     if (settingsTab && settingsTab.style.display !== 'none') {
       animateSettingsTab(settingsTab, false);
     }
+      // Get current speed setting or use default
+    const speedValue = parseInt(localStorage.getItem('setting_snakeSpeed') || '5');
+    const moveInterval = 300 - (speedValue * 16); // Same scale as the speed setting
     
     isRunning = setInterval(() => {
       snake.update()
-    }, MOVEMENT_SPEED)
+    }, moveInterval)
   }
 }
 
@@ -354,9 +370,22 @@ function resetGame() {
     entity = entities.pop()
   }
 
-  addFruit()
-  addBomb()
-  generateEntities()
+  // Add entities based on current settings
+  const numFruits = parseInt(localStorage.getItem('setting_numFruits') || '1');
+  const numBombs = parseInt(localStorage.getItem('setting_numBombs') || '1');
+  const numObjects = parseInt(localStorage.getItem('setting_numObjects') || '20');
+
+  for (let i = 0; i < numFruits; i++) {
+    addFruit();
+  }
+  
+  for (let i = 0; i < numBombs; i++) {
+    addBomb();
+  }
+  
+  for (let i = 0; i < numObjects; i++) {
+    addEntity();
+  }
   
   // Show settings tab after reset
   const settingsTab = document.getElementById('settings-tab');
@@ -382,15 +411,14 @@ function addFruit() {
 }
 
 function addBomb() {
-  if (bombs.length === 0) {
-    const bomb = new Bomb(resolution)
-    let index = getFreeIndex()
-    bomb.mesh.position.x = index % resolution.x
-    bomb.mesh.position.z = Math.floor(index / resolution.x)
-    bombs.push(bomb)
-    bomb.in()
-    scene.add(bomb.mesh)
-  }
+  // Remove the bombs.length === 0 condition to allow multiple bombs
+  const bomb = new Bomb(resolution)
+  let index = getFreeIndex()
+  bomb.mesh.position.x = index % resolution.x
+  bomb.mesh.position.z = Math.floor(index / resolution.x)
+  bombs.push(bomb)
+  bomb.in()
+  scene.add(bomb.mesh)
 }
 
 addFruit()
@@ -693,20 +721,99 @@ btnSettings.addEventListener('click', function () {
 // Initialize settings controls
 (() => {
   const controls = [
-    {rangeId: 'fruits-range', valueId: 'fruits-value'},
-    {rangeId: 'bombs-range', valueId: 'bombs-value'},
-    {rangeId: 'objects-range', valueId: 'objects-value'},
-    {rangeId: 'speed-range', valueId: 'speed-value'}
+    {rangeId: 'fruits-range', valueId: 'fruits-value', setting: 'numFruits'},
+    {rangeId: 'bombs-range', valueId: 'bombs-value', setting: 'numBombs'},
+    {rangeId: 'objects-range', valueId: 'objects-value', setting: 'numObjects'},
+    {rangeId: 'speed-range', valueId: 'speed-value', setting: 'snakeSpeed'}
   ];
-  controls.forEach(({rangeId, valueId}) => {
+    // Load saved settings and apply defaults
+  controls.forEach(({rangeId, valueId, setting}) => {
     const range = document.getElementById(rangeId);
     const display = document.getElementById(valueId);
     if (range && display) {
-      // set initial display
-      display.textContent = range.value;
-      range.addEventListener('input', () => display.textContent = range.value);
+      // Load saved value or use default
+      const defaultValue = setting === 'snakeSpeed' ? 5 : DEFAULT_SETTINGS[setting];
+      const savedValue = localStorage.getItem(`setting_${setting}`);
+      const value = savedValue ? JSON.parse(savedValue) : defaultValue;
+      
+      // Update input and display
+      range.value = value;
+      display.textContent = value;
+        // Add input handler
+      range.addEventListener('input', () => {
+        // Don't allow changes while game is running
+        if (isRunning) {
+          // Restore the previous value
+          const savedValue = localStorage.getItem(`setting_${setting}`);
+          range.value = savedValue ? JSON.parse(savedValue) : DEFAULT_SETTINGS[setting];
+          display.textContent = range.value;
+          return;
+        }
+
+        display.textContent = range.value;
+        const value = parseInt(range.value);
+        
+        // Save setting
+        localStorage.setItem(`setting_${setting}`, value);
+        
+        // Apply setting immediately
+        switch(setting) {
+          case 'snakeSpeed':            // Update snake speed - only applies to next game
+            break;
+            
+          case 'numFruits':
+            // Update fruits count
+            while (candies.length > value) {
+              const fruit = candies.pop();
+              scene.remove(fruit.mesh);
+            }
+            while (candies.length < value) {
+              addFruit();
+            }
+            break;
+            
+          case 'numBombs':
+            // Update bombs count
+            while (bombs.length > value) {
+              const bomb = bombs.pop();
+              scene.remove(bomb.mesh);
+            }
+            while (bombs.length < value) {
+              addBomb();
+            }
+            break;
+            
+          case 'numObjects':
+            // Update objects count
+            while (entities.length > value) {
+              const entity = entities.pop();
+              scene.remove(entity.mesh);
+            }
+            while (entities.length < value) {
+              addEntity();
+            }
+            break;
+        }
+      });
     }
-  });
+  });  // Handle border kill setting
+  const borderKillCheckbox = document.getElementById('kill-borders');
+  if (borderKillCheckbox) {
+    // Load saved value or use default (false)
+    const savedValue = localStorage.getItem('setting_killOnBorderTrespass');
+    borderKillCheckbox.checked = savedValue ? JSON.parse(savedValue) : DEFAULT_SETTINGS.killOnBorderTrespass;
+    
+    borderKillCheckbox.addEventListener('change', () => {
+      // Don't allow changes while game is running
+      if (isRunning) {
+        // Restore the previous value
+        const savedValue = localStorage.getItem('setting_killOnBorderTrespass');
+        borderKillCheckbox.checked = savedValue ? JSON.parse(savedValue) : false;
+        return;
+      }
+      localStorage.setItem('setting_killOnBorderTrespass', borderKillCheckbox.checked);
+    });
+  }
   
   // Set initial theme on the settings sidebar
   const settingsSidebar = document.getElementById('settings-sidebar');
@@ -726,6 +833,63 @@ btnSettings.addEventListener('click', function () {
     });
   }
 })();
+
+// Update snake's update method to respect border kill setting
+snake.update = function() {
+  if (this.newDirection) {
+    this.direction = this.newDirection;
+    this.newDirection = null;
+  }
+  let currentNode = this.end;
+  if (this.end.data.fruit) {
+    this.end.data.fruit = null;
+    this.end.data.mesh.scale.setScalar(1);
+    this.addTailNode();
+  }
+  while (currentNode.prev) {
+    const fruit = currentNode.prev.data.fruit;
+    if (fruit) {
+      currentNode.data.fruit = fruit;
+      currentNode.data.mesh.scale.setScalar(1.15);
+      currentNode.prev.data.fruit = null;
+      currentNode.prev.data.mesh.scale.setScalar(1);
+    }
+    const position = currentNode.prev.data.mesh.position;
+    currentNode.data.mesh.position.copy(position);
+    currentNode = currentNode.prev;
+  }
+  const headPos = currentNode.data.mesh.position;
+  headPos.add(this.direction);
+  const headMesh = this.body.head.data.mesh;
+  headMesh.lookAt(headMesh.position.clone().add(this.direction));
+  
+  // Check border crossing based on setting
+  const killOnBorderTrespass = JSON.parse(localStorage.getItem('setting_killOnBorderTrespass') || 'false');
+  if (killOnBorderTrespass) {
+    if (headPos.z < 0 || headPos.z > this.resolution.y - 1 || 
+        headPos.x < 0 || headPos.x > this.resolution.x - 1) {
+      this.die();
+      resetGame();
+      return;
+    }
+  } else {
+    // Original toroidal grid behavior
+    if (headPos.z < 0) {
+      headPos.z = this.resolution.y - 1;
+    } else if (headPos.z > this.resolution.y - 1) {
+      headPos.z = 0;
+    }
+    if (headPos.x < 0) {
+      headPos.x = this.resolution.x - 1;
+    } else if (headPos.x > this.resolution.x - 1) {
+      headPos.x = 0;
+    }
+  }
+  
+  this.updateIndexes();
+  this.updateSegmentScales();
+  this.dispatchEvent({ type: 'updated' });
+};
 
 applyPalette(paletteName)
 
