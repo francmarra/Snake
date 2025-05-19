@@ -6,130 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta property="og:title" content="Snake 3D" />
     <title>Snake 3D Game</title>
-    <style>      
-      #btn-settings {
-        clip-path: polygon(
-          89.50% 0.14%, 92.53% 0.47%, 94.45% 1.22%, 96.21% 3.67%, 97.80% 5.62%,
-          99.21% 8.00%, 100.40% 11.84%, 101.37% 15.01%, 102.08% 18.84%, 102.52% 22.50%,
-          102.67% 26.29%, 102.67% 73.69%, 102.52% 77.49%, 102.08% 81.15%, 101.37% 84.59%,
-          100.40% 87.76%, 99.21% 90.60%, 97.80% 93.06%, 96.21% 95.07%, 94.45% 96.58%,
-          92.53% 97.53%, 89.50% 99.86%, 44.64% 99.86%, 44.24% 99.00%, 0.14% 3.35%, -1.54% 0.14%
-        );
-      }
-      #btn-play {
-        clip-path: polygon(
-          13.34% 99.94%, 11.22% 99.64%, 9.19% 98.78%, 7.29% 97.39%, 5.55% 95.52%, 
-          3.99% 93.22%, 2.65% 90.53%, 1.56% 87.48%, 0.74% 84.14%, 0.23% 80.53%, 
-          0.05% 76.71%, 0.05% 23.29%, 0.23% 19.47%, 0.74% 15.86%, 1.56% 12.52%, 
-          2.65% 9.47%, 3.99% 6.78%, 5.55% 4.48%, 7.29% 2.61%, 9.19% 1.22%, 
-          11.22% 0.36%, 13.34% 0.06%, 62.30% 0.06%, 62.62% 0.89%, 97.63% 96.65%, 98.88% 99.94%
-        );
-      }
-      /* Settings sidebar styles */      
-      .settings-sidebar {
-        position: fixed;
-        right: -16rem; /* Start offscreen */
-        left: auto;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 16rem;
-        height: auto;
-        max-height: calc(100% - 5rem);
-        background: #1D5846; /* Default green theme */
-        padding: 1rem 0.75rem;
-        border-radius: 1rem 0 0 1rem;
-        box-shadow: -2px 0 8px rgba(0,0,0,0.5);
-        transition: right 0.3s cubic-bezier(0.42,0,0.58,1);
-        z-index: 100;
-        overflow-y: auto;
-      }
-      .settings-sidebar.open {
-        right: 0;
-        left: auto;
-      }
-      /* Theme-specific sidebar colors */
-      .settings-sidebar.theme-green {
-        background: #1D5846;
-      }
-      .settings-sidebar.theme-lilac {
-        background: #5A189A;
-      }
-      .settings-sidebar.theme-orange {
-        background: #DC2F02;
-      }
-      /* Theme-specific input colors */
-      .theme-green input[type="range"]::-webkit-slider-thumb {
-        background: #39C09F;
-      }
-      .theme-lilac input[type="range"]::-webkit-slider-thumb {
-        background: #9D4EDD;
-      }
-      .theme-orange input[type="range"]::-webkit-slider-thumb {
-        background: #F48C06;
-      }
-      /* Basic slider styling */
-      input[type="range"] {
-        -webkit-appearance: none;
-        appearance: none;
-        height: 5px;
-        border-radius: 5px;
-        background: rgba(255, 255, 255, 0.3);
-        outline: none;
-      }
-      input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 15px;
-        height: 15px;
-        border-radius: 50%;
-        background: #39C09F; /* Default green */
-        cursor: pointer;
-      }
-      /* Checkbox styling */
-      input[type="checkbox"] {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 16px;
-        height: 16px;
-        border-radius: 3px;
-        border: 2px solid #39C09F; /* Default green */
-        outline: none;
-        cursor: pointer;
-        position: relative;
-      }
-      input[type="checkbox"]:checked {
-        background: #39C09F; /* Default green */
-      }
-      input[type="checkbox"]:checked:after {
-        content: '';
-        position: absolute;
-        width: 6px;
-        height: 10px;
-        border: solid white;
-        border-width: 0 2px 2px 0;
-        transform: rotate(45deg);
-        top: 1px;
-        left: 5px;
-      }
-      .theme-green input[type="checkbox"] {
-        border-color: #39C09F;
-      }
-      .theme-green input[type="checkbox"]:checked {
-        background: #39C09F;
-      }
-      .theme-lilac input[type="checkbox"] {
-        border-color: #9D4EDD;
-      }
-      .theme-lilac input[type="checkbox"]:checked {
-        background: #9D4EDD;
-      }
-      .theme-orange input[type="checkbox"] {
-        border-color: #F48C06;
-      }
-      .theme-orange input[type="checkbox"]:checked {
-        background: #F48C06;
-      }
-    </style>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <!-- Snake‐segments HUD -->
@@ -144,25 +21,19 @@
       ></span>
     </div>
 
-    <script type="module" src="/main.js"></script>
-    <audio
-      style="opacity: 0"
+    <script type="module" src="/main.js"></script>    <audio
       id="audio"
       class="fixed top-0 left-0 z-50"
       controls
       loop="true"
       src="/short-audio.mp3"
-    ></audio>
-
-    <button
+    ></audio>    <button
       id="btn-settings"
-      style="opacity: 0; left: calc(50% + 8.5rem);"
       class="fixed w-max drop-shadow-xl top-[75%] lg:top-[60%] z-50 flex items-center justify-center"
     >
       <!-- Gear icon overlay -->      <img
         src="/Gear.svg"
         class="absolute w-10 h-10 lg:w-16 lg:h-16 pointer-events-none z-10"
-        style="left: 5.5rem; position: absolute;"
         alt="Settings Gear"
       />
       <img
@@ -171,12 +42,9 @@
         src="/ThemeBtn/green/GreenSettings.svg"
         alt="Settings Background"
       />
-      <span class="absolute" style="opacity: 0">settings</span>
-    </button>
-
-    <button
+      <span class="absolute btn-text">settings</span>
+    </button>    <button
       id="btn-play"
-      style="opacity: 0"
       class="fixed w-max drop-shadow-xl top-[75%] lg:top-[60%] left-1/2"
     >
       <img
@@ -185,12 +53,9 @@
         src="/ThemeBtn/green/GreenPlay.svg"
         alt=""
       />
-      <span class="absolute" style="opacity: 0">play</span>
-    </button>
-
-    <button
+      <span class="absolute btn-text">play</span>
+    </button>    <button
       id="btn-volume"
-      style="opacity: 1; background: #1E1E1E;"
       class="fixed w-max drop-shadow-xl hover:bg-black/30 rounded-[7px] left-4 bottom-20 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-20 after:rotate-45 after:absolute after:top-1/2"
     >
       <img
@@ -199,13 +64,10 @@
         src="/ThemeBtn/green/GreenAudio.svg"
         alt="Toggle Audio"
       />
-      <span class="absolute" style="opacity: 0">mute</span>
-    </button>
-
-    <!-- Updated Toggle Camera Button -->
+      <span class="absolute btn-text">mute</span>
+    </button>    <!-- Updated Toggle Camera Button -->
     <button
       id="btn-toggle-camera"
-      style="display: none; background: #1E1E1E;"
       class="fixed w-max drop-shadow-xl hover:bg-black/30 rounded-[7px] left-4 bottom-40 mb-6 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-20 after:rotate-45 after:absolute after:top-1/2"
     >
       <img
@@ -214,16 +76,13 @@
         src="/ThemeBtn/green/GreenCamera.svg"
         alt="Toggle Camera"
       />
-      <span class="absolute" style="opacity: 0">camera</span>
-    </button>
-
-    <ul
+      <span class="absolute btn-text">camera</span>
+    </button>    <ul
       class="fixed left-4 flex lg:flex-col gap-3 lg:gap-4 bottom-4 lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2 z-50"
     >
       <li
-        style="transform: translateX(-200px); background: #1E1E1E; border-radius: 9999px;"
         data-color="green"
-        class="cursor-pointer"
+        class="cursor-pointer theme-selector"
       >
         <img
           class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full w-14 h-14 lg:w-20 lg:h-20"
@@ -232,9 +91,8 @@
         />
       </li>
       <li
-        style="transform: translateX(-200px); background: #1E1E1E; border-radius: 9999px;"
         data-color="orange"
-        class="cursor-pointer"
+        class="cursor-pointer theme-selector"
       >
         <img
           class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full w-14 h-14 lg:w-20 lg:h-20"
@@ -243,9 +101,8 @@
         />
       </li>
       <li
-        style="transform: translateX(-200px); background: #1E1E1E; border-radius: 9999px;"
         data-color="lilac"
-        class="cursor-pointer"
+        class="cursor-pointer theme-selector"
       >
         <img
           class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full w-14 h-14 lg:w-20 lg:h-20"
@@ -253,7 +110,10 @@
           alt=""
         />
       </li>
-    </ul>
+    </ul><!-- Settings Tab -->
+    <div id="settings-tab" class="settings-tab">
+      <div class="settings-line"></div>
+    </div>
 
     <!-- Settings Sidebar -->
     <div id="settings-sidebar" class="settings-sidebar">
