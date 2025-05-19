@@ -315,12 +315,19 @@ function printScore() {
 function registerEventListener() {
   window.addEventListener('keydown', function (e) {
     const keyCode = e.code
+    const isMovementKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD'].includes(keyCode);
+    
+    // Set the direction regardless of whether the game is running
     snake.setDirection(keyCode)
+    
     if (keyCode === 'Space') {
       !isRunning ? startGame() : stopGame()
-    } else if (!isRunning) {
+    } else if (!isRunning && isMovementKey && gameStarted) {
+      // Only start the game if a movement key is pressed and the play button has been clicked
       startGame()
-    }    // Hide settings tab and sidebar when snake moves
+    }    
+    
+    // Hide settings tab and sidebar when snake moves
     const settingsTab = document.getElementById('settings-tab');
     const settingsSidebar = document.getElementById('settings-sidebar');
     if (settingsTab) {
@@ -358,6 +365,9 @@ function stopGame() {
 function resetGame() {
   stopGame()
   score = 0
+
+  // Wait for the player to press a movement key before starting again
+  // gameStarted stays true, but the snake won't move until a key is pressed
 
   let fruit = candies.pop()
   while (fruit) {
@@ -568,9 +578,11 @@ btnPlay.addEventListener('click', function () {
       if (settingsSidebar && settingsSidebar.classList.contains('open')) {
         settingsSidebar.classList.remove('open');
       }
-    }
-    btnToggleCamera.style.display = 'block'
+    }    btnToggleCamera.style.display = 'block'
     animateCameraButtonIn(btnToggleCamera)
+    
+    // Register event listener but don't start the snake movement yet
+    // The snake will start moving when the player presses a movement key
     registerEventListener()
     
     // Show settings tab after game starts with a slight delay
