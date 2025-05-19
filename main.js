@@ -132,8 +132,18 @@ const initialPosition = new THREE.Vector3(
 )
 camera.position.copy(initialPosition)
 
-const topCamera = new THREE.PerspectiveCamera(CAMERA_FOV, sizes.width / sizes.height, CAMERA_NEAR, CAMERA_FAR)
-topCamera.position.set(resolution.x / 2, 22, resolution.y / 2)
+// Top-view camera (Orthographic)
+const halfWidth = resolution.x / 2 * 1.2; // 20% wider view
+const halfHeight = resolution.y / 2 * 1.2; // 20% taller view
+const topCamera = new THREE.OrthographicCamera(
+  -halfWidth, // left
+  halfWidth,  // right
+  halfHeight, // top
+  -halfHeight, // bottom
+  1,         // near
+  1000       // far
+)
+topCamera.position.set(resolution.x / 2, 26, resolution.y / 2) // Increased height from 22 to 26
 topCamera.lookAt(new THREE.Vector3(resolution.x / 2, 0, resolution.y / 2))
 let activeCamera = camera
 
@@ -986,11 +996,26 @@ window.addEventListener('resize', handleResize)
 function handleResize() {
   sizes.width = window.innerWidth
   sizes.height = window.innerHeight
-
   camera.aspect = sizes.width / sizes.height
   camera.updateProjectionMatrix()
-
-  topCamera.aspect = sizes.width / sizes.height
+  // Update orthographic camera on resize
+  const aspect = sizes.width / sizes.height;
+  const halfWidth = resolution.x / 2 * 1.2; // 20% wider view (matching camera setup)
+  const halfHeight = resolution.y / 2 * 1.2; // 20% taller view (matching camera setup)
+  
+  if (aspect > 1) {
+    // Landscape: Adjust width based on aspect ratio
+    topCamera.left = -halfWidth * aspect;
+    topCamera.right = halfWidth * aspect;
+    topCamera.top = halfHeight;
+    topCamera.bottom = -halfHeight;
+  } else {
+    // Portrait: Adjust height based on aspect ratio
+    topCamera.left = -halfWidth;
+    topCamera.right = halfWidth;
+    topCamera.top = halfHeight / aspect;
+    topCamera.bottom = -halfHeight / aspect;
+  }
   topCamera.updateProjectionMatrix()
 
   renderer.setSize(sizes.width, sizes.height)
