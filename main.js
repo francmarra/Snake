@@ -9,7 +9,7 @@ import Snake from './src/Snake'
 import Fruit from './src/Fruit'
 import Rock from './src/Rock'
 import Tree from './src/Tree'
-import lights from './src/Lights'
+import lights, { toggleAmbientLight, toggleDirectionalLight } from './src/Lights'
 import gsap from 'gsap'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
@@ -841,6 +841,29 @@ btnSettings.addEventListener('click', function () {
         return;
       }
       // Don't save to localStorage
+    });
+  }
+  
+  // Handle light toggle settings
+  const ambientLightCheckbox = document.getElementById('ambient-light');
+  if (ambientLightCheckbox) {
+    // Set initial state based on default settings
+    ambientLightCheckbox.checked = DEFAULT_SETTINGS.ambientLightEnabled;
+    
+    ambientLightCheckbox.addEventListener('change', () => {
+      // Toggle ambient light based on checkbox state
+      toggleAmbientLight(ambientLightCheckbox.checked);
+    });
+  }
+  
+  const directionalLightCheckbox = document.getElementById('directional-light');
+  if (directionalLightCheckbox) {
+    // Set initial state based on default settings
+    directionalLightCheckbox.checked = DEFAULT_SETTINGS.directionalLightEnabled;
+    
+    directionalLightCheckbox.addEventListener('change', () => {
+      // Toggle directional light based on checkbox state
+      toggleDirectionalLight(directionalLightCheckbox.checked);
     });
   }
   
