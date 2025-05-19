@@ -528,7 +528,26 @@ let gameStarted = false
 btnPlay.addEventListener('click', function () {
   if (!gameStarted) {
     gameStarted = true
-    audio.play()
+    
+    // Handle audio initialization and play
+    const playAudio = async () => {
+      try {
+        // Check if user muted audio
+        if (audio.volume !== 0) {
+          await audio.play()
+          // Update the icon just to be safe
+          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`
+        } else {
+          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
+        }
+      } catch (err) {
+        console.log('Audio could not play automatically:', err)
+        // In case of autoplay failure, we keep the mute icon
+        muteVolume()
+      }
+    }
+    playAudio()
+    
     gsap.to(camera.position, { ...finalPosition, duration: 2 })
     gsap.to(scene.fog, { duration: 2, near: 20, far: 55 })
     animateButtonOut(this)
@@ -573,14 +592,31 @@ btnSettings.addEventListener('mouseleave', function () {
   this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
 });
 
+// Set up audio with proper initial values
+audio.volume = 0.7 // A reasonable default volume
+const initialVolume = audio.volume
+audio.pause() // Ensure it's paused initially
+
 const userVolume = 'on' // Default value, not loaded from localStorage
 if (userVolume === 'off') {
   muteVolume()
 }
 
-const initialVolume = audio.volume
-
 btnVolume.addEventListener('click', function () {
+  // Add a small scale animation for feedback
+  gsap.to(this, {
+    scale: 0.9,
+    duration: 0.1,
+    onComplete: () => {
+      gsap.to(this, {
+        scale: 1,
+        duration: 0.3,
+        ease: "elastic.out(1.2, 0.7)"
+      })
+    }
+  })
+  
+  // Check if audio is muted
   if (audio.volume === 0) {
     unmuteVolume()
   } else {
@@ -599,20 +635,26 @@ btnVolume.addEventListener('mouseleave', function () {
 
 function muteVolume() {
   // Don't save to localStorage
-  gsap.to(audio, { volume: 0, duration: 1 })
-  btnVolume.classList.remove('after:block')
-  btnVolume.querySelector(':first-child').classList.remove('animate-ping')
-  btnVolume.querySelector(':first-child').style.background = 'none'
-  document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
+  gsap.to(audio, { volume: 0, duration: 0.3 })
+  const btnVolumeImg = document.getElementById('btn-volume-img')
+  if (btnVolumeImg) {
+    // Stop any ongoing animations
+    gsap.killTweensOf(btnVolumeImg)
+    // Change the icon
+    btnVolumeImg.src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
+  }
 }
 
 function unmuteVolume() {
   // Don't save to localStorage
-  btnVolume.classList.add('after:hidden')
-  btnVolume.querySelector(':first-child').classList.add('animate-ping')
-  btnVolume.querySelector(':first-child').style.background = ''
-  gsap.to(audio, { volume: initialVolume, duration: 1 })
-  document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`
+  const btnVolumeImg = document.getElementById('btn-volume-img')
+  if (btnVolumeImg) {
+    // Stop any ongoing animations
+    gsap.killTweensOf(btnVolumeImg)
+    // Change the icon
+    btnVolumeImg.src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`
+  }
+  gsap.to(audio, { volume: initialVolume, duration: 0.3 })
 }
 
 const sideBar = document.querySelector('.top-bar')
