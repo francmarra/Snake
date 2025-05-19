@@ -27,7 +27,7 @@ import {
   CAMERA_NEAR,
   CAMERA_FAR
 } from './config/StaticData.js'
-import { animateButtonIn, animateButtonOut, animateCameraButtonIn } from './src/Animations.js';
+import { animateButtonIn, animateButtonOut, animateCameraButtonIn, animateSettingsTab } from './src/Animations.js';
 
 // Carrega a fonte para o texto da pontuação
 const loader = new FontLoader()
@@ -303,6 +303,11 @@ function registerEventListener() {
     } else if (!isRunning) {
       startGame()
     }
+    // Hide settings tab when snake moves
+    const settingsTab = document.getElementById('settings-tab');
+    if (settingsTab) {
+      animateSettingsTab(settingsTab, false);
+    }
   })
 }
 
@@ -310,6 +315,12 @@ let isRunning
 
 function startGame() {
   if (!snake.isMoving) {
+    // Hide settings tab when snake starts moving
+    const settingsTab = document.getElementById('settings-tab');
+    if (settingsTab && settingsTab.style.display !== 'none') {
+      animateSettingsTab(settingsTab, false);
+    }
+    
     isRunning = setInterval(() => {
       snake.update()
     }, MOVEMENT_SPEED)
@@ -346,6 +357,14 @@ function resetGame() {
   addFruit()
   addBomb()
   generateEntities()
+  
+  // Show settings tab after reset
+  const settingsTab = document.getElementById('settings-tab');
+  if (settingsTab) {
+    settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
+    settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
+    animateSettingsTab(settingsTab, true);
+  }
 }
 
 const candies = []
@@ -500,6 +519,15 @@ btnPlay.addEventListener('click', function () {
     btnToggleCamera.style.display = 'block'
     animateCameraButtonIn(btnToggleCamera)
     registerEventListener()
+    
+    // Show settings tab after game starts with a slight delay
+    const settingsTab = document.getElementById('settings-tab');
+    if (settingsTab) {
+      settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
+      settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
+      // Add slight delay to show after camera movement starts
+      setTimeout(() => animateSettingsTab(settingsTab, true), 1000);
+    }
   }
 })
 
@@ -627,6 +655,15 @@ applyPalette = function(name) {
   originalApplyPalette(name);
   updateSettingsIcon(name);
   
+  // Update settings tab theme
+  const settingsTab = document.getElementById('settings-tab');
+  if (settingsTab) {
+    // Remove all theme classes
+    settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
+    // Add the current theme class
+    settingsTab.classList.add(`theme-${name.toLowerCase()}`);
+  }
+  
   // Update settings sidebar theme
   const settingsSidebar = document.getElementById('settings-sidebar');
   if (settingsSidebar) {
@@ -675,6 +712,18 @@ btnSettings.addEventListener('click', function () {
   const settingsSidebar = document.getElementById('settings-sidebar');
   if (settingsSidebar) {
     settingsSidebar.classList.add(`theme-${paletteName.toLowerCase()}`);
+  }
+  
+  // Setup settings tab click handler
+  const settingsTab = document.getElementById('settings-tab');
+  if (settingsTab) {
+    settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
+    settingsTab.addEventListener('click', () => {
+      // Show settings sidebar
+      settingsSidebar.classList.add('open');
+      // Hide settings tab
+      animateSettingsTab(settingsTab, false);
+    });
   }
 })();
 

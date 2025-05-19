@@ -45,3 +45,34 @@ export function animateCameraButtonIn(element, options = {}) {
     }
   );
 }
+
+export function animateSettingsTab(element, show = true, options = {}) {
+  if (show) {
+    // Show the settings tab with a slide-in effect
+    gsap.fromTo(
+      element,
+      { autoAlpha: 0, right: "-3rem" },
+      {
+        duration: 0.5,
+        autoAlpha: 1,
+        right: 0,
+        display: 'flex',
+        ease: 'power3.out',
+        ...options
+      }
+    );
+  } else {
+    // Hide the settings tab with a slide-out effect
+    gsap.to(element, {
+      duration: 0.5,
+      autoAlpha: 0,
+      right: "-3rem",
+      ease: 'power3.in',
+      onComplete: () => {
+        element.style.display = 'none';
+        if (typeof options.onComplete === 'function') options.onComplete();
+      },
+      ...options
+    });
+  }
+}
