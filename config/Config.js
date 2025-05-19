@@ -9,15 +9,15 @@ export const DEFAULT_SETTINGS = {
     killOnBorderTrespass: false
 }
 
-// Get current setting value
+// Get current setting value - always returns the default value
 export function getSetting(key) {
-    const stored = localStorage.getItem(`setting_${key}`);
-    return stored ? JSON.parse(stored) : DEFAULT_SETTINGS[key];
+    return DEFAULT_SETTINGS[key];
 }
 
-// Save setting value
+// Save setting value - doesn't actually save to localStorage
 export function saveSetting(key, value) {
-    localStorage.setItem(`setting_${key}`, JSON.stringify(value));
+    // This function is now a no-op - doesn't save to localStorage
+    console.log(`Setting ${key} would have been saved as ${value}`);
 }
 
 // --- Gameplay ---

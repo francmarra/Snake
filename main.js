@@ -40,7 +40,7 @@ loader.load(fontSrc, (loadedFont) => {
 // --- Paletas de cores e seleção ---
 const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT)
 const palettes = COLOR_PALETTES
-let paletteName = localStorage.getItem('paletteName') || 'green'
+let paletteName = 'green' // Default palette, not loaded from localStorage
 let selectedPalette = palettes[paletteName]
 const params = { ...selectedPalette }
 
@@ -53,8 +53,8 @@ function applyPalette(name) {
   paletteName = name
   const palette = palettes[name]
   if (!palette) return
-  localStorage.setItem('paletteName', name)
-
+  
+  // Don't save to localStorage
   selectedPalette = palette
 
   const {
@@ -198,9 +198,8 @@ snake.addEventListener('updated', function () {
     candies.splice(fruitIndex, 1)
     snake.body.head.data.fruit = fruit
     addFruit()
-    
-    // Only add a bomb if we're below the bombs setting
-    const bombsSetting = parseInt(localStorage.getItem('setting_numBombs') || '1');
+      // Only add a bomb if we're below the bombs setting
+    const bombsSetting = DEFAULT_SETTINGS.numBombs;
     if (bombs.length < bombsSetting) {
       addBomb();
     }
@@ -228,9 +227,8 @@ snake.addEventListener('updated', function () {
         return
       }    }
     score = Math.max(0, score - bomb.points)
-    
-    // Only add a new bomb if we're below the bombs setting
-    const bombsSetting = parseInt(localStorage.getItem('setting_numBombs') || '1');
+      // Only add a new bomb if we're below the bombs setting
+    const bombsSetting = DEFAULT_SETTINGS.numBombs;
     if (bombs.length < bombsSetting) {
       addBomb();
     }
@@ -332,9 +330,8 @@ function startGame() {
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab && settingsTab.style.display !== 'none') {
       animateSettingsTab(settingsTab, false);
-    }
-      // Get current speed setting or use default
-    const speedValue = parseInt(localStorage.getItem('setting_snakeSpeed') || '5');
+    }    // Get speed setting from defaults
+    const speedValue = DEFAULT_SETTINGS.snakeSpeed / 28;
     const moveInterval = 300 - (speedValue * 16); // Same scale as the speed setting
     
     isRunning = setInterval(() => {
@@ -369,11 +366,10 @@ function resetGame() {
     scene.remove(entity.mesh)
     entity = entities.pop()
   }
-
-  // Add entities based on current settings
-  const numFruits = parseInt(localStorage.getItem('setting_numFruits') || '1');
-  const numBombs = parseInt(localStorage.getItem('setting_numBombs') || '1');
-  const numObjects = parseInt(localStorage.getItem('setting_numObjects') || '20');
+  // Add entities based on default settings
+  const numFruits = DEFAULT_SETTINGS.numFruits;
+  const numBombs = DEFAULT_SETTINGS.numBombs;
+  const numObjects = DEFAULT_SETTINGS.numObjects;
 
   for (let i = 0; i < numFruits; i++) {
     addFruit();
@@ -577,7 +573,7 @@ btnSettings.addEventListener('mouseleave', function () {
   this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
 });
 
-const userVolume = localStorage.getItem('volume')
+const userVolume = 'on' // Default value, not loaded from localStorage
 if (userVolume === 'off') {
   muteVolume()
 }
@@ -602,7 +598,7 @@ btnVolume.addEventListener('mouseleave', function () {
 });
 
 function muteVolume() {
-  localStorage.setItem('volume', 'off')
+  // Don't save to localStorage
   gsap.to(audio, { volume: 0, duration: 1 })
   btnVolume.classList.remove('after:block')
   btnVolume.querySelector(':first-child').classList.remove('animate-ping')
@@ -611,7 +607,7 @@ function muteVolume() {
 }
 
 function unmuteVolume() {
-  localStorage.setItem('volume', 'on')
+  // Don't save to localStorage
   btnVolume.classList.add('after:hidden')
   btnVolume.querySelector(':first-child').classList.add('animate-ping')
   btnVolume.querySelector(':first-child').style.background = ''
@@ -725,27 +721,23 @@ btnSettings.addEventListener('click', function () {
     {rangeId: 'bombs-range', valueId: 'bombs-value', setting: 'numBombs'},
     {rangeId: 'objects-range', valueId: 'objects-value', setting: 'numObjects'},
     {rangeId: 'speed-range', valueId: 'speed-value', setting: 'snakeSpeed'}
-  ];
-    // Load saved settings and apply defaults
+  ];    // Load default settings
   controls.forEach(({rangeId, valueId, setting}) => {
     const range = document.getElementById(rangeId);
     const display = document.getElementById(valueId);
     if (range && display) {
-      // Load saved value or use default
+      // Always use default values
       const defaultValue = setting === 'snakeSpeed' ? 5 : DEFAULT_SETTINGS[setting];
-      const savedValue = localStorage.getItem(`setting_${setting}`);
-      const value = savedValue ? JSON.parse(savedValue) : defaultValue;
       
       // Update input and display
-      range.value = value;
-      display.textContent = value;
+      range.value = defaultValue;
+      display.textContent = defaultValue;
         // Add input handler
       range.addEventListener('input', () => {
         // Don't allow changes while game is running
         if (isRunning) {
-          // Restore the previous value
-          const savedValue = localStorage.getItem(`setting_${setting}`);
-          range.value = savedValue ? JSON.parse(savedValue) : DEFAULT_SETTINGS[setting];
+          // Restore the default value
+          range.value = defaultValue;
           display.textContent = range.value;
           return;
         }
@@ -753,10 +745,7 @@ btnSettings.addEventListener('click', function () {
         display.textContent = range.value;
         const value = parseInt(range.value);
         
-        // Save setting
-        localStorage.setItem(`setting_${setting}`, value);
-        
-        // Apply setting immediately
+        // Apply setting immediately without saving to localStorage
         switch(setting) {
           case 'snakeSpeed':            // Update snake speed - only applies to next game
             break;
@@ -799,19 +788,17 @@ btnSettings.addEventListener('click', function () {
   });  // Handle border kill setting
   const borderKillCheckbox = document.getElementById('kill-borders');
   if (borderKillCheckbox) {
-    // Load saved value or use default (false)
-    const savedValue = localStorage.getItem('setting_killOnBorderTrespass');
-    borderKillCheckbox.checked = savedValue ? JSON.parse(savedValue) : DEFAULT_SETTINGS.killOnBorderTrespass;
+    // Always use default value
+    borderKillCheckbox.checked = DEFAULT_SETTINGS.killOnBorderTrespass;
     
     borderKillCheckbox.addEventListener('change', () => {
       // Don't allow changes while game is running
       if (isRunning) {
-        // Restore the previous value
-        const savedValue = localStorage.getItem('setting_killOnBorderTrespass');
-        borderKillCheckbox.checked = savedValue ? JSON.parse(savedValue) : false;
+        // Restore the default value
+        borderKillCheckbox.checked = DEFAULT_SETTINGS.killOnBorderTrespass;
         return;
       }
-      localStorage.setItem('setting_killOnBorderTrespass', borderKillCheckbox.checked);
+      // Don't save to localStorage
     });
   }
   
@@ -862,9 +849,8 @@ snake.update = function() {
   headPos.add(this.direction);
   const headMesh = this.body.head.data.mesh;
   headMesh.lookAt(headMesh.position.clone().add(this.direction));
-  
-  // Check border crossing based on setting
-  const killOnBorderTrespass = JSON.parse(localStorage.getItem('setting_killOnBorderTrespass') || 'false');
+    // Check border crossing based on setting
+  const killOnBorderTrespass = DEFAULT_SETTINGS.killOnBorderTrespass; // Use default value instead of localStorage
   if (killOnBorderTrespass) {
     if (headPos.z < 0 || headPos.z > this.resolution.y - 1 || 
         headPos.x < 0 || headPos.x > this.resolution.x - 1) {
