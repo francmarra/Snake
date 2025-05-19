@@ -16,7 +16,7 @@ import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import Entity from './src/Entity'
 import Bomb from './src/Bomb'
-import { MOVEMENT_SPEED, NUM_ENTITIES } from './config/Config.js'
+import { MOVEMENT_SPEED, NUM_ENTITIES, DEFAULT_SETTINGS } from './config/Config.js'
 import {
   GRID_WIDTH,
   GRID_HEIGHT,
@@ -192,14 +192,19 @@ snake.addEventListener('updated', function () {
   const fruitIndex = candies.findIndex(
     (fruit) => fruit.getIndexByCoord() === headIndex
   )
-
   if (fruitIndex >= 0) {
     const fruit = candies[fruitIndex]
     scene.remove(fruit.mesh)
     candies.splice(fruitIndex, 1)
     snake.body.head.data.fruit = fruit
     addFruit()
-    addBomb()
+    
+    // Only add a bomb if we're below the bombs setting
+    const bombsSetting = parseInt(localStorage.getItem('setting_numBombs') || '1');
+    if (bombs.length < bombsSetting) {
+      addBomb();
+    }
+    
     score += fruit.points
     printScore()
   }
@@ -221,10 +226,15 @@ snake.addEventListener('updated', function () {
         snake.die()
         resetGame()
         return
-      }
-    }
+      }    }
     score = Math.max(0, score - bomb.points)
-    addBomb()
+    
+    // Only add a new bomb if we're below the bombs setting
+    const bombsSetting = parseInt(localStorage.getItem('setting_numBombs') || '1');
+    if (bombs.length < bombsSetting) {
+      addBomb();
+    }
+    
     printScore()
   }
 })
@@ -302,11 +312,14 @@ function registerEventListener() {
       !isRunning ? startGame() : stopGame()
     } else if (!isRunning) {
       startGame()
-    }
-    // Hide settings tab when snake moves
+    }    // Hide settings tab and sidebar when snake moves
     const settingsTab = document.getElementById('settings-tab');
+    const settingsSidebar = document.getElementById('settings-sidebar');
     if (settingsTab) {
       animateSettingsTab(settingsTab, false);
+    }
+    if (settingsSidebar && settingsSidebar.classList.contains('open')) {
+      settingsSidebar.classList.remove('open');
     }
   })
 }
@@ -320,10 +333,13 @@ function startGame() {
     if (settingsTab && settingsTab.style.display !== 'none') {
       animateSettingsTab(settingsTab, false);
     }
+      // Get current speed setting or use default
+    const speedValue = parseInt(localStorage.getItem('setting_snakeSpeed') || '5');
+    const moveInterval = 300 - (speedValue * 16); // Same scale as the speed setting
     
     isRunning = setInterval(() => {
       snake.update()
-    }, MOVEMENT_SPEED)
+    }, moveInterval)
   }
 }
 
@@ -395,15 +411,14 @@ function addFruit() {
 }
 
 function addBomb() {
-  if (bombs.length === 0) {
-    const bomb = new Bomb(resolution)
-    let index = getFreeIndex()
-    bomb.mesh.position.x = index % resolution.x
-    bomb.mesh.position.z = Math.floor(index / resolution.x)
-    bombs.push(bomb)
-    bomb.in()
-    scene.add(bomb.mesh)
-  }
+  // Remove the bombs.length === 0 condition to allow multiple bombs
+  const bomb = new Bomb(resolution)
+  let index = getFreeIndex()
+  bomb.mesh.position.x = index % resolution.x
+  bomb.mesh.position.z = Math.floor(index / resolution.x)
+  bombs.push(bomb)
+  bomb.in()
+  scene.add(bomb.mesh)
 }
 
 addFruit()
@@ -711,21 +726,30 @@ btnSettings.addEventListener('click', function () {
     {rangeId: 'objects-range', valueId: 'objects-value', setting: 'numObjects'},
     {rangeId: 'speed-range', valueId: 'speed-value', setting: 'snakeSpeed'}
   ];
-  
-  // Load saved settings
+    // Load saved settings and apply defaults
   controls.forEach(({rangeId, valueId, setting}) => {
     const range = document.getElementById(rangeId);
     const display = document.getElementById(valueId);
     if (range && display) {
-      // Load saved value
+      // Load saved value or use default
+      const defaultValue = setting === 'snakeSpeed' ? 5 : DEFAULT_SETTINGS[setting];
       const savedValue = localStorage.getItem(`setting_${setting}`);
-      if (savedValue) {
-        range.value = JSON.parse(savedValue);
-      }
-      display.textContent = range.value;
+      const value = savedValue ? JSON.parse(savedValue) : defaultValue;
       
-      // Add input handler
+      // Update input and display
+      range.value = value;
+      display.textContent = value;
+        // Add input handler
       range.addEventListener('input', () => {
+        // Don't allow changes while game is running
+        if (isRunning) {
+          // Restore the previous value
+          const savedValue = localStorage.getItem(`setting_${setting}`);
+          range.value = savedValue ? JSON.parse(savedValue) : DEFAULT_SETTINGS[setting];
+          display.textContent = range.value;
+          return;
+        }
+
         display.textContent = range.value;
         const value = parseInt(range.value);
         
@@ -734,14 +758,7 @@ btnSettings.addEventListener('click', function () {
         
         // Apply setting immediately
         switch(setting) {
-          case 'snakeSpeed':
-            // Update snake speed
-            if (isRunning) {
-              clearInterval(isRunning);
-              isRunning = setInterval(() => {
-                snake.update();
-              }, 240 - (value * 20)); // Scale 1-10 to 220ms-40ms
-            }
+          case 'snakeSpeed':            // Update snake speed - only applies to next game
             break;
             
           case 'numFruits':
@@ -779,18 +796,21 @@ btnSettings.addEventListener('click', function () {
         }
       });
     }
-  });
-  
-  // Handle border kill setting
+  });  // Handle border kill setting
   const borderKillCheckbox = document.getElementById('kill-borders');
   if (borderKillCheckbox) {
-    // Load saved value
+    // Load saved value or use default (false)
     const savedValue = localStorage.getItem('setting_killOnBorderTrespass');
-    if (savedValue) {
-      borderKillCheckbox.checked = JSON.parse(savedValue);
-    }
+    borderKillCheckbox.checked = savedValue ? JSON.parse(savedValue) : DEFAULT_SETTINGS.killOnBorderTrespass;
     
     borderKillCheckbox.addEventListener('change', () => {
+      // Don't allow changes while game is running
+      if (isRunning) {
+        // Restore the previous value
+        const savedValue = localStorage.getItem('setting_killOnBorderTrespass');
+        borderKillCheckbox.checked = savedValue ? JSON.parse(savedValue) : false;
+        return;
+      }
       localStorage.setItem('setting_killOnBorderTrespass', borderKillCheckbox.checked);
     });
   }
