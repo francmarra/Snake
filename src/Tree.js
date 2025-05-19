@@ -3,7 +3,6 @@
 import {
     IcosahedronGeometry,
     Mesh,
-    MeshNormalMaterial,
     MeshStandardMaterial,
     CylinderGeometry,
     Group,
@@ -17,7 +16,7 @@ const MATERIAL = new MeshStandardMaterial({
     flatShading: true,
     color: 0xa2d109,
 })
-const TRUNK_GEOMETRY = new CylinderGeometry(0.3, 0.4, 1, 12)
+const TRUNK_GEOMETRY = new CylinderGeometry(0.4, 0.6, 1, 25)
 const TRUNK_MATERIAL = new MeshStandardMaterial({ flatShading: true, color: 0x8b4513 })
 
 export default class Tree extends Entity {
