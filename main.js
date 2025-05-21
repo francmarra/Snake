@@ -30,6 +30,7 @@ import { initCameras, updateCamerasOnResize } from './managers/CameraManager'
 import { muteVolume, unmuteVolume } from './managers/AudioManager'
 import { initializeSettings } from './managers/SettingsManager'
 import Minimap from './src/Minimap.js';
+import { animateCameraRotation } from './src/CameraRotation.js';
 
 // --------- Font Loader & Score Initialization ---------
 // Carrega a fonte para o texto da pontuação
@@ -352,6 +353,9 @@ let isRunning
 
 function startGame() {
   if (!snake.isMoving) {
+    // Ensure camera rotation is disabled when snake starts moving
+    cameraRotationActive = false;
+    
     // Hide settings tab when snake starts moving
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab && settingsTab.style.display !== 'none') {
@@ -389,6 +393,11 @@ function stopGame() {
 function resetGame() {
   stopGame()
   score = 0
+  
+  // Enable camera rotation again if the player goes back to the main menu
+  if (!gameStarted) {
+    cameraRotationActive = true;
+  }
 
   // Wait for the player to press a movement key before starting again
   // gameStarted stays true, but the snake won't move until a key is pressed
@@ -574,6 +583,9 @@ let gameStarted = false
 btnPlay.addEventListener('click', function () {
   if (!gameStarted) {
     gameStarted = true
+    
+    // Stop camera rotation when game starts
+    cameraRotationActive = false;
     
     // Handle audio initialization and play
     const playAudio = async () => {
@@ -889,10 +901,30 @@ btnToggleCamera.addEventListener('click', () => {
   activeCamera = activeCamera === camera ? topCamera : camera
 })
 
+// Center point for camera rotation
+const centerPoint = new THREE.Vector3(resolution.x / 2, 0, resolution.y / 2);
+
+// Flag to track if the camera rotation should be active
+let cameraRotationActive = true;
+
 // --------- Main Render Loop ---------
 // --- Ciclo principal de renderização ---
-function tic() {
-  controls.update()
+function tic() {  // If game hasn't started yet, animate camera rotation
+  if (!gameStarted && cameraRotationActive) {
+    // Set initial camera position when we start rotating, if needed
+    if (camera.position.equals(initialPosition)) {
+      // Set a closer starting position for the rotation
+      camera.position.set(
+        resolution.x / 2 + 10, // X position
+        3,                    // Y position (height - lowered)
+        resolution.y / 2      // Z position
+      );
+    }
+    animateCameraRotation(camera, controls, centerPoint, true);
+  } else {
+    controls.update();
+  }
+  
   renderer.render(scene, activeCamera)
   
   // Update minimap if the game has started and minimap is initialized
