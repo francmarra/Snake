@@ -4,12 +4,12 @@
 export const DEFAULT_SETTINGS = {
     numFruits: 1,
     numBombs: 1,
-    numObjects: 20,
+    numObjects: 25,
     snakeSpeed: 220,
     killOnBorderTrespass: false,
     ambientLightEnabled: true,
     directionalLightEnabled: true,
-    pointLightEnabled: true
+    pointLightEnabled: false
 }
 
 // Get current setting value - always returns the default value
