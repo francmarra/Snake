@@ -28,6 +28,9 @@ import {
   CAMERA_FAR
 } from './config/StaticData.js'
 import { animateButtonIn, animateButtonOut, animateCameraButtonIn, animateSettingsTab } from './src/Animations.js';
+import { initCameras, updateCamerasOnResize } from './managers/CameraManager'
+import { muteVolume, unmuteVolume } from './managers/AudioManager'
+import { initializeSettings } from './managers/SettingsManager'
 import Minimap from './src/Minimap.js';
 
 // Carrega a fonte para o texto da pontuação
@@ -131,32 +134,17 @@ const sizes = {
   height: window.innerHeight,
 }
 
-const camera = new THREE.PerspectiveCamera(CAMERA_FOV, sizes.width / sizes.height, CAMERA_NEAR)
-const finalPosition = new THREE.Vector3(
-  -8 + resolution.x / 2,
-  resolution.x / 2 + 4,
-  resolution.y + 6
-)
 const initialPosition = new THREE.Vector3(
   resolution.x / 2 + 5,
   4,
   resolution.y / 2 + 4
 )
-camera.position.copy(initialPosition)
-
-// Top-view camera (Orthographic)
-const halfWidth = resolution.x / 2 * 1.2; // 20% wider view
-const halfHeight = resolution.y / 2 * 1.2; // 20% taller view
-const topCamera = new THREE.OrthographicCamera(
-  -halfWidth, // left
-  halfWidth,  // right
-  halfHeight, // top
-  -halfHeight, // bottom
-  1,         // near
-  1000       // far
+const finalPosition = new THREE.Vector3(
+  -8 + resolution.x / 2,
+  resolution.x / 2 + 4,
+  resolution.y + 6
 )
-topCamera.position.set(resolution.x / 2, 26, resolution.y / 2) // Increased height from 22 to 26
-topCamera.lookAt(new THREE.Vector3(resolution.x / 2, 0, resolution.y / 2))
+const { camera, topCamera } = initCameras(resolution, sizes, initialPosition, finalPosition)
 let activeCamera = camera
 
 const renderer = new THREE.WebGLRenderer({
@@ -683,9 +671,9 @@ btnVolume.addEventListener('click', function () {
   
   // Check if audio is muted
   if (audio.volume === 0) {
-    unmuteVolume()
+    unmuteVolume(audio, document.getElementById('btn-volume-img'), paletteName, initialVolume, capitalize, gsap)
   } else {
-    muteVolume()
+    muteVolume(audio, document.getElementById('btn-volume-img'), paletteName, capitalize, gsap)
   }
 })
 
@@ -697,30 +685,6 @@ btnVolume.addEventListener('mouseleave', function () {
   this.style.transform = 'scale(1)';
   this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
 });
-
-function muteVolume() {
-  // Don't save to localStorage
-  gsap.to(audio, { volume: 0, duration: 0.3 })
-  const btnVolumeImg = document.getElementById('btn-volume-img')
-  if (btnVolumeImg) {
-    // Stop any ongoing animations
-    gsap.killTweensOf(btnVolumeImg)
-    // Change the icon
-    btnVolumeImg.src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
-  }
-}
-
-function unmuteVolume() {
-  // Don't save to localStorage
-  const btnVolumeImg = document.getElementById('btn-volume-img')
-  if (btnVolumeImg) {
-    // Stop any ongoing animations
-    gsap.killTweensOf(btnVolumeImg)
-    // Change the icon
-    btnVolumeImg.src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`
-  }
-  gsap.to(audio, { volume: initialVolume, duration: 0.3 })
-}
 
 const sideBar = document.querySelector('.top-bar')
 const paletteSelectors = document.querySelectorAll('[data-color]')
@@ -821,158 +785,7 @@ btnSettings.addEventListener('click', function () {
   document.getElementById('settings-sidebar').classList.toggle('open');
 });
 
-// Initialize settings controls
-(() => {
-  const controls = [
-    {rangeId: 'fruits-range', valueId: 'fruits-value', setting: 'numFruits'},
-    {rangeId: 'bombs-range', valueId: 'bombs-value', setting: 'numBombs'},
-    {rangeId: 'objects-range', valueId: 'objects-value', setting: 'numObjects'},
-    {rangeId: 'speed-range', valueId: 'speed-value', setting: 'snakeSpeed'}
-  ];    // Load default settings
-  controls.forEach(({rangeId, valueId, setting}) => {
-    const range = document.getElementById(rangeId);
-    const display = document.getElementById(valueId);
-    if (range && display) {
-      // Always use default values
-      const defaultValue = setting === 'snakeSpeed' ? 5 : DEFAULT_SETTINGS[setting];
-      
-      // Update input and display
-      range.value = defaultValue;
-      display.textContent = defaultValue;
-        // Add input handler
-      range.addEventListener('input', () => {
-        // Don't allow changes while game is running
-        if (isRunning) {
-          // Restore the default value
-          range.value = defaultValue;
-          display.textContent = range.value;
-          return;
-        }
-
-        display.textContent = range.value;
-        const value = parseInt(range.value);
-        
-        // Apply setting immediately without saving to localStorage
-        switch(setting) {
-          case 'snakeSpeed':            // Update snake speed - only applies to next game
-            break;
-            
-          case 'numFruits':
-            // Update fruits count
-            while (candies.length > value) {
-              const fruit = candies.pop();
-              scene.remove(fruit.mesh);
-            }
-            while (candies.length < value) {
-              addFruit();
-            }
-            break;
-            
-          case 'numBombs':
-            // Update bombs count
-            while (bombs.length > value) {
-              const bomb = bombs.pop();
-              scene.remove(bomb.mesh);
-            }
-            while (bombs.length < value) {
-              addBomb();
-            }
-            break;
-            
-          case 'numObjects':
-            // Update objects count
-            while (entities.length > value) {
-              const entity = entities.pop();
-              scene.remove(entity.mesh);
-            }
-            while (entities.length < value) {
-              addEntity();
-            }
-            break;
-        }
-      });
-    }
-  });  // Handle border kill setting
-  const borderKillCheckbox = document.getElementById('kill-borders');
-  if (borderKillCheckbox) {
-    // Always use default value
-    borderKillCheckbox.checked = DEFAULT_SETTINGS.killOnBorderTrespass;
-    
-    borderKillCheckbox.addEventListener('change', () => {
-      // Don't allow changes while game is running
-      if (isRunning) {
-        // Restore the default value
-        borderKillCheckbox.checked = DEFAULT_SETTINGS.killOnBorderTrespass;
-        return;
-      }
-      // Don't save to localStorage
-    });
-  }
-  
-  // Handle light toggle settings
-  const ambientLightCheckbox = document.getElementById('ambient-light');
-  if (ambientLightCheckbox) {
-    // Set initial state based on default settings
-    ambientLightCheckbox.checked = DEFAULT_SETTINGS.ambientLightEnabled;
-    
-    ambientLightCheckbox.addEventListener('change', () => {
-      // Toggle ambient light based on checkbox state
-      toggleAmbientLight(ambientLightCheckbox.checked);
-    });
-  }
-  
-  const directionalLightCheckbox = document.getElementById('directional-light');
-  if (directionalLightCheckbox) {
-    // Set initial state based on default settings
-    directionalLightCheckbox.checked = DEFAULT_SETTINGS.directionalLightEnabled;
-      directionalLightCheckbox.addEventListener('change', () => {
-      // Toggle directional light based on checkbox state
-      toggleDirectionalLight(directionalLightCheckbox.checked);
-    });
-  }
-  
-  const pointLightCheckbox = document.getElementById('point-light');
-  if (pointLightCheckbox) {
-    // Set initial state based on default settings
-    pointLightCheckbox.checked = DEFAULT_SETTINGS.pointLightEnabled;
-    
-    pointLightCheckbox.addEventListener('change', () => {
-      // Toggle point light based on checkbox state
-      togglePointLight(pointLightCheckbox.checked);
-    });
-  }
-  
-  // Handle minimap toggle
-  const minimapCheckbox = document.getElementById('show-minimap');
-  const minimapContainer = document.getElementById('minimap-container');
-  if (minimapCheckbox && minimapContainer) {
-    // Set initial state (default is visible)
-    minimapCheckbox.checked = true;
-    
-    minimapCheckbox.addEventListener('change', () => {
-      // Toggle minimap visibility based on checkbox state
-      minimapContainer.style.display = minimapCheckbox.checked ? 'block' : 'none';
-    });
-  }
-  
-  // Set initial theme on the settings sidebar
-  const settingsSidebar = document.getElementById('settings-sidebar');
-  if (settingsSidebar) {
-    settingsSidebar.classList.add(`theme-${paletteName.toLowerCase()}`);
-  }
-  
-  // Setup settings tab click handler
-  const settingsTab = document.getElementById('settings-tab');
-  if (settingsTab) {
-    settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
-    settingsTab.addEventListener('click', () => {
-      // Show settings sidebar
-      settingsSidebar.classList.add('open');
-      // Hide settings tab
-      animateSettingsTab(settingsTab, false);
-    });
-  }
-})();
+initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, addEntity, candies, bombs, entities, animateSettingsTab, paletteName)
 
 // Update snake's update method to respect border kill setting
 snake.update = function() {
@@ -1070,30 +883,7 @@ window.addEventListener('resize', handleResize)
 function handleResize() {
   sizes.width = window.innerWidth
   sizes.height = window.innerHeight
-  camera.aspect = sizes.width / sizes.height
-  camera.updateProjectionMatrix()
-  // Update orthographic camera on resize
-  const aspect = sizes.width / sizes.height;
-  const halfWidth = resolution.x / 2 * 1.2; // 20% wider view (matching camera setup)
-  const halfHeight = resolution.y / 2 * 1.2; // 20% taller view (matching camera setup)
-  
-  if (aspect > 1) {
-    // Landscape: Adjust width based on aspect ratio
-    topCamera.left = -halfWidth * aspect;
-    topCamera.right = halfWidth * aspect;
-    topCamera.top = halfHeight;
-    topCamera.bottom = -halfHeight;
-  } else {
-    // Portrait: Adjust height based on aspect ratio
-    topCamera.left = -halfWidth;
-    topCamera.right = halfWidth;
-    topCamera.top = halfHeight / aspect;
-    topCamera.bottom = -halfHeight / aspect;
-  }
-  topCamera.updateProjectionMatrix()
-
+  updateCamerasOnResize({ camera, topCamera }, sizes, resolution)
   renderer.setSize(sizes.width, sizes.height)
-
-  const pixelRatio = Math.min(window.devicePixelRatio, 2)
-  renderer.setPixelRatio(pixelRatio)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 }
