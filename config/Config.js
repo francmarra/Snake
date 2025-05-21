@@ -9,7 +9,8 @@ export const DEFAULT_SETTINGS = {
     killOnBorderTrespass: false,
     ambientLightEnabled: true,
     directionalLightEnabled: true,
-    pointLightEnabled: false
+    pointLightEnabled: false,
+    showMinimap: true
 }
 
 // Obter valor da definição atual - devolve sempre o valor por defeito

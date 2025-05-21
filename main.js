@@ -28,7 +28,7 @@ import {
 import { animateButtonIn, animateButtonOut, animateCameraButtonIn, animateSettingsTab } from './src/Animations.js';
 import { initCameras, updateCamerasOnResize } from './managers/CameraManager'
 import { muteVolume, unmuteVolume } from './managers/AudioManager'
-import { initializeSettings } from './managers/SettingsManager'
+import { initializeSettings, toggleMinimap } from './managers/SettingsManager'
 import Minimap from './src/Minimap.js';
 import { animateCameraRotation } from './src/CameraRotation.js';
 
@@ -469,6 +469,16 @@ function resetGame() {
     settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
     animateSettingsTab(settingsTab, true);
   }
+  
+  // Update minimap visibility based on settings
+  const showMinimap = document.getElementById('show-minimap').checked;
+  if (minimapContainer) {
+    if (showMinimap) {
+      minimapContainer.style.display = 'block';
+    } else {
+      minimapContainer.style.display = 'none';
+    }
+  }
 }
 
 // --------- Entity, Fruit, Bomb, and Object Functions ---------
@@ -632,28 +642,33 @@ btnPlay.addEventListener('click', function () {
     }
     // Enhanced minimap animation with smoother timing
     const minimapContainer = document.getElementById('minimap-container');
-    minimapContainer.style.display = 'block';
-    minimapContainer.style.opacity = '0';
-    minimapContainer.style.transform = 'scale(0.7) translateY(30px)';
+    const showMinimap = document.getElementById('show-minimap').checked;
     
-    gsap.to(minimapContainer, {
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      duration: 1.2,
-      delay: 1.0, // Slightly earlier to feel more responsive
-      ease: "back.out(1.7)", // More natural elastic feel
-      onComplete: () => {
-        // Add a subtle pulse effect after appearing
-        gsap.to(minimapContainer, {
-          scale: 1.05,
-          duration: 0.3,
-          repeat: 1,
-          yoyo: true,
-          ease: "sine.inOut"
-        });
-      }
-    });
+    if (showMinimap) {
+      minimapContainer.style.display = 'block';
+      minimapContainer.style.opacity = '0';
+      minimapContainer.style.transform = 'scale(0.7) translateY(30px)';
+      
+      gsap.to(minimapContainer, {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        duration: 1.2,
+        delay: 1.0,
+        ease: "back.out(1.7)",
+        onComplete: () => {
+          gsap.to(minimapContainer, {
+            scale: 1.05,
+            duration: 0.3,
+            repeat: 1,
+            yoyo: true,
+            ease: "sine.inOut"
+          });
+        }
+      });
+    } else {
+      minimapContainer.style.display = 'none';
+    }
     
     playAudio()
     
@@ -959,8 +974,8 @@ function tic() {  // If game hasn't started yet, animate camera rotation
   
   renderer.render(scene, activeCamera)
   
-  // Update minimap if the game has started and minimap is initialized
-  if (gameStarted && minimap) {
+  // Update minimap if the game has started, minimap is initialized, and it should be shown
+  if (gameStarted && minimap && document.getElementById('show-minimap').checked) {
     minimap.update(snake, candies, bombs, selectedPalette)
   }
   

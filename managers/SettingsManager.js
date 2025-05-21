@@ -1,4 +1,38 @@
 import { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from '../src/Lights'
+import gsap from 'gsap'
+
+// Helper function to toggle minimap visibility - moved up before it's used
+export function toggleMinimap(visible) {
+  const minimapContainer = document.getElementById('minimap-container')
+  if (minimapContainer) {
+    if (visible) {
+      // Show with animation
+      minimapContainer.style.display = 'block'
+      minimapContainer.style.opacity = '0'
+      minimapContainer.style.transform = 'scale(0.7) translateY(30px)'
+      
+      gsap.to(minimapContainer, {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        duration: 0.5,
+        ease: "back.out(1.7)"
+      })
+    } else {
+      // Hide with animation
+      gsap.to(minimapContainer, {
+        opacity: 0,
+        scale: 0.7,
+        y: 30,
+        duration: 0.3,
+        ease: "power2.in",
+        onComplete: () => {
+          minimapContainer.style.display = 'none'
+        }
+      })
+    }
+  }
+}
 
 export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, addEntity, candies, bombs, entities, animateSettingsTab, paletteName) {
   // Inicializa controlos de definições
@@ -98,6 +132,15 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
     pointLightCheckbox.checked = DEFAULT_SETTINGS.pointLightEnabled
     pointLightCheckbox.addEventListener('change', () => {
       togglePointLight(pointLightCheckbox.checked)
+    })
+  }
+
+  // Checkbox for minimap visibility
+  const minimapCheckbox = document.getElementById('show-minimap')
+  if (minimapCheckbox) {
+    minimapCheckbox.checked = DEFAULT_SETTINGS.showMinimap
+    minimapCheckbox.addEventListener('change', () => {
+      toggleMinimap(minimapCheckbox.checked)
     })
   }
 
