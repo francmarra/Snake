@@ -1,4 +1,4 @@
-// Centralized animation functions for UI/game buttons and elements
+// Funções centralizadas de animação para botões e elementos da UI/jogo
 import gsap from 'gsap';
 
 export function animateButtonIn(element, options = {}) {
@@ -48,7 +48,7 @@ export function animateCameraButtonIn(element, options = {}) {
 
 export function animateSettingsTab(element, show = true, options = {}) {
   if (show) {
-    // Show the settings tab with a slide-in effect
+    // Mostra o separador de definições com efeito de deslize
     gsap.fromTo(
       element,
       { autoAlpha: 0, right: "-3rem" },
@@ -62,7 +62,7 @@ export function animateSettingsTab(element, show = true, options = {}) {
       }
     );
   } else {
-    // Hide the settings tab with a slide-out effect
+    // Esconde o separador de definições com efeito de deslize
     gsap.to(element, {
       duration: 0.5,
       autoAlpha: 0,

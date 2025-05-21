@@ -1,15 +1,15 @@
-// --- Configurações "Estáticas" ---
+// --- Definições "Estáticas" ---
 
-// --- Grid ---
+// --- Grelha ---
 export const GRID_WIDTH = 20
 export const GRID_HEIGHT = 20
 
-// --- Camera ---
+// --- Câmara ---
 export const CAMERA_FOV = 60
 export const CAMERA_NEAR = 0.1
 export const CAMERA_FAR = 1000
 
-// --- Palettes ---
+// --- Paletas ---
 export const COLOR_PALETTES = {
 	green: {
 		groundColor: 0x56f854,
@@ -40,7 +40,7 @@ export const COLOR_PALETTES = {
 	},
 }
 
-// Árvores: [x, y, z, scale]
+// Árvores: [x, y, z, escala]
 export const TREE_DATA = [
 	[-5, 0, 10, 1],
 	[-6, 0, 15, 1.2],
@@ -68,7 +68,7 @@ export const TREE_DATA = [
 	[35, 0, 10, 0.7],
 ]
 
-// Pedras: [ [x, y, z], [scaleX, scaleY, scaleZ, rotY] ]
+// Pedras: [ [x, y, z], [escalaX, escalaY, escalaZ, rotY] ]
 export const ROCK_DATA = [
 	[[-7, -0.5, 2], [2, 8, 3, 2.8]],
 	[[-3, -0.5, -10], [3, 2, 2.5, 1.5]],

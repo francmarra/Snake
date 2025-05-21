@@ -1,6 +1,4 @@
-// --- Ficheiro principal do jogo Snake 3D ---
-// Inicializa a cena, câmara, luzes, entidades e lógica principal do jogo
-
+// --------- Imports ---------
 import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
@@ -33,6 +31,7 @@ import { muteVolume, unmuteVolume } from './managers/AudioManager'
 import { initializeSettings } from './managers/SettingsManager'
 import Minimap from './src/Minimap.js';
 
+// --------- Font Loader & Score Initialization ---------
 // Carrega a fonte para o texto da pontuação
 const loader = new FontLoader()
 let font
@@ -41,6 +40,7 @@ loader.load(fontSrc, (loadedFont) => {
   printScore()
 })
 
+// --------- Color Palette and Helper Functions ---------
 // --- Paletas de cores e seleção ---
 const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT)
 const palettes = COLOR_PALETTES
@@ -52,6 +52,7 @@ function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+// --------- Palette Application Function ---------
 // Aplica a paleta de cores selecionada
 function applyPalette(name) {
   paletteName = name
@@ -113,6 +114,7 @@ function applyPalette(name) {
   }
 }
 
+// --------- Scene, Grid, Renderer, and Camera Setup ---------
 // --- Inicialização da cena, grelha e câmara ---
 const gridHelper = new THREE.GridHelper(
   resolution.x,
@@ -170,6 +172,7 @@ controls.target.set(
   resolution.y / 2 + 2
 )
 
+// --------- Plane and Minimap Initialization ---------
 // Initialize the minimap
 let minimap = null;
 
@@ -188,6 +191,7 @@ plane.position.y = -0.5
 scene.add(plane)
 plane.receiveShadow = true
 
+// --------- Snake Initialization and Game Logic ---------
 const snake = new Snake({
   scene,
   resolution,
@@ -273,6 +277,7 @@ snake.addEventListener('updated', updateSnakeSegmentsUI)
 let score = 0
 let scoreEntity
 
+// --------- Score Rendering Function ---------
 function printScore() {
   if (!font) {
     return
@@ -315,6 +320,7 @@ function printScore() {
   scene.add(scoreEntity.mesh)
 }
 
+// --------- Event Listeners ---------
 function registerEventListener() {
   window.addEventListener('keydown', function (e) {
     const keyCode = e.code
@@ -430,6 +436,7 @@ function resetGame() {
   }
 }
 
+// --------- Entity, Fruit, Bomb, and Object Functions ---------
 const candies = []
 const bombs = []
 const entities = []
@@ -546,6 +553,7 @@ ROCK_DATA.forEach(([posArr, scaleArr]) => {
   scene.add(clone)
 })
 
+// --------- Audio and Control Buttons Setup ---------
 // --- Áudio e controlos de volume ---
 const audio = document.getElementById('audio')
 const btnVolume = document.getElementById('btn-volume')
@@ -753,6 +761,7 @@ planeWasd.position.set(13, 0, 21)
 scene.add(planeArrows, planeWasd)
 manager.onLoad = () => {}
 
+// --------- Settings and Palette Update Functions ---------
 // Palette-aware settings icon
 function updateSettingsIcon(name) {
   if (!btnSettingsImg) return;
@@ -802,6 +811,7 @@ btnSettings.addEventListener('click', function () {
 
 initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, addEntity, candies, bombs, entities, animateSettingsTab, paletteName)
 
+// --------- Snake Update Modification ---------
 // Update snake's update method to respect border kill setting
 snake.update = function() {
   if (this.newDirection) {
@@ -860,6 +870,7 @@ snake.update = function() {
 
 applyPalette(paletteName)
 
+// --------- Camera Toggle Button and Its Handlers ---------
 // --- Botão para alternar entre câmaras ---
 const btnToggleCamera = document.getElementById('btn-toggle-camera')
 
@@ -878,6 +889,7 @@ btnToggleCamera.addEventListener('click', () => {
   activeCamera = activeCamera === camera ? topCamera : camera
 })
 
+// --------- Main Render Loop ---------
 // --- Ciclo principal de renderização ---
 function tic() {
   controls.update()
@@ -893,6 +905,7 @@ function tic() {
 
 requestAnimationFrame(tic)
 
+// --------- Window Resize Handler ---------
 window.addEventListener('resize', handleResize)
 
 function handleResize() {
