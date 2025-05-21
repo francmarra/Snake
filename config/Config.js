@@ -5,7 +5,7 @@ export const DEFAULT_SETTINGS = {
     numFruits: 1,
     numBombs: 1,
     numObjects: 20,
-    snakeSpeed: 140,
+    snakeSpeed: 220,
     killOnBorderTrespass: false,
     ambientLightEnabled: true,
     directionalLightEnabled: true,
