@@ -71,9 +71,13 @@ export default class Minimap {
     
     while (current) {
       const position = current.data.mesh.position;
-      // Convert 3D position to 2D grid coordinates
-      const x = Math.floor(position.x);
-      const z = Math.floor(position.z);
+      // Use exact position coordinates without flooring to maintain accuracy
+      const x = position.x;
+      const z = position.z;
+      
+      // Calculate pixel position on minimap
+      const pixelX = this.offsetX + x * this.cellSize + this.cellSize / 2;
+      const pixelY = this.offsetY + z * this.cellSize + this.cellSize / 2;
       
       // Draw the snake segment
       if (isHead) {
@@ -84,8 +88,8 @@ export default class Minimap {
         
         this.ctx.beginPath();
         this.ctx.arc(
-          this.offsetX + x * this.cellSize + this.cellSize / 2,
-          this.offsetY + z * this.cellSize + this.cellSize / 2,
+          pixelX,
+          pixelY,
           this.cellSize / 2 - 1,
           0,
           Math.PI * 2
@@ -98,9 +102,11 @@ export default class Minimap {
         this.ctx.fillStyle = color;
         this.ctx.globalAlpha = alpha;
         
+        // Draw each segment as a square centered on the exact position
+        const halfCell = this.cellSize / 2 - 1;
         this.ctx.fillRect(
-          this.offsetX + x * this.cellSize + 1, 
-          this.offsetY + z * this.cellSize + 1, 
+          pixelX - halfCell, 
+          pixelY - halfCell, 
           this.cellSize - 2, 
           this.cellSize - 2
         );
@@ -113,13 +119,18 @@ export default class Minimap {
       current = current.next;
     }
   }
+  
   // Draw fruits on the minimap
   drawFruits(fruits, color) {
     fruits.forEach(fruit => {
       const position = fruit.mesh.position;
-      // Convert 3D position to 2D grid coordinates
-      const x = Math.floor(position.x);
-      const z = Math.floor(position.z);
+      // Use exact position coordinates without flooring
+      const x = position.x;
+      const z = position.z;
+      
+      // Calculate pixel position
+      const pixelX = this.offsetX + x * this.cellSize + this.cellSize / 2;
+      const pixelY = this.offsetY + z * this.cellSize + this.cellSize / 2;
       
       // Draw the fruit as a circle with a pulsating effect
       const pulseFactor = 0.8 + 0.2 * Math.sin(Date.now() * 0.005);
@@ -127,11 +138,11 @@ export default class Minimap {
       
       // Draw glow effect
       const gradient = this.ctx.createRadialGradient(
-        this.offsetX + x * this.cellSize + this.cellSize / 2,
-        this.offsetY + z * this.cellSize + this.cellSize / 2,
+        pixelX,
+        pixelY,
         radius * 0.5,
-        this.offsetX + x * this.cellSize + this.cellSize / 2,
-        this.offsetY + z * this.cellSize + this.cellSize / 2,
+        pixelX,
+        pixelY,
         radius * 1.3
       );
       
@@ -141,8 +152,8 @@ export default class Minimap {
       this.ctx.fillStyle = gradient;
       this.ctx.beginPath();
       this.ctx.arc(
-        this.offsetX + x * this.cellSize + this.cellSize / 2,
-        this.offsetY + z * this.cellSize + this.cellSize / 2,
+        pixelX,
+        pixelY,
         radius * 1.3,
         0,
         Math.PI * 2
@@ -153,8 +164,8 @@ export default class Minimap {
       this.ctx.fillStyle = color;
       this.ctx.beginPath();
       this.ctx.arc(
-        this.offsetX + x * this.cellSize + this.cellSize / 2,
-        this.offsetY + z * this.cellSize + this.cellSize / 2,
+        pixelX,
+        pixelY,
         radius,
         0,
         Math.PI * 2
@@ -162,16 +173,18 @@ export default class Minimap {
       this.ctx.fill();
     });
   }
+  
   // Draw bombs on the minimap
   drawBombs(bombs) {
     bombs.forEach(bomb => {
       const position = bomb.mesh.position;
-      // Convert 3D position to 2D grid coordinates
-      const x = Math.floor(position.x);
-      const z = Math.floor(position.z);
+      // Use exact position coordinates without flooring
+      const x = position.x;
+      const z = position.z;
       
-      const centerX = this.offsetX + x * this.cellSize + this.cellSize / 2;
-      const centerY = this.offsetY + z * this.cellSize + this.cellSize / 2;
+      // Calculate pixel position
+      const pixelX = this.offsetX + x * this.cellSize + this.cellSize / 2;
+      const pixelY = this.offsetY + z * this.cellSize + this.cellSize / 2;
       
       // Draw the bomb with a pulsing danger effect
       const pulseIntensity = 0.5 + 0.5 * Math.sin(Date.now() * 0.008);
@@ -181,8 +194,8 @@ export default class Minimap {
       this.ctx.fillStyle = bombColor;
       this.ctx.beginPath();
       this.ctx.arc(
-        centerX,
-        centerY,
+        pixelX,
+        pixelY,
         this.cellSize / 2 - 2,
         0,
         Math.PI * 2
@@ -196,20 +209,20 @@ export default class Minimap {
       // Draw X
       this.ctx.beginPath();
       this.ctx.moveTo(
-        centerX - this.cellSize / 3,
-        centerY - this.cellSize / 3
+        pixelX - this.cellSize / 3,
+        pixelY - this.cellSize / 3
       );
       this.ctx.lineTo(
-        centerX + this.cellSize / 3,
-        centerY + this.cellSize / 3
+        pixelX + this.cellSize / 3,
+        pixelY + this.cellSize / 3
       );
       this.ctx.moveTo(
-        centerX + this.cellSize / 3,
-        centerY - this.cellSize / 3
+        pixelX + this.cellSize / 3,
+        pixelY - this.cellSize / 3
       );
       this.ctx.lineTo(
-        centerX - this.cellSize / 3,
-        centerY + this.cellSize / 3
+        pixelX - this.cellSize / 3,
+        pixelY + this.cellSize / 3
       );
       this.ctx.stroke();
     });
