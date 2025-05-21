@@ -143,10 +143,11 @@ const initialPosition = new THREE.Vector3(
   resolution.y / 2 + 4
 )
 const finalPosition = new THREE.Vector3(
-  -8 + resolution.x / 2,
-  resolution.x / 2 + 4,
-  resolution.y + 6
+  (resolution.x / 2) - 8, // ajustar à direita
+  (resolution.x / 2) + 4, // altura da câmara
+  resolution.y + 9 // ajustar para a esquerda
 )
+
 const { camera, topCamera } = initCameras(resolution, sizes, initialPosition, finalPosition)
 let activeCamera = camera
 
@@ -324,29 +325,54 @@ function printScore() {
 // --------- Event Listeners ---------
 function registerEventListener() {
   window.addEventListener('keydown', function (e) {
-    const keyCode = e.code
+    const keyCode = e.code;
     const isMovementKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD'].includes(keyCode);
+    const settingsSidebar = document.getElementById('settings-sidebar');
     
-    // Set the direction regardless of whether the game is running
-    snake.setDirection(keyCode)
+    // If settings are open, ignore key input for settings changes
+    if (settingsSidebar && settingsSidebar.classList.contains('open')) {
+      // If the key is meant to start the game, close settings and start game without updating direction
+      if (keyCode === 'Space' || (!isRunning && isMovementKey && gameStarted)) {
+        closeSettings();
+        if (keyCode === 'Space') {
+          !isRunning ? startGame() : stopGame();
+        } else if (!isRunning && isMovementKey && gameStarted) {
+          startGame();
+        }
+      }
+      return; // Do not update the snake or settings values
+    }
+    
+    // Update snake direction if settings are not being shown
+    snake.setDirection(keyCode);
     
     if (keyCode === 'Space') {
-      !isRunning ? startGame() : stopGame()
+      !isRunning ? startGame() : stopGame();
     } else if (!isRunning && isMovementKey && gameStarted) {
-      // Only start the game if a movement key is pressed and the play button has been clicked
-      startGame()
-    }    
+      startGame();
+    }
     
     // Hide settings tab and sidebar when snake moves
     const settingsTab = document.getElementById('settings-tab');
-    const settingsSidebar = document.getElementById('settings-sidebar');
     if (settingsTab) {
       animateSettingsTab(settingsTab, false);
     }
     if (settingsSidebar && settingsSidebar.classList.contains('open')) {
-      settingsSidebar.classList.remove('open');
+      closeSettings();
     }
-  })
+  });
+}
+
+// Helper function to close settings and blur all inputs
+function closeSettings() {
+  const settingsSidebar = document.getElementById('settings-sidebar');
+  if (settingsSidebar) {
+    settingsSidebar.classList.remove('open');
+    
+    // Blur all input elements to prevent them from receiving keyboard events
+    const inputs = settingsSidebar.querySelectorAll('input');
+    inputs.forEach(input => input.blur());
+  }
 }
 
 let isRunning
@@ -817,8 +843,14 @@ btnSettings.addEventListener('click', function () {
       ease: "power2.inOut"
     });
   }
+  
   // Toggle settings sidebar
-  document.getElementById('settings-sidebar').classList.toggle('open');
+  const settingsSidebar = document.getElementById('settings-sidebar');
+  if (settingsSidebar.classList.contains('open')) {
+    closeSettings();
+  } else {
+    settingsSidebar.classList.add('open');
+  }
 });
 
 initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, addEntity, candies, bombs, entities, animateSettingsTab, paletteName)
