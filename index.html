@@ -21,17 +21,20 @@
       ></span>
     </div>
 
-    <script type="module" src="/main.js"></script>    <audio
+    <script type="module" src="/main.js"></script>
+    <audio
       id="audio"
       class="fixed top-0 left-0 z-50"
       controls
       loop="true"
       src="/short-audio.mp3"
-    ></audio>    <button
+    ></audio>
+    <button
       id="btn-settings"
       class="fixed w-max drop-shadow-xl top-[75%] lg:top-[60%] z-50 flex items-center justify-center"
     >
-      <!-- Gear icon overlay -->      <img
+      <!-- Gear icon overlay -->      
+       <img
         src="/Gear.svg"
         class="absolute w-10 h-10 lg:w-16 lg:h-16 pointer-events-none z-10"
         alt="Settings Gear"
@@ -43,7 +46,8 @@
         alt="Settings Background"
       />
       <span class="absolute btn-text">settings</span>
-    </button>    <button
+    </button>
+    <button
       id="btn-play"
       class="fixed w-max drop-shadow-xl top-[75%] lg:top-[60%] left-1/2"
     >
@@ -54,7 +58,8 @@
         alt=""
       />
       <span class="absolute btn-text">play</span>
-    </button>    <button
+    </button>
+    <button
       id="btn-volume"
       class="fixed w-max drop-shadow-xl hover:bg-black/30 rounded-[7px] left-4 bottom-20 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-20 after:rotate-45 after:absolute after:top-1/2"
     >
@@ -65,7 +70,7 @@
         alt="Toggle Audio"
       />
       <span class="absolute btn-text">mute</span>
-    </button>    <!-- Updated Toggle Camera Button -->
+    </button>
     <button
       id="btn-toggle-camera"
       class="fixed w-max drop-shadow-xl hover:bg-black/30 rounded-[7px] left-4 bottom-40 mb-6 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-20 after:rotate-45 after:absolute after:top-1/2"
@@ -77,9 +82,8 @@
         alt="Toggle Camera"
       />
       <span class="absolute btn-text">camera</span>
-    </button>    <ul
-      class="fixed left-4 flex lg:flex-col gap-3 lg:gap-4 bottom-4 lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2 z-50"
-    >
+    </button>
+    <ul class="fixed left-4 flex lg:flex-col gap-3 lg:gap-4 bottom-4 lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2 z-50">
       <li
         data-color="green"
         class="cursor-pointer theme-selector"
@@ -110,7 +114,8 @@
           alt=""
         />
       </li>
-    </ul><!-- Settings Tab -->
+    </ul>
+    <!-- Settings Tab -->
     <div id="settings-tab" class="settings-tab">
       <div class="settings-line"></div>
     </div>
@@ -153,6 +158,16 @@
           <input id="point-light" type="checkbox" checked class="mr-2" /> Point Light
         </label>
       </div>
+        <h3 class="text-lg font-bold text-white mt-6 mb-3">Minimap</h3>
+      <div class="setting-item mt-2">
+        <label class="text-white inline-flex items-center">
+          <input id="show-minimap" type="checkbox" checked class="mr-2" /> Show Minimap
+        </label>
+      </div>
+    </div>
+    <div id="minimap-container" style="display: none; transform-origin: bottom right;" class="fixed bottom-4 right-4 z-50 bg-black/50 rounded-md p-2 theme-green">
+      <div class="text-white text-xs mb-1 font-bold text-center">Minimap</div>
+      <canvas id="minimap" width="200" height="200"></canvas>
     </div>
   </body>
 </html>
