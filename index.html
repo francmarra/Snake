@@ -2,14 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="/Favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta property="og:title" content="Snake 3D" />
-    <meta name="description" content="A simple 3D snake indie game!" />
-    <meta property="og:description" content="A simple 3D snake indie game!" />
-    <meta property="og:url" content="https://snake3d.vercel.app/" />
-    <meta property="og:image" content="/og-preview.png" />
     <title>Snake 3D Game</title>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <!-- Snake‐segments HUD -->
@@ -24,106 +21,138 @@
       ></span>
     </div>
 
-    <script type="module" src="/main.js"></script>
-    <audio
-      style="opacity: 0"
+    <script type="module" src="/main.js"></script>    <audio
       id="audio"
       class="fixed top-0 left-0 z-50"
       controls
       loop="true"
       src="/short-audio.mp3"
-    ></audio>
-
-    <button
+    ></audio>    <button
+      id="btn-settings"
+      class="fixed w-max drop-shadow-xl top-[75%] lg:top-[60%] z-50 flex items-center justify-center"
+    >
+      <!-- Gear icon overlay -->      <img
+        src="/Gear.svg"
+        class="absolute w-10 h-10 lg:w-16 lg:h-16 pointer-events-none z-10"
+        alt="Settings Gear"
+      />
+      <img
+        id="btn-settings-img"
+        class="h-[4rem] lg:h-[7rem]"
+        src="/ThemeBtn/green/GreenSettings.svg"
+        alt="Settings Background"
+      />
+      <span class="absolute btn-text">settings</span>
+    </button>    <button
       id="btn-play"
-      style="opacity: 0"
       class="fixed w-max drop-shadow-xl top-[75%] lg:top-[60%] left-1/2"
     >
       <img
         id="btn-play-img"
         class="h-[4rem] lg:h-[7rem]"
-        src="/ThemeBtn/GreenPlay.svg"
+        src="/ThemeBtn/green/GreenPlay.svg"
         alt=""
       />
-      <span class="absolute" style="opacity: 0">play</span>
-    </button>
-
-    <button
+      <span class="absolute btn-text">play</span>
+    </button>    <button
       id="btn-volume"
-      style="opacity: 1; background: #1E1E1E; right: 50px;"
-      class="fixed w-max drop-shadow-xl hover:bg-black/30 rounded-[7px] right-4 bottom-4 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-20 after:rotate-45 after:absolute after:top-1/2"
+      class="fixed w-max drop-shadow-xl hover:bg-black/30 rounded-[7px] left-4 bottom-20 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-20 after:rotate-45 after:absolute after:top-1/2"
     >
-      <div class="absolute animate-ping inset-0 bg-black/30 scale-125"></div>
       <img
         id="btn-volume-img"
         class="aspect-square w-20"
-        src="/ThemeBtn/GreenAudio.svg"
+        src="/ThemeBtn/green/GreenAudio.svg"
         alt="Toggle Audio"
       />
-      <span class="absolute" style="opacity: 0">mute</span>
-    </button>
-
-    <!-- Updated Toggle Camera Button -->
+      <span class="absolute btn-text">mute</span>
+    </button>    <!-- Updated Toggle Camera Button -->
     <button
       id="btn-toggle-camera"
-      style="
-        display: none;
-        position: fixed;
-        top: 25px;
-        right: 50px;
-        z-index: 60;
-        width: 110px;
-        height: 40px;
-        background: #1E1E1E;
-        border: none;
-        padding: 0;
-        border-radius: 10px;
-      "
+      class="fixed w-max drop-shadow-xl hover:bg-black/30 rounded-[7px] left-4 bottom-40 mb-6 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-20 after:rotate-45 after:absolute after:top-1/2"
     >
       <img
         id="btn-toggle-camera-img"
-        style="width: 100%; height: 100%; border-radius: 0px;"
-        src="/ThemeBtn/GreenCamera.svg"
+        class="aspect-square w-20"
+        src="/ThemeBtn/green/GreenCamera.svg"
         alt="Toggle Camera"
       />
-    </button>
-
-    <ul
+      <span class="absolute btn-text">camera</span>
+    </button>    <ul
       class="fixed left-4 flex lg:flex-col gap-3 lg:gap-4 bottom-4 lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2 z-50"
     >
       <li
-        style="transform: translateX(-200px); background: #1E1E1E; border-radius: 9999px;"
         data-color="green"
-        class="cursor-pointer"
+        class="cursor-pointer theme-selector"
       >
         <img
           class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full w-14 h-14 lg:w-20 lg:h-20"
-          src="/ThemeBtn/GreenTheme.svg"
+          src="/ThemeBtn/green/GreenTheme.svg"
           alt=""
         />
       </li>
       <li
-        style="transform: translateX(-200px); background: #1E1E1E; border-radius: 9999px;"
         data-color="orange"
-        class="cursor-pointer"
+        class="cursor-pointer theme-selector"
       >
         <img
           class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full w-14 h-14 lg:w-20 lg:h-20"
-          src="/ThemeBtn/OrangeTheme.svg"
+          src="/ThemeBtn/orange/OrangeTheme.svg"
           alt=""
         />
       </li>
       <li
-        style="transform: translateX(-200px); background: #1E1E1E; border-radius: 9999px;"
         data-color="lilac"
-        class="cursor-pointer"
+        class="cursor-pointer theme-selector"
       >
         <img
           class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full w-14 h-14 lg:w-20 lg:h-20"
-          src="/ThemeBtn/LilacTheme.svg"
+          src="/ThemeBtn/lilac/LilacTheme.svg"
           alt=""
         />
       </li>
-    </ul>
+    </ul><!-- Settings Tab -->
+    <div id="settings-tab" class="settings-tab">
+      <div class="settings-line"></div>
+    </div>
+
+    <!-- Settings Sidebar -->
+    <div id="settings-sidebar" class="settings-sidebar">
+      <h2 class="text-xl font-bold text-white mb-4">Settings</h2>      <div class="setting-item mb-4">
+        <label for="fruits-range" class="text-white">Nº of fruits: <span id="fruits-value">1</span></label>
+        <input id="fruits-range" type="range" min="1" max="10" value="1" class="w-full" />
+      </div>
+      <div class="setting-item mb-4">
+        <label for="bombs-range" class="text-white">Nº of bombs: <span id="bombs-value">1</span></label>
+        <input id="bombs-range" type="range" min="0" max="10" value="1" class="w-full" />
+      </div>
+      <div class="setting-item mb-4">
+        <label for="objects-range" class="text-white">Nº of objects: <span id="objects-value">20</span></label>
+        <input id="objects-range" type="range" min="0" max="50" value="20" class="w-full" />
+      </div>
+      <div class="setting-item mb-4">
+        <label for="speed-range" class="text-white">Snake speed: <span id="speed-value">5</span></label>
+        <input id="speed-range" type="range" min="1" max="10" value="5" class="w-full" />
+      </div>      <div class="setting-item">
+        <label class="text-white inline-flex items-center">
+          <input id="kill-borders" type="checkbox" class="mr-2" /> Kill after trespassing borders
+        </label>
+      </div>
+        <h3 class="text-lg font-bold text-white mt-6 mb-3">Lighting</h3>
+      <div class="setting-item mb-2">
+        <label class="text-white inline-flex items-center">
+          <input id="ambient-light" type="checkbox" checked class="mr-2" /> Ambient Light
+        </label>
+      </div>
+      <div class="setting-item mb-2">
+        <label class="text-white inline-flex items-center">
+          <input id="directional-light" type="checkbox" checked class="mr-2" /> Directional Light
+        </label>
+      </div>
+      <div class="setting-item">
+        <label class="text-white inline-flex items-center">
+          <input id="point-light" type="checkbox" checked class="mr-2" /> Point Light
+        </label>
+      </div>
+    </div>
   </body>
 </html>

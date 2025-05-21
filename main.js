@@ -9,14 +9,14 @@ import Snake from './src/Snake'
 import Fruit from './src/Fruit'
 import Rock from './src/Rock'
 import Tree from './src/Tree'
-import lights from './src/Lights'
+import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from './src/Lights'
 import gsap from 'gsap'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import Entity from './src/Entity'
 import Bomb from './src/Bomb'
-import { MOVEMENT_SPEED, NUM_ENTITIES } from './config/Config.js'
+import { MOVEMENT_SPEED, NUM_ENTITIES, DEFAULT_SETTINGS } from './config/Config.js'
 import {
   GRID_WIDTH,
   GRID_HEIGHT,
@@ -27,6 +27,7 @@ import {
   CAMERA_NEAR,
   CAMERA_FAR
 } from './config/StaticData.js'
+import { animateButtonIn, animateButtonOut, animateCameraButtonIn, animateSettingsTab } from './src/Animations.js';
 
 // Carrega a fonte para o texto da pontuação
 const loader = new FontLoader()
@@ -39,7 +40,7 @@ loader.load(fontSrc, (loadedFont) => {
 // --- Paletas de cores e seleção ---
 const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT)
 const palettes = COLOR_PALETTES
-let paletteName = localStorage.getItem('paletteName') || 'green'
+let paletteName = 'green' // Default palette, not loaded from localStorage
 let selectedPalette = palettes[paletteName]
 const params = { ...selectedPalette }
 
@@ -52,8 +53,8 @@ function applyPalette(name) {
   paletteName = name
   const palette = palettes[name]
   if (!palette) return
-  localStorage.setItem('paletteName', name)
-
+  
+  // Don't save to localStorage
   selectedPalette = palette
 
   const {
@@ -84,16 +85,16 @@ function applyPalette(name) {
 
   updateSnakeSegmentsUI()
 
-  btnPlayImg.src = `/ThemeBtn/${capitalize(name)}Play.svg`
+  btnPlayImg.src = `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Play.svg`
   document.getElementById('btn-toggle-camera-img').src =
-    `/ThemeBtn/${capitalize(name)}Camera.svg`
+    `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Camera.svg`
   document.getElementById('btn-volume-img').src =
-    `/ThemeBtn/${capitalize(name)}Audio.svg`
+    `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Audio.svg`
 
   const vol = localStorage.getItem('volume')
   if (vol === 'off' || audio.volume === 0) {
     document.getElementById('btn-volume-img').src =
-      `/ThemeBtn/${capitalize(name)}NoAudio.svg`
+      `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}NoAudio.svg`
   }
 }
 
@@ -131,8 +132,18 @@ const initialPosition = new THREE.Vector3(
 )
 camera.position.copy(initialPosition)
 
-const topCamera = new THREE.PerspectiveCamera(CAMERA_FOV, sizes.width / sizes.height, CAMERA_NEAR, CAMERA_FAR)
-topCamera.position.set(resolution.x / 2, 22, resolution.y / 2)
+// Top-view camera (Orthographic)
+const halfWidth = resolution.x / 2 * 1.2; // 20% wider view
+const halfHeight = resolution.y / 2 * 1.2; // 20% taller view
+const topCamera = new THREE.OrthographicCamera(
+  -halfWidth, // left
+  halfWidth,  // right
+  halfHeight, // top
+  -halfHeight, // bottom
+  1,         // near
+  1000       // far
+)
+topCamera.position.set(resolution.x / 2, 26, resolution.y / 2) // Increased height from 22 to 26
 topCamera.lookAt(new THREE.Vector3(resolution.x / 2, 0, resolution.y / 2))
 let activeCamera = camera
 
@@ -191,14 +202,18 @@ snake.addEventListener('updated', function () {
   const fruitIndex = candies.findIndex(
     (fruit) => fruit.getIndexByCoord() === headIndex
   )
-
   if (fruitIndex >= 0) {
     const fruit = candies[fruitIndex]
     scene.remove(fruit.mesh)
     candies.splice(fruitIndex, 1)
     snake.body.head.data.fruit = fruit
     addFruit()
-    addBomb()
+      // Only add a bomb if we're below the bombs setting
+    const bombsSetting = DEFAULT_SETTINGS.numBombs;
+    if (bombs.length < bombsSetting) {
+      addBomb();
+    }
+    
     score += fruit.points
     printScore()
   }
@@ -220,10 +235,14 @@ snake.addEventListener('updated', function () {
         snake.die()
         resetGame()
         return
-      }
-    }
+      }    }
     score = Math.max(0, score - bomb.points)
-    addBomb()
+      // Only add a new bomb if we're below the bombs setting
+    const bombsSetting = DEFAULT_SETTINGS.numBombs;
+    if (bombs.length < bombsSetting) {
+      addBomb();
+    }
+    
     printScore()
   }
 })
@@ -296,11 +315,26 @@ function printScore() {
 function registerEventListener() {
   window.addEventListener('keydown', function (e) {
     const keyCode = e.code
+    const isMovementKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD'].includes(keyCode);
+    
+    // Set the direction regardless of whether the game is running
     snake.setDirection(keyCode)
+    
     if (keyCode === 'Space') {
       !isRunning ? startGame() : stopGame()
-    } else if (!isRunning) {
+    } else if (!isRunning && isMovementKey && gameStarted) {
+      // Only start the game if a movement key is pressed and the play button has been clicked
       startGame()
+    }    
+    
+    // Hide settings tab and sidebar when snake moves
+    const settingsTab = document.getElementById('settings-tab');
+    const settingsSidebar = document.getElementById('settings-sidebar');
+    if (settingsTab) {
+      animateSettingsTab(settingsTab, false);
+    }
+    if (settingsSidebar && settingsSidebar.classList.contains('open')) {
+      settingsSidebar.classList.remove('open');
     }
   })
 }
@@ -309,9 +343,17 @@ let isRunning
 
 function startGame() {
   if (!snake.isMoving) {
+    // Hide settings tab when snake starts moving
+    const settingsTab = document.getElementById('settings-tab');
+    if (settingsTab && settingsTab.style.display !== 'none') {
+      animateSettingsTab(settingsTab, false);
+    }    // Get speed setting from defaults
+    const speedValue = DEFAULT_SETTINGS.snakeSpeed / 28;
+    const moveInterval = 300 - (speedValue * 16); // Same scale as the speed setting
+    
     isRunning = setInterval(() => {
       snake.update()
-    }, MOVEMENT_SPEED)
+    }, moveInterval)
   }
 }
 
@@ -323,6 +365,9 @@ function stopGame() {
 function resetGame() {
   stopGame()
   score = 0
+
+  // Wait for the player to press a movement key before starting again
+  // gameStarted stays true, but the snake won't move until a key is pressed
 
   let fruit = candies.pop()
   while (fruit) {
@@ -341,10 +386,30 @@ function resetGame() {
     scene.remove(entity.mesh)
     entity = entities.pop()
   }
+  // Add entities based on default settings
+  const numFruits = DEFAULT_SETTINGS.numFruits;
+  const numBombs = DEFAULT_SETTINGS.numBombs;
+  const numObjects = DEFAULT_SETTINGS.numObjects;
 
-  addFruit()
-  addBomb()
-  generateEntities()
+  for (let i = 0; i < numFruits; i++) {
+    addFruit();
+  }
+  
+  for (let i = 0; i < numBombs; i++) {
+    addBomb();
+  }
+  
+  for (let i = 0; i < numObjects; i++) {
+    addEntity();
+  }
+  
+  // Show settings tab after reset
+  const settingsTab = document.getElementById('settings-tab');
+  if (settingsTab) {
+    settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
+    settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
+    animateSettingsTab(settingsTab, true);
+  }
 }
 
 const candies = []
@@ -362,15 +427,14 @@ function addFruit() {
 }
 
 function addBomb() {
-  if (bombs.length === 0) {
-    const bomb = new Bomb(resolution)
-    let index = getFreeIndex()
-    bomb.mesh.position.x = index % resolution.x
-    bomb.mesh.position.z = Math.floor(index / resolution.x)
-    bombs.push(bomb)
-    bomb.in()
-    scene.add(bomb.mesh)
-  }
+  // Remove the bombs.length === 0 condition to allow multiple bombs
+  const bomb = new Bomb(resolution)
+  let index = getFreeIndex()
+  bomb.mesh.position.x = index % resolution.x
+  bomb.mesh.position.z = Math.floor(index / resolution.x)
+  bombs.push(bomb)
+  bomb.in()
+  scene.add(bomb.mesh)
 }
 
 addFruit()
@@ -469,56 +533,112 @@ const audio = document.getElementById('audio')
 const btnVolume = document.getElementById('btn-volume')
 const btnPlay = document.getElementById('btn-play')
 const btnPlayImg = document.getElementById('btn-play-img')
+const btnSettings = document.getElementById('btn-settings')
+const btnSettingsImg = document.getElementById('btn-settings-img')
 
 // Play button animation
-gsap.fromTo(
-  btnPlay,
-  { autoAlpha: 0, scale: 0, yPercent: -50, xPercent: -50 },
-  {
-    duration: 0.8,
-    autoAlpha: 1,
-    scale: 1,
-    yPercent: -50,
-    xPercent: -50,
-    delay: 0.3,
-    ease: `elastic.out(1.2, 0.7)`,
-  }
-)
+animateButtonIn(btnPlay);
+// Animate settings button in sync with play button
+if (btnSettings) {
+  animateButtonIn(btnSettings);
+}
 
 let gameStarted = false
 
 btnPlay.addEventListener('click', function () {
   if (!gameStarted) {
     gameStarted = true
-    audio.play()
+    
+    // Handle audio initialization and play
+    const playAudio = async () => {
+      try {
+        // Check if user muted audio
+        if (audio.volume !== 0) {
+          await audio.play()
+          // Update the icon just to be safe
+          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`
+        } else {
+          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
+        }
+      } catch (err) {
+        console.log('Audio could not play automatically:', err)
+        // In case of autoplay failure, we keep the mute icon
+        muteVolume()
+      }
+    }
+    playAudio()
+    
     gsap.to(camera.position, { ...finalPosition, duration: 2 })
     gsap.to(scene.fog, { duration: 2, near: 20, far: 55 })
-    gsap.to(this, {
-      duration: 1,
-      scale: 0,
-      ease: `elastic.in(1.2, 0.7)`,
-      onComplete: () => {
-        this.style.visibility = 'hidden'
-      },
-    })
-    btnToggleCamera.style.display = 'block'
-    gsap.fromTo(
-      btnToggleCamera,
-      { autoAlpha: 0, scale: 0 },
-      { duration: 0.8, autoAlpha: 1, scale: 1, ease: 'elastic.out(1.2, 0.7)', delay: 0.3 }
-    )
+    animateButtonOut(this)
+    if (btnSettings) {
+      animateButtonOut(btnSettings)
+      // Close settings sidebar if it's open
+      const settingsSidebar = document.getElementById('settings-sidebar');
+      if (settingsSidebar && settingsSidebar.classList.contains('open')) {
+        settingsSidebar.classList.remove('open');
+      }
+    }    btnToggleCamera.style.display = 'block'
+    animateCameraButtonIn(btnToggleCamera)
+    
+    // Register event listener but don't start the snake movement yet
+    // The snake will start moving when the player presses a movement key
     registerEventListener()
+    
+    // Show settings tab after game starts with a slight delay
+    const settingsTab = document.getElementById('settings-tab');
+    if (settingsTab) {
+      settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
+      settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
+      // Add slight delay to show after camera movement starts
+      setTimeout(() => animateSettingsTab(settingsTab, true), 1000);
+    }
   }
 })
 
-const userVolume = localStorage.getItem('volume')
+btnPlay.addEventListener('mouseenter', function () {
+  this.style.transform = 'translate(-50%, -50%) scale(1.15)';
+  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
+});
+btnPlay.addEventListener('mouseleave', function () {
+  this.style.transform = 'translate(-50%, -50%) scale(1)';
+  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
+});
+
+btnSettings.addEventListener('mouseenter', function () {
+  this.style.transform = 'translate(-50%, -50%) scale(1.15)';
+  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
+});
+btnSettings.addEventListener('mouseleave', function () {
+  this.style.transform = 'translate(-50%, -50%) scale(1)';
+  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
+});
+
+// Set up audio with proper initial values
+audio.volume = 0.7 // A reasonable default volume
+const initialVolume = audio.volume
+audio.pause() // Ensure it's paused initially
+
+const userVolume = 'on' // Default value, not loaded from localStorage
 if (userVolume === 'off') {
   muteVolume()
 }
 
-const initialVolume = audio.volume
-
 btnVolume.addEventListener('click', function () {
+  // Add a small scale animation for feedback
+  gsap.to(this, {
+    scale: 0.9,
+    duration: 0.1,
+    onComplete: () => {
+      gsap.to(this, {
+        scale: 1,
+        duration: 0.3,
+        ease: "elastic.out(1.2, 0.7)"
+      })
+    }
+  })
+  
+  // Check if audio is muted
   if (audio.volume === 0) {
     unmuteVolume()
   } else {
@@ -526,22 +646,37 @@ btnVolume.addEventListener('click', function () {
   }
 })
 
+btnVolume.addEventListener('mouseenter', function () {
+  this.style.transform = 'scale(1.15)';
+  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
+});
+btnVolume.addEventListener('mouseleave', function () {
+  this.style.transform = 'scale(1)';
+  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
+});
+
 function muteVolume() {
-  localStorage.setItem('volume', 'off')
-  gsap.to(audio, { volume: 0, duration: 1 })
-  btnVolume.classList.remove('after:block')
-  btnVolume.querySelector(':first-child').classList.remove('animate-ping')
-  btnVolume.querySelector(':first-child').style.background = 'none'
-  document.getElementById('btn-volume-img').src = `/ThemeBtn/${capitalize(paletteName)}NoAudio.svg`
+  // Don't save to localStorage
+  gsap.to(audio, { volume: 0, duration: 0.3 })
+  const btnVolumeImg = document.getElementById('btn-volume-img')
+  if (btnVolumeImg) {
+    // Stop any ongoing animations
+    gsap.killTweensOf(btnVolumeImg)
+    // Change the icon
+    btnVolumeImg.src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
+  }
 }
 
 function unmuteVolume() {
-  localStorage.setItem('volume', 'on')
-  btnVolume.classList.add('after:hidden')
-  btnVolume.querySelector(':first-child').classList.add('animate-ping')
-  btnVolume.querySelector(':first-child').style.background = ''
-  gsap.to(audio, { volume: initialVolume, duration: 1 })
-  document.getElementById('btn-volume-img').src = `/ThemeBtn/${capitalize(paletteName)}Audio.svg`
+  // Don't save to localStorage
+  const btnVolumeImg = document.getElementById('btn-volume-img')
+  if (btnVolumeImg) {
+    // Stop any ongoing animations
+    gsap.killTweensOf(btnVolumeImg)
+    // Change the icon
+    btnVolumeImg.src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`
+  }
+  gsap.to(audio, { volume: initialVolume, duration: 0.3 })
 }
 
 const sideBar = document.querySelector('.top-bar')
@@ -596,6 +731,249 @@ planeWasd.position.set(13, 0, 21)
 scene.add(planeArrows, planeWasd)
 manager.onLoad = () => {}
 
+// Palette-aware settings icon
+function updateSettingsIcon(name) {
+  if (!btnSettingsImg) return;
+  btnSettingsImg.src = `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Settings.svg`;
+}
+
+// Update settings icon when palette changes
+const originalApplyPalette = applyPalette;
+applyPalette = function(name) {
+  originalApplyPalette(name);
+  updateSettingsIcon(name);
+  
+  // Update settings tab theme
+  const settingsTab = document.getElementById('settings-tab');
+  if (settingsTab) {
+    // Remove all theme classes
+    settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
+    // Add the current theme class
+    settingsTab.classList.add(`theme-${name.toLowerCase()}`);
+  }
+  
+  // Update settings sidebar theme
+  const settingsSidebar = document.getElementById('settings-sidebar');
+  if (settingsSidebar) {
+    // Remove all theme classes
+    settingsSidebar.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
+    // Add the current theme class
+    settingsSidebar.classList.add(`theme-${name.toLowerCase()}`);
+  }
+};
+
+updateSettingsIcon(paletteName);
+
+// Placeholder click event for settings
+btnSettings.addEventListener('click', function () {
+  const gear = btnSettings.querySelector('img[alt="Settings Gear"]');
+  if (gear) {
+    gsap.to(gear, {
+      rotation: "+=360",
+      duration: 1,
+      ease: "power2.inOut"
+    });
+  }
+  // Toggle settings sidebar
+  document.getElementById('settings-sidebar').classList.toggle('open');
+});
+
+// Initialize settings controls
+(() => {
+  const controls = [
+    {rangeId: 'fruits-range', valueId: 'fruits-value', setting: 'numFruits'},
+    {rangeId: 'bombs-range', valueId: 'bombs-value', setting: 'numBombs'},
+    {rangeId: 'objects-range', valueId: 'objects-value', setting: 'numObjects'},
+    {rangeId: 'speed-range', valueId: 'speed-value', setting: 'snakeSpeed'}
+  ];    // Load default settings
+  controls.forEach(({rangeId, valueId, setting}) => {
+    const range = document.getElementById(rangeId);
+    const display = document.getElementById(valueId);
+    if (range && display) {
+      // Always use default values
+      const defaultValue = setting === 'snakeSpeed' ? 5 : DEFAULT_SETTINGS[setting];
+      
+      // Update input and display
+      range.value = defaultValue;
+      display.textContent = defaultValue;
+        // Add input handler
+      range.addEventListener('input', () => {
+        // Don't allow changes while game is running
+        if (isRunning) {
+          // Restore the default value
+          range.value = defaultValue;
+          display.textContent = range.value;
+          return;
+        }
+
+        display.textContent = range.value;
+        const value = parseInt(range.value);
+        
+        // Apply setting immediately without saving to localStorage
+        switch(setting) {
+          case 'snakeSpeed':            // Update snake speed - only applies to next game
+            break;
+            
+          case 'numFruits':
+            // Update fruits count
+            while (candies.length > value) {
+              const fruit = candies.pop();
+              scene.remove(fruit.mesh);
+            }
+            while (candies.length < value) {
+              addFruit();
+            }
+            break;
+            
+          case 'numBombs':
+            // Update bombs count
+            while (bombs.length > value) {
+              const bomb = bombs.pop();
+              scene.remove(bomb.mesh);
+            }
+            while (bombs.length < value) {
+              addBomb();
+            }
+            break;
+            
+          case 'numObjects':
+            // Update objects count
+            while (entities.length > value) {
+              const entity = entities.pop();
+              scene.remove(entity.mesh);
+            }
+            while (entities.length < value) {
+              addEntity();
+            }
+            break;
+        }
+      });
+    }
+  });  // Handle border kill setting
+  const borderKillCheckbox = document.getElementById('kill-borders');
+  if (borderKillCheckbox) {
+    // Always use default value
+    borderKillCheckbox.checked = DEFAULT_SETTINGS.killOnBorderTrespass;
+    
+    borderKillCheckbox.addEventListener('change', () => {
+      // Don't allow changes while game is running
+      if (isRunning) {
+        // Restore the default value
+        borderKillCheckbox.checked = DEFAULT_SETTINGS.killOnBorderTrespass;
+        return;
+      }
+      // Don't save to localStorage
+    });
+  }
+  
+  // Handle light toggle settings
+  const ambientLightCheckbox = document.getElementById('ambient-light');
+  if (ambientLightCheckbox) {
+    // Set initial state based on default settings
+    ambientLightCheckbox.checked = DEFAULT_SETTINGS.ambientLightEnabled;
+    
+    ambientLightCheckbox.addEventListener('change', () => {
+      // Toggle ambient light based on checkbox state
+      toggleAmbientLight(ambientLightCheckbox.checked);
+    });
+  }
+  
+  const directionalLightCheckbox = document.getElementById('directional-light');
+  if (directionalLightCheckbox) {
+    // Set initial state based on default settings
+    directionalLightCheckbox.checked = DEFAULT_SETTINGS.directionalLightEnabled;
+      directionalLightCheckbox.addEventListener('change', () => {
+      // Toggle directional light based on checkbox state
+      toggleDirectionalLight(directionalLightCheckbox.checked);
+    });
+  }
+  
+  const pointLightCheckbox = document.getElementById('point-light');
+  if (pointLightCheckbox) {
+    // Set initial state based on default settings
+    pointLightCheckbox.checked = DEFAULT_SETTINGS.pointLightEnabled;
+    
+    pointLightCheckbox.addEventListener('change', () => {
+      // Toggle point light based on checkbox state
+      togglePointLight(pointLightCheckbox.checked);
+    });
+  }
+  
+  // Set initial theme on the settings sidebar
+  const settingsSidebar = document.getElementById('settings-sidebar');
+  if (settingsSidebar) {
+    settingsSidebar.classList.add(`theme-${paletteName.toLowerCase()}`);
+  }
+  
+  // Setup settings tab click handler
+  const settingsTab = document.getElementById('settings-tab');
+  if (settingsTab) {
+    settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
+    settingsTab.addEventListener('click', () => {
+      // Show settings sidebar
+      settingsSidebar.classList.add('open');
+      // Hide settings tab
+      animateSettingsTab(settingsTab, false);
+    });
+  }
+})();
+
+// Update snake's update method to respect border kill setting
+snake.update = function() {
+  if (this.newDirection) {
+    this.direction = this.newDirection;
+    this.newDirection = null;
+  }
+  let currentNode = this.end;
+  if (this.end.data.fruit) {
+    this.end.data.fruit = null;
+    this.end.data.mesh.scale.setScalar(1);
+    this.addTailNode();
+  }
+  while (currentNode.prev) {
+    const fruit = currentNode.prev.data.fruit;
+    if (fruit) {
+      currentNode.data.fruit = fruit;
+      currentNode.data.mesh.scale.setScalar(1.15);
+      currentNode.prev.data.fruit = null;
+      currentNode.prev.data.mesh.scale.setScalar(1);
+    }
+    const position = currentNode.prev.data.mesh.position;
+    currentNode.data.mesh.position.copy(position);
+    currentNode = currentNode.prev;
+  }
+  const headPos = currentNode.data.mesh.position;
+  headPos.add(this.direction);
+  const headMesh = this.body.head.data.mesh;
+  headMesh.lookAt(headMesh.position.clone().add(this.direction));
+    // Check border crossing based on setting
+  const killOnBorderTrespass = DEFAULT_SETTINGS.killOnBorderTrespass; // Use default value instead of localStorage
+  if (killOnBorderTrespass) {
+    if (headPos.z < 0 || headPos.z > this.resolution.y - 1 || 
+        headPos.x < 0 || headPos.x > this.resolution.x - 1) {
+      this.die();
+      resetGame();
+      return;
+    }
+  } else {
+    // Original toroidal grid behavior
+    if (headPos.z < 0) {
+      headPos.z = this.resolution.y - 1;
+    } else if (headPos.z > this.resolution.y - 1) {
+      headPos.z = 0;
+    }
+    if (headPos.x < 0) {
+      headPos.x = this.resolution.x - 1;
+    } else if (headPos.x > this.resolution.x - 1) {
+      headPos.x = 0;
+    }
+  }
+  
+  this.updateIndexes();
+  this.updateSegmentScales();
+  this.dispatchEvent({ type: 'updated' });
+};
+
 applyPalette(paletteName)
 
 // --- Botão para alternar entre câmaras ---
@@ -630,11 +1008,26 @@ window.addEventListener('resize', handleResize)
 function handleResize() {
   sizes.width = window.innerWidth
   sizes.height = window.innerHeight
-
   camera.aspect = sizes.width / sizes.height
   camera.updateProjectionMatrix()
-
-  topCamera.aspect = sizes.width / sizes.height
+  // Update orthographic camera on resize
+  const aspect = sizes.width / sizes.height;
+  const halfWidth = resolution.x / 2 * 1.2; // 20% wider view (matching camera setup)
+  const halfHeight = resolution.y / 2 * 1.2; // 20% taller view (matching camera setup)
+  
+  if (aspect > 1) {
+    // Landscape: Adjust width based on aspect ratio
+    topCamera.left = -halfWidth * aspect;
+    topCamera.right = halfWidth * aspect;
+    topCamera.top = halfHeight;
+    topCamera.bottom = -halfHeight;
+  } else {
+    // Portrait: Adjust height based on aspect ratio
+    topCamera.left = -halfWidth;
+    topCamera.right = halfWidth;
+    topCamera.top = halfHeight / aspect;
+    topCamera.bottom = -halfHeight / aspect;
+  }
   topCamera.updateProjectionMatrix()
 
   renderer.setSize(sizes.width, sizes.height)
