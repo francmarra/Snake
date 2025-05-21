@@ -582,43 +582,40 @@ let gameStarted = false
 
 btnPlay.addEventListener('click', function () {
   if (!gameStarted) {
-    gameStarted = true
+    gameStarted = true;
     
     // Stop camera rotation when game starts
     cameraRotationActive = false;
     
-    // Handle audio initialization and play
+    // Handle audio initialization (unchanged)
     const playAudio = async () => {
       try {
-        // Check if user muted audio
         if (audio.volume !== 0) {
-          await audio.play()
-          // Update the icon just to be safe
-          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`
+          await audio.play();
+          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`;
         } else {
-          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
+          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`;
         }
       } catch (err) {
-        console.log('Audio could not play automatically:', err)
-        // In case of autoplay failure, we keep the mute icon
-        muteVolume()
+        console.log('Audio could not play automatically:', err);
+        muteVolume();
       }
-    }
-    // Enhanced minimap animation with smoother timing
+    };
+
     const minimapContainer = document.getElementById('minimap-container');
-    minimapContainer.style.display = 'block';
-    minimapContainer.style.opacity = '0';
-    minimapContainer.style.transform = 'scale(0.7) translateY(30px)';
+    // Create a timeline to sync camera, fog, and minimap animations
+    const tl = gsap.timeline();
+    tl.to(camera.position, { ...finalPosition, duration: 2, ease: "power2.out" }, 0)
+      .to(scene.fog, { duration: 2, near: 20, far: 55, ease: "power2.out" }, 0);
     
-    gsap.to(minimapContainer, {
+    gsap.set(minimapContainer, { display: 'block', opacity: 0, transform: 'scale(0.7) translateY(30px)' });
+    tl.to(minimapContainer, {
       opacity: 1,
       scale: 1,
       y: 0,
       duration: 1.2,
-      delay: 1.0, // Slightly earlier to feel more responsive
-      ease: "back.out(1.7)", // More natural elastic feel
+      ease: "back.out(1.7)",
       onComplete: () => {
-        // Add a subtle pulse effect after appearing
         gsap.to(minimapContainer, {
           scale: 1.05,
           duration: 0.3,
@@ -627,40 +624,34 @@ btnPlay.addEventListener('click', function () {
           ease: "sine.inOut"
         });
       }
-    });
+    }, 1);  // Start slightly later for a more responsive feel
+
+    playAudio();
     
-    playAudio()
-    
-    gsap.to(camera.position, { ...finalPosition, duration: 2 })
-    gsap.to(scene.fog, { duration: 2, near: 20, far: 55 })
-    animateButtonOut(this)
+    // Remove individual gsap.to calls and use timeline instead
+    animateButtonOut(this);
     if (btnSettings) {
-      animateButtonOut(btnSettings)
-      // Close settings sidebar if it's open
+      animateButtonOut(btnSettings);
       const settingsSidebar = document.getElementById('settings-sidebar');
       if (settingsSidebar && settingsSidebar.classList.contains('open')) {
         settingsSidebar.classList.remove('open');
       }
-    }    btnToggleCamera.style.display = 'block'
-    animateCameraButtonIn(btnToggleCamera)
+    }
+    btnToggleCamera.style.display = 'block';
+    animateCameraButtonIn(btnToggleCamera);
     
-    // Register event listener but don't start the snake movement yet
-    // The snake will start moving when the player presses a movement key
-    registerEventListener()
+    registerEventListener();
     
-    // Show settings tab after game starts with a slight delay
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab) {
       settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
       settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
-      // Add slight delay to show after camera movement starts
       setTimeout(() => animateSettingsTab(settingsTab, true), 1000);
     }
     
-    // Initialize minimap
     minimap = new Minimap(GRID_WIDTH, GRID_HEIGHT);
   }
-})
+});
 
 btnPlay.addEventListener('mouseenter', function () {
   this.style.transform = 'translate(-50%, -50%) scale(1.15)';

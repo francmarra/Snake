@@ -21,6 +21,7 @@ body {
 #btn-settings {
   opacity: 0;
   left: calc(50% + 8.5rem);
+  overflow: hidden;  /* Added to restrict clickable area to the visible clip-path */
 }
 
 #btn-settings img[alt="Settings Gear"] {
@@ -40,6 +41,7 @@ body {
 
 .btn-text {
   opacity: 0;
+  pointer-events: none;
 }
 
 #btn-play {
