@@ -897,15 +897,14 @@ const centerPoint = new THREE.Vector3(resolution.x / 2, 0, resolution.y / 2);
 let cameraRotationActive = true;
 
 // --- Ciclo principal de renderização ---
-function tic() {
-  // If game hasn't started yet, animate camera rotation
+function tic() {  // If game hasn't started yet, animate camera rotation
   if (!gameStarted && cameraRotationActive) {
     // Set initial camera position when we start rotating, if needed
     if (camera.position.equals(initialPosition)) {
       // Set a closer starting position for the rotation
       camera.position.set(
-        resolution.x / 2 + 8, // X position
-        5,                    // Y position (height)
+        resolution.x / 2 + 10, // X position
+        3,                    // Y position (height - lowered)
         resolution.y / 2      // Z position
       );
     }
