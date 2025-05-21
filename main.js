@@ -28,6 +28,7 @@ import {
   CAMERA_FAR
 } from './config/StaticData.js'
 import { animateButtonIn, animateButtonOut, animateCameraButtonIn, animateSettingsTab } from './src/Animations.js';
+import Minimap from './src/Minimap.js';
 
 // Carrega a fonte para o texto da pontuação
 const loader = new FontLoader()
@@ -90,11 +91,22 @@ function applyPalette(name) {
     `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Camera.svg`
   document.getElementById('btn-volume-img').src =
     `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Audio.svg`
-
   const vol = localStorage.getItem('volume')
   if (vol === 'off' || audio.volume === 0) {
     document.getElementById('btn-volume-img').src =
       `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}NoAudio.svg`
+  }
+  
+  // Update minimap theme and colors
+  const minimapContainer = document.getElementById('minimap-container')
+  if (minimapContainer) {
+    minimapContainer.classList.remove('theme-green', 'theme-orange', 'theme-lilac')
+    minimapContainer.classList.add(`theme-${name.toLowerCase()}`)
+  }
+  
+  // Update minimap with new palette colors if it exists
+  if (minimap && gameStarted) {
+    minimap.update(snake, candies, bombs, selectedPalette)
   }
 }
 
@@ -169,6 +181,9 @@ controls.target.set(
   0,
   resolution.y / 2 + 2
 )
+
+// Initialize the minimap
+let minimap = null;
 
 const planeGeometry = new THREE.PlaneGeometry(
   resolution.x * 50,
@@ -566,6 +581,31 @@ btnPlay.addEventListener('click', function () {
         muteVolume()
       }
     }
+    // Enhanced minimap animation with smoother timing
+    const minimapContainer = document.getElementById('minimap-container');
+    minimapContainer.style.display = 'block';
+    minimapContainer.style.opacity = '0';
+    minimapContainer.style.transform = 'scale(0.7) translateY(30px)';
+    
+    gsap.to(minimapContainer, {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      duration: 1.2,
+      delay: 1.0, // Slightly earlier to feel more responsive
+      ease: "back.out(1.7)", // More natural elastic feel
+      onComplete: () => {
+        // Add a subtle pulse effect after appearing
+        gsap.to(minimapContainer, {
+          scale: 1.05,
+          duration: 0.3,
+          repeat: 1,
+          yoyo: true,
+          ease: "sine.inOut"
+        });
+      }
+    });
+    
     playAudio()
     
     gsap.to(camera.position, { ...finalPosition, duration: 2 })
@@ -593,6 +633,9 @@ btnPlay.addEventListener('click', function () {
       // Add slight delay to show after camera movement starts
       setTimeout(() => animateSettingsTab(settingsTab, true), 1000);
     }
+    
+    // Initialize minimap
+    minimap = new Minimap(GRID_WIDTH, GRID_HEIGHT);
   }
 })
 
@@ -899,6 +942,19 @@ btnSettings.addEventListener('click', function () {
     });
   }
   
+  // Handle minimap toggle
+  const minimapCheckbox = document.getElementById('show-minimap');
+  const minimapContainer = document.getElementById('minimap-container');
+  if (minimapCheckbox && minimapContainer) {
+    // Set initial state (default is visible)
+    minimapCheckbox.checked = true;
+    
+    minimapCheckbox.addEventListener('change', () => {
+      // Toggle minimap visibility based on checkbox state
+      minimapContainer.style.display = minimapCheckbox.checked ? 'block' : 'none';
+    });
+  }
+  
   // Set initial theme on the settings sidebar
   const settingsSidebar = document.getElementById('settings-sidebar');
   if (settingsSidebar) {
@@ -998,6 +1054,12 @@ btnToggleCamera.addEventListener('click', () => {
 function tic() {
   controls.update()
   renderer.render(scene, activeCamera)
+  
+  // Update minimap if the game has started and minimap is initialized
+  if (gameStarted && minimap) {
+    minimap.update(snake, candies, bombs, selectedPalette)
+  }
+  
   requestAnimationFrame(tic)
 }
 
