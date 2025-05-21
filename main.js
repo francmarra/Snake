@@ -143,10 +143,11 @@ const initialPosition = new THREE.Vector3(
   resolution.y / 2 + 4
 )
 const finalPosition = new THREE.Vector3(
-  -8 + resolution.x / 2,
-  resolution.x / 2 + 4,
-  resolution.y + 6
+  (resolution.x / 2) - 8, // ajustar à direita
+  (resolution.x / 2) + 4, // altura da câmara
+  resolution.y + 9 // ajustar para a esquerda
 )
+
 const { camera, topCamera } = initCameras(resolution, sizes, initialPosition, finalPosition)
 let activeCamera = camera
 

@@ -296,4 +296,11 @@ class SnakeNode extends Entity {
 		const mesh = new Mesh(NODE_GEOMETRY, NODE_MATERIAL)
 		super(mesh, resolution)
 	}
+	// round the snake‐segment coords to nearest grid cell
+	getIndexByCoord() {
+		const p = this.mesh.position
+		const x = Math.round(p.x)
+		const z = Math.round(p.z)
+		return x + z * this.resolution.x
+	}
 }
