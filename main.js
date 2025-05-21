@@ -350,15 +350,30 @@ function startGame() {
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab && settingsTab.style.display !== 'none') {
       animateSettingsTab(settingsTab, false);
-    }    // Get speed setting from defaults
-    const speedValue = DEFAULT_SETTINGS.snakeSpeed / 28;
-    const moveInterval = 300 - (speedValue * 16); // Same scale as the speed setting
-    
+    }    // Use the current slider value to determine moveInterval for snake speed
+    const sliderVal = parseInt(document.getElementById('speed-range').value);
+    const moveInterval = 300 - (sliderVal * 16);
     isRunning = setInterval(() => {
-      snake.update()
-    }, moveInterval)
+      snake.update();
+    }, moveInterval);
   }
 }
+
+// New event listener for dynamic speed changes
+document.getElementById('speed-range').addEventListener('input', function() {
+  const sliderVal = parseInt(this.value);
+  document.getElementById('speed-value').textContent = sliderVal;
+  // Update the default setting in case other components rely on it
+  DEFAULT_SETTINGS.snakeSpeed = sliderVal;
+  // If the game is already running, restart the move interval with the new speed
+  if (isRunning) {
+    clearInterval(isRunning);
+    const newInterval = 300 - (sliderVal * 16);
+    isRunning = setInterval(() => {
+      snake.update();
+    }, newInterval);
+  }
+});
 
 function stopGame() {
   clearInterval(isRunning)
