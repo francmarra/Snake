@@ -1,4 +1,4 @@
-// Minimap implementation for Snake 3D game
+// Implementação do minimapa para o jogo Snake 3D
 export default class Minimap {
   constructor(gridWidth, gridHeight) {
     this.canvas = document.getElementById('minimap');
@@ -6,23 +6,23 @@ export default class Minimap {
     this.gridWidth = gridWidth;
     this.gridHeight = gridHeight;
     
-    // Adjust cell size calculation for the larger canvas
+    // Ajusta o cálculo do tamanho da célula para o canvas maior
     this.cellSize = Math.min(
       this.canvas.width / this.gridWidth,
       this.canvas.height / this.gridHeight
     );
     
-    // Center the grid in the canvas
+    // Centra a grelha no canvas
     this.offsetX = (this.canvas.width - this.cellSize * this.gridWidth) / 2;
     this.offsetY = (this.canvas.height - this.cellSize * this.gridHeight) / 2;
     
-    // Initialize the minimap with improved styling
+    // Inicializa o minimapa com estilo melhorado
     this.clear();
     this.drawGrid();
   }
-  // Clear the minimap
+  // Limpa o minimapa
   clear() {
-    // Create a gradient background
+    // Cria um fundo em gradiente
     const gradient = this.ctx.createRadialGradient(
       this.canvas.width / 2,
       this.canvas.height / 2,
@@ -39,12 +39,12 @@ export default class Minimap {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
-  // Draw the grid lines
+  // Desenha as linhas da grelha
   drawGrid() {
     this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
     this.ctx.lineWidth = 0.7;
 
-    // Draw vertical grid lines
+    // Desenha linhas verticais
     for (let x = 0; x <= this.gridWidth; x++) {
       const xPos = this.offsetX + x * this.cellSize;
       this.ctx.beginPath();
@@ -53,7 +53,7 @@ export default class Minimap {
       this.ctx.stroke();
     }
 
-    // Draw horizontal grid lines
+    // Desenha linhas horizontais
     for (let y = 0; y <= this.gridHeight; y++) {
       const yPos = this.offsetY + y * this.cellSize;
       this.ctx.beginPath();
@@ -62,26 +62,26 @@ export default class Minimap {
       this.ctx.stroke();
     }
   }
-  // Draw the snake on the minimap
+  // Desenha a cobra no minimapa
   drawSnake(snake, color) {
-    // Draw each segment of the snake
+    // Desenha cada segmento da cobra
     let current = snake.body.head;
     let isHead = true;
     let segmentCount = 0;
     
     while (current) {
       const position = current.data.mesh.position;
-      // Use exact position coordinates without flooring to maintain accuracy
+      // Usa coordenadas exatas sem arredondar para manter precisão
       const x = position.x;
       const z = position.z;
       
-      // Calculate pixel position on minimap
+      // Calcula a posição em pixels no minimapa
       const pixelX = this.offsetX + x * this.cellSize + this.cellSize / 2;
       const pixelY = this.offsetY + z * this.cellSize + this.cellSize / 2;
       
-      // Draw the snake segment
+      // Desenha o segmento da cobra
       if (isHead) {
-        // Draw head with a different style
+        // Desenha a cabeça com estilo diferente
         this.ctx.fillStyle = '#FFFFFF';
         this.ctx.strokeStyle = color;
         this.ctx.lineWidth = 2;
@@ -97,12 +97,12 @@ export default class Minimap {
         this.ctx.fill();
         this.ctx.stroke();
       } else {
-        // Draw body segments with a pulsating effect based on segment position
+        // Desenha segmentos do corpo com efeito pulsante baseado na posição
         const alpha = 0.7 + 0.3 * Math.sin(segmentCount * 0.2 + Date.now() * 0.003);
         this.ctx.fillStyle = color;
         this.ctx.globalAlpha = alpha;
         
-        // Draw each segment as a square centered on the exact position
+        // Desenha cada segmento como quadrado centrado na posição exata
         const halfCell = this.cellSize / 2 - 1;
         this.ctx.fillRect(
           pixelX - halfCell, 
@@ -120,23 +120,23 @@ export default class Minimap {
     }
   }
   
-  // Draw fruits on the minimap
+  // Desenha frutas no minimapa
   drawFruits(fruits, color) {
     fruits.forEach(fruit => {
       const position = fruit.mesh.position;
-      // Use exact position coordinates without flooring
+      // Usa coordenadas exatas sem arredondar
       const x = position.x;
       const z = position.z;
       
-      // Calculate pixel position
+      // Calcula a posição em pixels
       const pixelX = this.offsetX + x * this.cellSize + this.cellSize / 2;
       const pixelY = this.offsetY + z * this.cellSize + this.cellSize / 2;
       
-      // Draw the fruit as a circle with a pulsating effect
+      // Desenha a fruta como círculo com efeito pulsante
       const pulseFactor = 0.8 + 0.2 * Math.sin(Date.now() * 0.005);
       const radius = (this.cellSize / 2 - 1) * pulseFactor;
       
-      // Draw glow effect
+      // Desenha efeito de brilho
       const gradient = this.ctx.createRadialGradient(
         pixelX,
         pixelY,
@@ -160,7 +160,7 @@ export default class Minimap {
       );
       this.ctx.fill();
       
-      // Draw fruit
+      // Desenha a fruta
       this.ctx.fillStyle = color;
       this.ctx.beginPath();
       this.ctx.arc(
@@ -174,23 +174,23 @@ export default class Minimap {
     });
   }
   
-  // Draw bombs on the minimap
+  // Desenha bombas no minimapa
   drawBombs(bombs) {
     bombs.forEach(bomb => {
       const position = bomb.mesh.position;
-      // Use exact position coordinates without flooring
+      // Usa coordenadas exatas sem arredondar
       const x = position.x;
       const z = position.z;
       
-      // Calculate pixel position
+      // Calcula a posição em pixels
       const pixelX = this.offsetX + x * this.cellSize + this.cellSize / 2;
       const pixelY = this.offsetY + z * this.cellSize + this.cellSize / 2;
       
-      // Draw the bomb with a pulsing danger effect
+      // Desenha a bomba com efeito de perigo pulsante
       const pulseIntensity = 0.5 + 0.5 * Math.sin(Date.now() * 0.008);
       const bombColor = `rgba(255, ${Math.floor(50 * pulseIntensity)}, 0, 1)`;
       
-      // Draw bomb circle
+      // Desenha círculo da bomba
       this.ctx.fillStyle = bombColor;
       this.ctx.beginPath();
       this.ctx.arc(
@@ -202,11 +202,11 @@ export default class Minimap {
       );
       this.ctx.fill();
       
-      // Draw danger cross
+      // Desenha cruz de perigo
       this.ctx.strokeStyle = '#FFFFFF';
       this.ctx.lineWidth = 2;
       
-      // Draw X
+      // Desenha X
       this.ctx.beginPath();
       this.ctx.moveTo(
         pixelX - this.cellSize / 3,
@@ -227,16 +227,16 @@ export default class Minimap {
       this.ctx.stroke();
     });
   }
-  // Update the minimap
+  // Atualiza o minimapa
   update(snake, fruits, bombs, palette) {
     this.clear();
     this.drawGrid();
     
-    // Get colors from the palette and convert to hex string
+    // Obtém cores da paleta e converte para string hexadecimal
     const snakeColorHex = `#${palette.snakeColor.toString(16).padStart(6, '0')}`;
     const fruitColorHex = `#${palette.fruitColor.toString(16).padStart(6, '0')}`;
     
-    // Draw entities
+    // Desenha entidades
     this.drawFruits(fruits, fruitColorHex);
     this.drawBombs(bombs);
     this.drawSnake(snake, snakeColorHex);

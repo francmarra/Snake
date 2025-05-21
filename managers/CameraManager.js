@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { CAMERA_FOV, CAMERA_NEAR, CAMERA_FAR } from '../config/StaticData.js'
 
 export function initCameras(resolution, sizes, initialPosition, finalPosition) {
+  // Inicializa as câmaras principal e ortográfica
   const camera = new THREE.PerspectiveCamera(CAMERA_FOV, sizes.width / sizes.height, CAMERA_NEAR, CAMERA_FAR)
   camera.position.copy(initialPosition)
 
@@ -15,6 +16,7 @@ export function initCameras(resolution, sizes, initialPosition, finalPosition) {
 }
 
 export function updateCamerasOnResize(cameras, sizes, resolution) {
+  // Atualiza as câmaras ao redimensionar a janela
   const { camera, topCamera } = cameras
   camera.aspect = sizes.width / sizes.height
   camera.updateProjectionMatrix()
