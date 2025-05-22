@@ -233,17 +233,17 @@ export const MUSHROOM_DATA = [
 	// Forest floor mushrooms
 	[-4, 0, 6, 0.8, 0x8B4513, 0xF5DEB3],
 	[-9, 0, 14, 1.1, 0xDC143C, 0xFFFFE0],
-	[-1, 0, 16, 0.9, 0x8B4513, 0xF5DEB3],
+	[-2, 0, 16, 0.9, 0x8B4513, 0xF5DEB3],
 	[7, 0, -10, 1.0, 0xFF4500, 0xF5DEB3],
 	[11, 0, -6, 0.7, 0x8B4513, 0xFFFFE0],
 	[16, 0, 7, 1.2, 0xDC143C, 0xF5DEB3],
-	[20, 0, 14, 0.8, 0x8B4513, 0xF5DEB3],
-	[8, 0, 20, 1.0, 0xFF4500, 0xFFFFE0],
+	[15, 0, 14, 0.8, 0x8B4513, 0xF5DEB3], // Moved from [21,0,14] - was beyond right boundary
+	[8, 0, 24, 1.0, 0xFF4500, 0xFFFFE0],
 	[3, 0, 25, 0.9, 0xDC143C, 0xF5DEB3],
 	[-7, 0, -12, 1.1, 0x8B4513, 0xF5DEB3],
 	[24, 0, -8, 0.8, 0xFF4500, 0xFFFFE0],
-	[29, 0, 3, 1.0, 0xDC143C, 0xF5DEB3],
-	[33, 0, 18, 0.9, 0x8B4513, 0xF5DEB3],
+	[18, 0, 3, 1.0, 0xDC143C, 0xF5DEB3], // Moved from [29,0,3] - was beyond right boundary
+	[17, 0, 18, 0.9, 0x8B4513, 0xF5DEB3], // Moved from [33,0,18] - was beyond right boundary
 	[-14, 0, 20, 1.2, 0xFF4500, 0xF5DEB3],
-	[35, 0, -5, 0.7, 0xDC143C, 0xFFFFE0],
+	[14, 0, 2, 0.7, 0xDC143C, 0xFFFFE0], // Moved from [35,0,-5] - was beyond both boundaries
 ]
