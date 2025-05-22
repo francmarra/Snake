@@ -11,6 +11,7 @@ export default class Fence {
   createFence() {
     // Create fence post geometry
     const postGeometry = new THREE.BoxGeometry(0.1, 1.2, 0.1)
+    const cornerPostGeometry = new THREE.BoxGeometry(0.15, 1.3, 0.15) // Slightly larger corner posts
     const railGeometry = new THREE.BoxGeometry(0.8, 0.08, 0.08)
     const material = new THREE.MeshStandardMaterial({ color: this.color })
     
@@ -24,7 +25,7 @@ export default class Fence {
     
     // Bottom edge (z = resolution.y)
     for (let x = -1; x <= this.resolution.x; x++) {
-      positions.push({ x, z: this.resolution.y, rotation: 0 })
+      positions.push({ x, z: this.resolution.y, rotation: Math.PI })
     }
     
     // Left edge (x = -1)
@@ -35,9 +36,20 @@ export default class Fence {
     // Right edge (x = resolution.x)
     for (let z = 0; z < this.resolution.y; z++) {
       positions.push({ x: this.resolution.x, z, rotation: Math.PI / 2 })
-    }
+    }    // Add corner pieces positions with specific rotations
+    const corners = [
+      { x: -1, z: -1, isCorner: true, rotation: 0 },         // Top-left corner
+      { x: this.resolution.x, z: -1, isCorner: true, rotation: -Math.PI / 2 },   // Top-right corner
+      { x: -1, z: this.resolution.y, isCorner: true, rotation: Math.PI / 2 },   // Bottom-left corner
+      { x: this.resolution.x, z: this.resolution.y, isCorner: true, rotation: Math.PI } // Bottom-right corner
+    ]
     
     positions.forEach(pos => {
+      // Skip positions where corners will be placed
+      if (corners.some(corner => corner.x === pos.x && corner.z === pos.z)) {
+        return
+      }
+      
       const fenceSection = new THREE.Group()
       
       // Create post
@@ -68,6 +80,59 @@ export default class Fence {
       
       this.fencePosts.push(fenceSection)
     })
+      // Add corner posts with rotation
+    corners.forEach(corner => {
+      this.createCornerPost(corner.x, corner.z, corner.rotation, cornerPostGeometry, railGeometry, material)
+    })
+  }
+    createCornerPost(x, z, rotation, cornerPostGeometry, railGeometry, material) {
+    const cornerGroup = new THREE.Group()
+    
+    // Create corner post
+    const cornerPost = new THREE.Mesh(cornerPostGeometry.clone(), material.clone())
+    cornerPost.position.y = 0.65 // Slightly taller
+    cornerGroup.add(cornerPost)
+    
+    // Add two sets of rails at right angles
+    // First set of rails (along X axis)
+    const railX1 = new THREE.Mesh(railGeometry.clone(), material.clone())
+    const railX2 = new THREE.Mesh(railGeometry.clone(), material.clone())
+    
+    railX1.position.y = 0.4
+    railX2.position.y = 0.8
+    
+    // Position the rails correctly relative to the corner
+    railX1.position.x = 0.4 
+    railX2.position.x = 0.4
+    
+    // Second set of rails (along Z axis)
+    const railZ1 = new THREE.Mesh(railGeometry.clone(), material.clone())
+    const railZ2 = new THREE.Mesh(railGeometry.clone(), material.clone())
+    
+    railZ1.position.y = 0.4
+    railZ2.position.y = 0.8
+    railZ1.position.z = 0.4
+    railZ2.position.z = 0.4
+    
+    // Rotate the Z rails
+    railZ1.rotation.y = Math.PI / 2
+    railZ2.rotation.y = Math.PI / 2
+    
+    cornerGroup.add(railX1, railX2, railZ1, railZ2)
+    
+    // Position the corner and apply rotation
+    cornerGroup.position.set(x, 0, z)
+    cornerGroup.rotation.y = rotation
+    
+    // Enable shadows
+    cornerGroup.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true
+        child.receiveShadow = true
+      }
+    })
+    
+    this.fencePosts.push(cornerGroup)
   }
   
   addToScene(scene) {
