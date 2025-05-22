@@ -7,12 +7,11 @@ export default class Fence {
     this.fencePosts = []
     this.createFence()
   }
-  
-  createFence() {
+    createFence() {
     // Create fence post geometry
     const postGeometry = new THREE.BoxGeometry(0.1, 1.2, 0.1)
     const cornerPostGeometry = new THREE.BoxGeometry(0.15, 1.3, 0.15) // Slightly larger corner posts
-    const railGeometry = new THREE.BoxGeometry(0.8, 0.08, 0.08)
+    const railGeometry = new THREE.BoxGeometry(1.0, 0.08, 0.08) // Increased length for better connection
     const material = new THREE.MeshStandardMaterial({ color: this.color })
     
     // Create fence around the perimeter
@@ -32,11 +31,12 @@ export default class Fence {
     for (let z = 0; z < this.resolution.y; z++) {
       positions.push({ x: -1, z, rotation: Math.PI / 2 })
     }
-    
-    // Right edge (x = resolution.x)
+      // Right edge (x = resolution.x)
     for (let z = 0; z < this.resolution.y; z++) {
       positions.push({ x: this.resolution.x, z, rotation: Math.PI / 2 })
-    }    // Add corner pieces positions with specific rotations
+    }
+    
+    // Add corner pieces positions with specific rotations
     const corners = [
       { x: -1, z: -1, isCorner: true, rotation: 0 },         // Top-left corner
       { x: this.resolution.x, z: -1, isCorner: true, rotation: -Math.PI / 2 },   // Top-right corner
@@ -56,13 +56,17 @@ export default class Fence {
       const post = new THREE.Mesh(postGeometry.clone(), material.clone())
       post.position.y = 0.6
       fenceSection.add(post)
-      
-      // Create rails
+        // Create rails
       const rail1 = new THREE.Mesh(railGeometry.clone(), material.clone())
       const rail2 = new THREE.Mesh(railGeometry.clone(), material.clone())
       
       rail1.position.y = 0.4
       rail2.position.y = 0.8
+      
+      // Push the rails slightly forward to better connect between posts
+      // (rails are 1.0 units long, position at 0.5 centers them in the post)
+      rail1.position.z = 0.05
+      rail2.position.z = 0.05
       
       fenceSection.add(rail1, rail2)
       
@@ -85,15 +89,16 @@ export default class Fence {
       this.createCornerPost(corner.x, corner.z, corner.rotation, cornerPostGeometry, railGeometry, material)
     })
   }
-    createCornerPost(x, z, rotation, cornerPostGeometry, railGeometry, material) {
+  createCornerPost(x, z, rotation, cornerPostGeometry, railGeometry, material) {
     const cornerGroup = new THREE.Group()
     
     // Create corner post
     const cornerPost = new THREE.Mesh(cornerPostGeometry.clone(), material.clone())
     cornerPost.position.y = 0.65 // Slightly taller
+    cornerPost.castShadow = true
+    cornerPost.receiveShadow = true
     cornerGroup.add(cornerPost)
-    
-    // Add two sets of rails at right angles
+      // Add two sets of rails at right angles
     // First set of rails (along X axis)
     const railX1 = new THREE.Mesh(railGeometry.clone(), material.clone())
     const railX2 = new THREE.Mesh(railGeometry.clone(), material.clone())
@@ -102,8 +107,11 @@ export default class Fence {
     railX2.position.y = 0.8
     
     // Position the rails correctly relative to the corner
-    railX1.position.x = 0.4 
-    railX2.position.x = 0.4
+    // Using half rail length (0.5) for better positioning
+    railX1.position.x = 0.5 
+    railX2.position.x = 0.5
+    railX1.position.z = 0.05
+    railX2.position.z = 0.05
     
     // Second set of rails (along Z axis)
     const railZ1 = new THREE.Mesh(railGeometry.clone(), material.clone())
@@ -111,8 +119,10 @@ export default class Fence {
     
     railZ1.position.y = 0.4
     railZ2.position.y = 0.8
-    railZ1.position.z = 0.4
-    railZ2.position.z = 0.4
+    railZ1.position.z = 0.5
+    railZ2.position.z = 0.5
+    railZ1.position.x = 0.05
+    railZ2.position.x = 0.05
     
     // Rotate the Z rails
     railZ1.rotation.y = Math.PI / 2
