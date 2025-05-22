@@ -643,8 +643,8 @@ MUSHROOM_DATA.forEach(([x, y, z, scale, capColor, stemColor]) => {
   scene.add(mushroom.mesh)
 })
 
-// Add fence around the perimeter
-const fence = new Fence(resolution, selectedPalette.rockColor)
+// Add fence around the perimeter - always light brown regardless of theme
+const fence = new Fence(resolution) // Use default light brown colors defined in the Fence class
 fence.addToScene(scene)
 
 // --------- Audio and Control Buttons Setup ---------

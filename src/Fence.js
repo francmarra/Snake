@@ -1,18 +1,21 @@
 import * as THREE from 'three'
 
 export default class Fence {
-  constructor(resolution, color = 0x8B4513) {
+  constructor(resolution, color = 0xA67C52, railColor = 0x8B4513) {
     this.resolution = resolution
-    this.color = color
+    this.postColor = 0x7f5539 // Light brown for posts regardless of theme
+    this.railColor = 0x9c6644 // Darker brown for rails regardless of theme
     this.fencePosts = []
     this.createFence()
   }
-    createFence() {
-    // Create fence post geometry
+    createFence() {    // Create fence post geometry
     const postGeometry = new THREE.BoxGeometry(0.1, 1.2, 0.1)
     const cornerPostGeometry = new THREE.BoxGeometry(0.15, 1.3, 0.15) // Slightly larger corner posts
     const railGeometry = new THREE.BoxGeometry(1.0, 0.08, 0.08) // Increased length for better connection
-    const material = new THREE.MeshStandardMaterial({ color: this.color })
+    
+    // Create materials for posts and rails - can now be different colors
+    const postMaterial = new THREE.MeshStandardMaterial({ color: this.postColor })
+    const railMaterial = new THREE.MeshStandardMaterial({ color: this.railColor })
     
     // Create fence around the perimeter
     const positions = []
@@ -51,14 +54,13 @@ export default class Fence {
       }
       
       const fenceSection = new THREE.Group()
-      
-      // Create post
-      const post = new THREE.Mesh(postGeometry.clone(), material.clone())
+        // Create post
+      const post = new THREE.Mesh(postGeometry.clone(), postMaterial.clone())
       post.position.y = 0.6
       fenceSection.add(post)
         // Create rails
-      const rail1 = new THREE.Mesh(railGeometry.clone(), material.clone())
-      const rail2 = new THREE.Mesh(railGeometry.clone(), material.clone())
+      const rail1 = new THREE.Mesh(railGeometry.clone(), railMaterial.clone())
+      const rail2 = new THREE.Mesh(railGeometry.clone(), railMaterial.clone())
       
       rail1.position.y = 0.4
       rail2.position.y = 0.8
@@ -83,25 +85,23 @@ export default class Fence {
       })
       
       this.fencePosts.push(fenceSection)
-    })
-      // Add corner posts with rotation
+    })    // Add corner posts with rotation
     corners.forEach(corner => {
-      this.createCornerPost(corner.x, corner.z, corner.rotation, cornerPostGeometry, railGeometry, material)
+      this.createCornerPost(corner.x, corner.z, corner.rotation, cornerPostGeometry, railGeometry, postMaterial, railMaterial)
     })
-  }
-  createCornerPost(x, z, rotation, cornerPostGeometry, railGeometry, material) {
+  }  createCornerPost(x, z, rotation, cornerPostGeometry, railGeometry, postMaterial, railMaterial) {
     const cornerGroup = new THREE.Group()
     
     // Create corner post
-    const cornerPost = new THREE.Mesh(cornerPostGeometry.clone(), material.clone())
+    const cornerPost = new THREE.Mesh(cornerPostGeometry.clone(), postMaterial.clone())
     cornerPost.position.y = 0.65 // Slightly taller
     cornerPost.castShadow = true
     cornerPost.receiveShadow = true
     cornerGroup.add(cornerPost)
       // Add two sets of rails at right angles
     // First set of rails (along X axis)
-    const railX1 = new THREE.Mesh(railGeometry.clone(), material.clone())
-    const railX2 = new THREE.Mesh(railGeometry.clone(), material.clone())
+    const railX1 = new THREE.Mesh(railGeometry.clone(), railMaterial.clone())
+    const railX2 = new THREE.Mesh(railGeometry.clone(), railMaterial.clone())
     
     railX1.position.y = 0.4
     railX2.position.y = 0.8
@@ -112,10 +112,9 @@ export default class Fence {
     railX2.position.x = 0.5
     railX1.position.z = 0.05
     railX2.position.z = 0.05
-    
-    // Second set of rails (along Z axis)
-    const railZ1 = new THREE.Mesh(railGeometry.clone(), material.clone())
-    const railZ2 = new THREE.Mesh(railGeometry.clone(), material.clone())
+      // Second set of rails (along Z axis)
+    const railZ1 = new THREE.Mesh(railGeometry.clone(), railMaterial.clone())
+    const railZ2 = new THREE.Mesh(railGeometry.clone(), railMaterial.clone())
     
     railZ1.position.y = 0.4
     railZ2.position.y = 0.8
