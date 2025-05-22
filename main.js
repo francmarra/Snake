@@ -7,6 +7,9 @@ import Snake from './src/Snake'
 import Fruit from './src/Fruit'
 import Rock from './src/Rock'
 import Tree from './src/Tree'
+import Flower from './src/Flower'
+import Mushroom from './src/Mushroom'
+import Fence from './src/Fence'
 import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from './src/Lights'
 import gsap from 'gsap'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
@@ -21,6 +24,8 @@ import {
   COLOR_PALETTES,
   TREE_DATA,
   ROCK_DATA,
+  FLOWER_DATA,
+  MUSHROOM_DATA,
   CAMERA_FOV,
   CAMERA_NEAR,
   CAMERA_FAR
@@ -85,6 +90,20 @@ function applyPalette(name) {
   entities.filter((e) => e instanceof Tree).forEach((tree) => {
     tree.foliage.material.color.set(treeColor)
   })
+  // Update flower colors to match palette
+  entities.filter((e) => e instanceof Flower).forEach((flower) => {
+    const bloom = flower.mesh.children.find(child => child.material && child.material.color.getHex() !== 0x228B22)
+    if (bloom) {
+      bloom.material.color.set(fruitColor)
+      // Update petals as well
+      flower.mesh.children.forEach(child => {
+        if (child.material && child.material.color.getHex() !== 0x228B22 && child !== bloom) {
+          child.material.color.set(fruitColor)
+        }
+      })
+    }
+  })
+  
   candies[0].mesh.material.color.set(fruitColor)
   snake.body.head.data.mesh.material.color.set(snakeColor)
   snake.mouth.material.color.set(mouthColor)
@@ -529,10 +548,18 @@ function getFreeIndex() {
 }
 
 function addEntity() {
-  const entity =
-    Math.random() > 0.5
-      ? new Rock(resolution, selectedPalette.rockColor)
-      : new Tree(resolution, selectedPalette.treeColor)
+  const entityType = Math.random()
+  let entity
+  
+  if (entityType < 0.4) {
+    entity = new Rock(resolution, selectedPalette.rockColor)
+  } else if (entityType < 0.7) {
+    entity = new Tree(resolution, selectedPalette.treeColor)
+  } else if (entityType < 0.85) {
+    entity = new Flower(resolution, selectedPalette.fruitColor)
+  } else {
+    entity = new Mushroom(resolution)
+  }
 
   let index = getFreeIndex()
 
@@ -581,6 +608,7 @@ generateEntities()
 
 scene.add(...lights)
 
+// Add static trees
 const tree = new Tree(resolution)
 TREE_DATA.forEach(([x, y, z, w]) => {
   let clone = tree.mesh.clone()
@@ -589,6 +617,7 @@ TREE_DATA.forEach(([x, y, z, w]) => {
   scene.add(clone)
 })
 
+// Add static rocks
 const rock = new Rock(resolution)
 ROCK_DATA.forEach(([posArr, scaleArr]) => {
   let clone = new Rock(resolution).mesh
@@ -597,6 +626,26 @@ ROCK_DATA.forEach(([posArr, scaleArr]) => {
   clone.rotation.y = scaleArr[3]
   scene.add(clone)
 })
+
+// Add static flowers
+FLOWER_DATA.forEach(([x, y, z, scale, color]) => {
+  const flower = new Flower(resolution, color || selectedPalette.fruitColor)
+  flower.mesh.position.set(x, y, z)
+  flower.mesh.scale.setScalar(scale)
+  scene.add(flower.mesh)
+})
+
+// Add static mushrooms
+MUSHROOM_DATA.forEach(([x, y, z, scale, capColor, stemColor]) => {
+  const mushroom = new Mushroom(resolution, capColor, stemColor)
+  mushroom.mesh.position.set(x, y, z)
+  mushroom.mesh.scale.setScalar(scale)
+  scene.add(mushroom.mesh)
+})
+
+// Add fence around the perimeter
+const fence = new Fence(resolution, selectedPalette.rockColor)
+fence.addToScene(scene)
 
 // --------- Audio and Control Buttons Setup ---------
 // --- Áudio e controlos de volume ---
