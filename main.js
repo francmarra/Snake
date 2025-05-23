@@ -79,12 +79,11 @@ function applyPalette(name) {
     flowerPetalColor,
     flowerCenterColor,
     mushroomCapColor,
-    mushroomSpotColor
-  } = palette
-
+    mushroomSpotColor  } = palette
+  
   planeMaterial.color.set(groundColor)
-  scene.fog.color.set(fogColor)
-  scene.background.set(fogColor)
+  // Maintain fog color consistent with skybox instead of theme colors
+  // This ensures the skybox and fog blend seamlessly
 
   // Atualiza cor de rochas
   entities.filter((e) => e instanceof Rock).forEach((rock) => {
@@ -184,8 +183,39 @@ gridHelper.material.transparent = true
 gridHelper.material.opacity = 0.3
 
 const scene = new THREE.Scene()
-scene.background = new THREE.Color(params.fogColor)
-scene.fog = new THREE.Fog(params.fogColor, 5, 40)
+
+// --------- Enhanced Skybox Setup with Horizon Alignment ---------
+const skyTextureLoader = new THREE.TextureLoader()
+const skyTexture = skyTextureLoader.load('./clear_midday_4k.png')
+
+// Better mapping for horizon alignment
+skyTexture.mapping = THREE.EquirectangularReflectionMapping
+skyTexture.wrapS = THREE.RepeatWrapping
+skyTexture.wrapT = THREE.ClampToEdgeWrapping
+
+// Create a skybox sphere for better control over horizon alignment
+const skyGeometry = new THREE.SphereGeometry(500, 60, 40)
+const skyMaterial = new THREE.MeshBasicMaterial({
+  map: skyTexture,
+  side: THREE.BackSide,
+  fog: false
+})
+
+const skyBox = new THREE.Mesh(skyGeometry, skyMaterial)
+
+// Position the skybox to align horizon with your ground plane
+skyBox.position.set(resolution.x / 2 - 0.5, -50, resolution.y / 2 - 0.5) // Lowered Y position
+skyBox.rotation.y = Math.PI // Rotate if needed to align horizon
+
+scene.add(skyBox)
+
+// --------- Improved Fog Settings for Better Sky Integration ---------
+// Adjust fog to work better with the skybox
+scene.fog = new THREE.Fog(
+  new THREE.Color(0x87CEEB), // Sky blue color that matches your skybox
+  25, // Start distance - increased to let skybox show through
+  80  // End distance - increased for smoother transition
+)
 scene.add(gridHelper)
 
 const sizes = {
@@ -193,14 +223,15 @@ const sizes = {
   height: window.innerHeight,
 }
 
+// --------- Camera Positioning Adjustments ---------
 const initialPosition = new THREE.Vector3(
   resolution.x / 2 + 5,
-  4,
+  3, // Lowered from 4 to bring horizon closer to natural eye level
   resolution.y / 2 + 4
 )
 const finalPosition = new THREE.Vector3(
   (resolution.x / 2) - 8, // ajustar à direita
-  (resolution.x / 2) + 4, // altura da câmara
+  (resolution.x / 2) + 3, // Lowered camera height slightly
   resolution.y + 9 // ajustar para a esquerda
 )
 
@@ -772,11 +803,10 @@ btnPlay.addEventListener('click', function () {
     } else {
       minimapContainer.style.display = 'none';
     }
-    
-    playAudio()
+      playAudio()
     
     gsap.to(camera.position, { ...finalPosition, duration: 2 })
-    gsap.to(scene.fog, { duration: 2, near: 20, far: 55 })
+    gsap.to(scene.fog, { duration: 2, near: 30, far: 80 })
     animateButtonOut(this)
     if (btnSettings) {
       animateButtonOut(btnSettings)
