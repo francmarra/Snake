@@ -2,7 +2,7 @@ import Entity from './Entity'
 import * as THREE from 'three'
 
 export default class Mushroom extends Entity {
-  constructor(resolution, capColor = 0x8B4513, stemColor = 0xF5DEB3) {
+  constructor(resolution, capColor = 0x8B4513, stemColor = 0xF5DEB3, spotColor = 0xFFFFFF) {
     // Create mushroom geometry
     const stemGeometry = new THREE.CylinderGeometry(0.12, 0.15, 0.6, 8)
     const capGeometry = new THREE.SphereGeometry(0.4, 12, 8)
@@ -19,19 +19,18 @@ export default class Mushroom extends Entity {
     const cap = new THREE.Mesh(capGeometry, capMaterial)
     
     // Position parts
-    // stem.position.y = 0.3
-    cap.position.y = 0.4
+    stem.position.y = -0.2
+    cap.position.y = 0.2
     
     // Create group to hold all parts
     const group = new THREE.Group()
     group.add(stem, cap)      // Add flat spots to the cap with random pattern
     const spotCount = Math.floor(Math.random() * 5) + 5; // Random number of spots between 5-9
-    
-    // Create some flat spots in a scattered pattern on top
+      // Create some flat spots in a scattered pattern on top
     for (let i = 0; i < spotCount; i++) {
       // Use thin cylinders for flat spots
       const spotGeometry = new THREE.CylinderGeometry(0.06, 0.06, 0.01, 8)
-      const spotMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFFFF })
+      const spotMaterial = new THREE.MeshStandardMaterial({ color: spotColor })
       const spot = new THREE.Mesh(spotGeometry, spotMaterial)
       
       // Random position within cap bounds
@@ -58,7 +57,7 @@ export default class Mushroom extends Entity {
       // Calculate height on the cap surface (using spherical cap equation)
       const capHeight = 0.4; // Cap radius
       const height = Math.sqrt(Math.max(0, capHeight*capHeight - x*x - z*z)) * 0.5; // 0.5 for flattened sphere
-      spot.position.y = 0.4 + height + 0.005; // Add small offset from surface
+      spot.position.y = 0.2 + height + 0.005; // Add small offset from surface
       
       // Calculate normal vector at this point on the cap to orient the flat spot
       const normal = new THREE.Vector3(x, height, z).normalize();
@@ -75,11 +74,10 @@ export default class Mushroom extends Entity {
       
       group.add(spot);
     }
-    
-    // Add few spots on the sides of the cap for extra detail
+      // Add few spots on the sides of the cap for extra detail
     for (let i = 0; i < Math.floor(Math.random() * 3) + 2; i++) {
       const spotGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.01, 8)
-      const spotMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFFFF })
+      const spotMaterial = new THREE.MeshStandardMaterial({ color: spotColor })
       const spot = new THREE.Mesh(spotGeometry, spotMaterial)
       
       // Position on the sides of the cap

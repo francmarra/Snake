@@ -10,7 +10,7 @@ export const CAMERA_NEAR = 0.1
 export const CAMERA_FAR = 1000
 
 // --- Paletas ---
-export const COLOR_PALETTES = {
+export const COLOR_PALETTES = {	
 	green: {
 		groundColor: 0x56f854,
 		fogColor: 0x39c09f,
@@ -21,7 +21,10 @@ export const COLOR_PALETTES = {
 		mouthColor: 0x39c09f,
 		flowerPetalColor: 0xff69b4,
 		flowerCenterColor: 0xFFA500,
+		mushroomCapColor: 0x8B4513,
+		mushroomSpotColor: 0xFFFFE0,
 	},
+	
 	orange: {
 		groundColor: 0xd68a4c,
 		fogColor: 0xffac38,
@@ -32,7 +35,10 @@ export const COLOR_PALETTES = {
 		mouthColor: 0x614bdd,
 		flowerPetalColor: 0xf48c06,
 		flowerCenterColor: 0xffea00,
+		mushroomCapColor: 0xe5383b,
+		mushroomSpotColor: 0xFFFF99,
 	},
+	
 	lilac: {
 		groundColor: 0xd199ff,
 		fogColor: 0xb04ce6,
@@ -43,6 +49,8 @@ export const COLOR_PALETTES = {
 		mouthColor: 0x614bdd,
 		flowerPetalColor: 0x9d4edd,
 		flowerCenterColor: 0xffd6ff,
+		mushroomCapColor: 0x1F44EA,
+		mushroomSpotColor: 0x4CC9F0,
 	},
 }
 

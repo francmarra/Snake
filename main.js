@@ -66,7 +66,8 @@ function applyPalette(name) {
   if (!palette) return
   
   // Don't save to localStorage
-  selectedPalette = palette
+  selectedPalette = palette;
+  
   const {
     groundColor,
     fogColor,
@@ -76,7 +77,9 @@ function applyPalette(name) {
     snakeColor,
     mouthColor,
     flowerPetalColor,
-    flowerCenterColor
+    flowerCenterColor,
+    mushroomCapColor,
+    mushroomSpotColor
   } = palette
 
   planeMaterial.color.set(groundColor)
@@ -112,6 +115,28 @@ function applyPalette(name) {
       if (child.material && !isGreenPart && child !== center) {
         // Use flowerPetalColor or fall back to fruitColor for backward compatibility
         child.material.color.set(palette.flowerPetalColor || palette.fruitColor);
+      }
+    });
+  })
+  
+  // Update mushroom colors - maintaining natural stem color
+  entities.filter((e) => e instanceof Mushroom).forEach((mushroom) => {
+    // Find the cap (sphere) and update its color
+    const cap = mushroom.mesh.children.find(child => 
+      child.geometry instanceof THREE.SphereGeometry
+    );
+    
+    if (cap) {
+      cap.material.color.set(palette.mushroomCapColor || 0x8B4513);
+    }
+    
+    // Update all spot colors but keep the stem untouched
+    mushroom.mesh.children.forEach(child => {
+      // Skip the stem which is a cylinder but taller than spots (spots are very thin cylinders)
+      if (child.geometry instanceof THREE.CylinderGeometry && 
+          child !== cap && 
+          child.geometry.parameters.height <= 0.01) { // Only thin cylinders (spots)
+        child.material.color.set(palette.mushroomSpotColor || 0xFFFFFF);
       }
     });
   })
@@ -570,7 +595,12 @@ function addEntity() {
   } else if (entityType < 0.85) {
     entity = new Flower(resolution, selectedPalette.flowerPetalColor, selectedPalette.flowerCenterColor)
   } else {
-    entity = new Mushroom(resolution)
+    entity = new Mushroom(
+      resolution, 
+      selectedPalette.mushroomCapColor, 
+      0xF5DEB3, // Stem color stays constant
+      selectedPalette.mushroomSpotColor
+    )
   }
 
   let index = getFreeIndex()
@@ -654,7 +684,14 @@ FLOWER_DATA.forEach(([x, y, z, scale, color]) => {
 
 // Add static mushrooms
 MUSHROOM_DATA.forEach(([x, y, z, scale, capColor, stemColor]) => {
-  const mushroom = new Mushroom(resolution, capColor, stemColor)
+  // Use specified cap color or theme's cap color, and specified stem color or default
+  // Also add the theme's spot color
+  const mushroom = new Mushroom(
+    resolution,
+    capColor || selectedPalette.mushroomCapColor,
+    stemColor || 0xF5DEB3, // Stem color stays natural regardless of theme
+    selectedPalette.mushroomSpotColor
+  )
   mushroom.mesh.position.set(x, y, z)
   mushroom.mesh.scale.setScalar(scale)
   scene.add(mushroom.mesh)
