@@ -67,7 +67,6 @@ function applyPalette(name) {
   
   // Don't save to localStorage
   selectedPalette = palette
-
   const {
     groundColor,
     fogColor,
@@ -75,7 +74,9 @@ function applyPalette(name) {
     treeColor,
     fruitColor,
     snakeColor,
-    mouthColor
+    mouthColor,
+    flowerPetalColor,
+    flowerCenterColor
   } = palette
 
   planeMaterial.color.set(groundColor)
@@ -90,18 +91,29 @@ function applyPalette(name) {
   entities.filter((e) => e instanceof Tree).forEach((tree) => {
     tree.foliage.material.color.set(treeColor)
   })
-  // Update flower colors to match palette
+  // Update flower colors to match palette - maintaining green stems and leaves
   entities.filter((e) => e instanceof Flower).forEach((flower) => {
-    const bloom = flower.mesh.children.find(child => child.material && child.material.color.getHex() !== 0x228B22)
-    if (bloom) {
-      bloom.material.color.set(fruitColor)
-      // Update petals as well
-      flower.mesh.children.forEach(child => {
-        if (child.material && child.material.color.getHex() !== 0x228B22 && child !== bloom) {
-          child.material.color.set(fruitColor)
-        }
-      })
+    // Find center (sphere) - it's typically the second child after the stem
+    const center = flower.mesh.children.find(child => 
+      child.geometry instanceof THREE.SphereGeometry
+    );
+    
+    if (center) {
+      // Update the center color
+      center.material.color.set(palette.flowerCenterColor);
     }
+      // Update all petals (avoiding stems and leaves which are green)
+    flower.mesh.children.forEach(child => {
+      // Skip stem and leaves which have these green color hex values
+      const childColor = child.material?.color?.getHex();
+      const isGreenPart = childColor === 0x2d5016 || childColor === 0x228B22;
+      
+      // If it's not stem or leaves and not the center, it's a petal
+      if (child.material && !isGreenPart && child !== center) {
+        // Use flowerPetalColor or fall back to fruitColor for backward compatibility
+        child.material.color.set(palette.flowerPetalColor || palette.fruitColor);
+      }
+    });
   })
   
   candies[0].mesh.material.color.set(fruitColor)
@@ -556,7 +568,7 @@ function addEntity() {
   } else if (entityType < 0.7) {
     entity = new Tree(resolution, selectedPalette.treeColor)
   } else if (entityType < 0.85) {
-    entity = new Flower(resolution, selectedPalette.fruitColor)
+    entity = new Flower(resolution, selectedPalette.flowerPetalColor, selectedPalette.flowerCenterColor)
   } else {
     entity = new Mushroom(resolution)
   }
@@ -629,7 +641,12 @@ ROCK_DATA.forEach(([posArr, scaleArr]) => {
 
 // Add static flowers
 FLOWER_DATA.forEach(([x, y, z, scale, color]) => {
-  const flower = new Flower(resolution, color || selectedPalette.fruitColor)
+  // Use specified petal color or theme's petal color, and use the theme's center color
+  const flower = new Flower(
+    resolution, 
+    color || selectedPalette.flowerPetalColor,
+    selectedPalette.flowerCenterColor
+  )
   flower.mesh.position.set(x, y, z)
   flower.mesh.scale.setScalar(scale)
   scene.add(flower.mesh)

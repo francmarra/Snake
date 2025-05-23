@@ -19,7 +19,8 @@ export const COLOR_PALETTES = {
 		fruitColor: 0x1d5846,
 		snakeColor: 0x1d5846,
 		mouthColor: 0x39c09f,
-		flowerColor: 0xff69b4,
+		flowerPetalColor: 0xff69b4,
+		flowerCenterColor: 0xFFA500,
 	},
 	orange: {
 		groundColor: 0xd68a4c,
@@ -29,7 +30,8 @@ export const COLOR_PALETTES = {
 		fruitColor: 0x614bdd,
 		snakeColor: 0xff470a,
 		mouthColor: 0x614bdd,
-		flowerColor: 0xff6347,
+		flowerPetalColor: 0xf48c06,
+		flowerCenterColor: 0xffea00,
 	},
 	lilac: {
 		groundColor: 0xd199ff,
@@ -39,7 +41,8 @@ export const COLOR_PALETTES = {
 		fruitColor: 0x9900ff,
 		snakeColor: 0xff2ed2,
 		mouthColor: 0x614bdd,
-		flowerColor: 0x9370db,
+		flowerPetalColor: 0x9d4edd,
+		flowerCenterColor: 0xffd6ff,
 	},
 }
 
@@ -211,11 +214,11 @@ export const FLOWER_DATA = [
 	[-2, 0, 18, 0.9, 0xffd700],
 	[4, 0, -12, 1.1, 0xff69b4],
 	[8, 0, -8, 0.7, 0xff6347],
-	[12, 0, 5, 1.3, 0x9370db],
-	[18, 0, 12, 0.8, 0xff1493],
+	[-2, 0, 5, 1.3, 0x9370db],
+	[23, 0, 12, 0.8, 0xff1493],
 	[22, 0, 8, 1.0, 0xffd700],
 	[6, 0, 22, 1.1, 0xff69b4],
-	[14, 0, 18, 0.9, 0x9370db],
+	[22, 0, 18, 0.9, 0x9370db],
 	[-12, 0, -5, 1.2, 0xff6347],
 	[-8, 0, 25, 0.8, 0xff1493],
 	[28, 0, -3, 1.0, 0xffd700],
@@ -236,14 +239,14 @@ export const MUSHROOM_DATA = [
 	[-2, 0, 16, 0.9, 0x8B4513, 0xF5DEB3],
 	[7, 0, -10, 1.0, 0xFF4500, 0xF5DEB3],
 	[11, 0, -6, 0.7, 0x8B4513, 0xFFFFE0],
-	[16, 0, 7, 1.2, 0xDC143C, 0xF5DEB3],
-	[15, 0, 14, 0.8, 0x8B4513, 0xF5DEB3], // Moved from [21,0,14] - was beyond right boundary
+	[-6, 0, 7, 1.2, 0xDC143C, 0xF5DEB3],
+	[-3, 0, 14, 0.8, 0x8B4513, 0xF5DEB3], // Moved from [21,0,14] - was beyond right boundary
 	[8, 0, 24, 1.0, 0xFF4500, 0xFFFFE0],
 	[3, 0, 25, 0.9, 0xDC143C, 0xF5DEB3],
 	[-7, 0, -12, 1.1, 0x8B4513, 0xF5DEB3],
 	[24, 0, -8, 0.8, 0xFF4500, 0xFFFFE0],
-	[18, 0, 3, 1.0, 0xDC143C, 0xF5DEB3], // Moved from [29,0,3] - was beyond right boundary
-	[17, 0, 18, 0.9, 0x8B4513, 0xF5DEB3], // Moved from [33,0,18] - was beyond right boundary
+	[21, 0, 3, 1.0, 0xDC143C, 0xF5DEB3], // Moved from [29,0,3] - was beyond right boundary
+	[24, 0, 13, 0.9, 0x8B4513, 0xF5DEB3], // Moved from [33,0,18] - was beyond right boundary
 	[-14, 0, 20, 1.2, 0xFF4500, 0xF5DEB3],
-	[14, 0, 2, 0.7, 0xDC143C, 0xFFFFE0], // Moved from [35,0,-5] - was beyond both boundaries
+	[14, 0, -2, 0.7, 0xDC143C, 0xFFFFE0], // Moved from [35,0,-5] - was beyond both boundaries
 ]
