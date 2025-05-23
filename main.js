@@ -33,7 +33,9 @@ import {
 import { animateButtonIn, animateButtonOut, animateCameraButtonIn, animateSettingsTab } from './src/Animations.js';
 import { initCameras, updateCamerasOnResize } from './managers/CameraManager'
 import { muteVolume, unmuteVolume } from './managers/AudioManager'
-import { initializeSettings, toggleMinimap } from './managers/SettingsManager'
+import { initializeSettings, toggleMinimap, updateSettingsUI } from './managers/SettingsManager'
+import { DifficultyManager } from './managers/DifficultyManager.js'
+import { currentDifficulty, DIFFICULTY_LEVELS } from './config/DifficultyConfig.js'
 import Minimap from './src/Minimap.js';
 import { animateCameraRotation } from './src/CameraRotation.js';
 
@@ -432,6 +434,133 @@ function closeSettings() {
 }
 
 let isRunning
+let difficultyManager
+
+// Função para iniciar jogo após seleção de dificuldade
+function onDifficultySelected(difficulty) {
+  // Atualiza a interface com as novas configurações
+  updateSettingsUI(DEFAULT_SETTINGS);
+  
+  // Atualiza as entidades no jogo baseado nas novas configurações
+  updateEntitiesBasedOnSettings();
+  
+  // Inicia o jogo
+  gameStarted = true;
+  
+  // Stop camera rotation when game starts
+  cameraRotationActive = false;
+  
+  // Handle audio initialization and play
+  const playAudio = async () => {
+    try {
+      // Check if user muted audio
+      if (audio.volume !== 0) {
+        await audio.play()
+        // Update the icon just to be safe
+        document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`
+      } else {
+        document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
+      }
+    } catch (err) {
+      console.log('Audio could not play automatically:', err)
+      // In case of autoplay failure, we keep the mute icon
+      muteVolume()
+    }
+  }
+  
+  // Enhanced minimap animation with smoother timing
+  const minimapContainer = document.getElementById('minimap-container');
+  const showMinimap = document.getElementById('show-minimap').checked;
+  
+  if (showMinimap) {
+    minimapContainer.style.display = 'block';
+    minimapContainer.style.opacity = '0';
+    minimapContainer.style.transform = 'scale(0.7) translateY(30px)';
+    
+    gsap.to(minimapContainer, {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      duration: 1.2,
+      delay: 1.0,
+      ease: "back.out(1.7)",
+      onComplete: () => {
+        gsap.to(minimapContainer, {
+          scale: 1.05,
+          duration: 0.3,
+          repeat: 1,
+          yoyo: true,
+          ease: "sine.inOut"
+        });
+      }
+    });
+  } else {
+    minimapContainer.style.display = 'none';
+  }
+  
+  playAudio()
+  
+  gsap.to(camera.position, { ...finalPosition, duration: 2 })
+  gsap.to(scene.fog, { duration: 2, near: 20, far: 55 })
+  animateButtonOut(btnPlay)
+  if (btnSettings) {
+    animateButtonOut(btnSettings)
+    // Close settings sidebar if it's open
+    const settingsSidebar = document.getElementById('settings-sidebar');
+    if (settingsSidebar && settingsSidebar.classList.contains('open')) {
+      settingsSidebar.classList.remove('open');
+    }
+  }
+  
+  btnToggleCamera.style.display = 'block'
+  animateCameraButtonIn(btnToggleCamera)
+  
+  // Register event listener but don't start the snake movement yet
+  // The snake will start moving when the player presses a movement key
+  registerEventListener()
+  
+  // Show settings tab after game starts with a slight delay
+  const settingsTab = document.getElementById('settings-tab');
+  if (settingsTab) {
+    settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
+    settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
+    // Add slight delay to show after camera movement starts
+    setTimeout(() => animateSettingsTab(settingsTab, true), 1000);
+  }
+  
+  // Initialize minimap
+  minimap = new Minimap(GRID_WIDTH, GRID_HEIGHT);
+}
+
+// Função para atualizar entidades baseado nas configurações
+function updateEntitiesBasedOnSettings() {
+  // Ajusta frutas
+  while (candies.length > DEFAULT_SETTINGS.numFruits) {
+    const fruit = candies.pop();
+    scene.remove(fruit.mesh);
+  }
+  while (candies.length < DEFAULT_SETTINGS.numFruits) {
+    addFruit();
+  }
+  
+  // Ajusta bombas
+  while (bombs.length > DEFAULT_SETTINGS.numBombs) {
+    const bomb = bombs.pop();
+    scene.remove(bomb.mesh);
+  }
+  while (bombs.length < DEFAULT_SETTINGS.numBombs) {
+    addBomb();
+  }
+  
+  // Ajusta objetos
+  while (entities.length > DEFAULT_SETTINGS.numObjects) {
+    const entity = entities.pop();
+    scene.remove(entity.mesh);
+  }
+  while (entities.length < DEFAULT_SETTINGS.numObjects) {
+    addEntity();
+  }
+}
 
 function startGame() {
   if (!snake.isMoving) {
@@ -442,9 +571,10 @@ function startGame() {
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab && settingsTab.style.display !== 'none') {
       animateSettingsTab(settingsTab, false);
-    }    // Use the current slider value to determine moveInterval for snake speed
-    const sliderVal = parseInt(document.getElementById('speed-range').value);
-    const moveInterval = 300 - (sliderVal * 16);
+    }    
+    
+    // Use the snake speed from settings
+    const moveInterval = DEFAULT_SETTINGS.snakeSpeed;
     isRunning = setInterval(() => {
       snake.update();
     }, moveInterval);
@@ -453,28 +583,33 @@ function startGame() {
 
 // New event listener for dynamic speed changes
 document.getElementById('speed-range').addEventListener('input', function() {
+  if (currentDifficulty !== DIFFICULTY_LEVELS.CUSTOM) {
+    return; // Não permitir alterações em modos predefinidos
+  }
+  
   const sliderVal = parseInt(this.value);
   document.getElementById('speed-value').textContent = sliderVal;
-  // Update the default setting in case other components rely on it
-  DEFAULT_SETTINGS.snakeSpeed = sliderVal;
+  
+  // Converter o valor do slider para milissegundos (menor = mais rápido)
+  DEFAULT_SETTINGS.snakeSpeed = 300 - (sliderVal * 16);
+  
   // If the game is already running, restart the move interval with the new speed
   if (isRunning) {
     clearInterval(isRunning);
-    const newInterval = 300 - (sliderVal * 16);
     isRunning = setInterval(() => {
       snake.update();
-    }, newInterval);
+    }, DEFAULT_SETTINGS.snakeSpeed);
   }
 });
 
 function stopGame() {
-  clearInterval(isRunning)
-  isRunning = null
+  clearInterval(isRunning);
+  isRunning = null;
 }
 
 function resetGame() {
-  stopGame()
-  score = 0
+  stopGame();
+  score = 0;
   
   // Enable camera rotation again if the player goes back to the main menu
   if (!gameStarted) {
@@ -719,92 +854,15 @@ if (btnSettings) {
 
 let gameStarted = false
 
+// Inicializa o gerenciador de dificuldade
+difficultyManager = new DifficultyManager(DEFAULT_SETTINGS, onDifficultySelected);
+
 btnPlay.addEventListener('click', function () {
   if (!gameStarted) {
-    gameStarted = true
-    
-    // Stop camera rotation when game starts
-    cameraRotationActive = false;
-    
-    // Handle audio initialization and play
-    const playAudio = async () => {
-      try {
-        // Check if user muted audio
-        if (audio.volume !== 0) {
-          await audio.play()
-          // Update the icon just to be safe
-          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`
-        } else {
-          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
-        }
-      } catch (err) {
-        console.log('Audio could not play automatically:', err)
-        // In case of autoplay failure, we keep the mute icon
-        muteVolume()
-      }
-    }
-    // Enhanced minimap animation with smoother timing
-    const minimapContainer = document.getElementById('minimap-container');
-    const showMinimap = document.getElementById('show-minimap').checked;
-    
-    if (showMinimap) {
-      minimapContainer.style.display = 'block';
-      minimapContainer.style.opacity = '0';
-      minimapContainer.style.transform = 'scale(0.7) translateY(30px)';
-      
-      gsap.to(minimapContainer, {
-        opacity: 1,
-        scale: 1,
-        y: 0,
-        duration: 1.2,
-        delay: 1.0,
-        ease: "back.out(1.7)",
-        onComplete: () => {
-          gsap.to(minimapContainer, {
-            scale: 1.05,
-            duration: 0.3,
-            repeat: 1,
-            yoyo: true,
-            ease: "sine.inOut"
-          });
-        }
-      });
-    } else {
-      minimapContainer.style.display = 'none';
-    }
-    
-    playAudio()
-    
-    gsap.to(camera.position, { ...finalPosition, duration: 2 })
-    gsap.to(scene.fog, { duration: 2, near: 20, far: 55 })
-    animateButtonOut(this)
-    if (btnSettings) {
-      animateButtonOut(btnSettings)
-      // Close settings sidebar if it's open
-      const settingsSidebar = document.getElementById('settings-sidebar');
-      if (settingsSidebar && settingsSidebar.classList.contains('open')) {
-        settingsSidebar.classList.remove('open');
-      }
-    }    btnToggleCamera.style.display = 'block'
-    animateCameraButtonIn(btnToggleCamera)
-    
-    // Register event listener but don't start the snake movement yet
-    // The snake will start moving when the player presses a movement key
-    registerEventListener()
-    
-    // Show settings tab after game starts with a slight delay
-    const settingsTab = document.getElementById('settings-tab');
-    if (settingsTab) {
-      settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
-      settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
-      // Add slight delay to show after camera movement starts
-      setTimeout(() => animateSettingsTab(settingsTab, true), 1000);
-    }
-    
-    // Initialize minimap
-    minimap = new Minimap(GRID_WIDTH, GRID_HEIGHT);
+    // Mostra o modal de dificuldade em vez de iniciar o jogo diretamente
+    difficultyManager.showModal();
   }
-})
+});
 
 btnPlay.addEventListener('mouseenter', function () {
   this.style.transform = 'translate(-50%, -50%) scale(1.15)';
@@ -825,13 +883,13 @@ btnSettings.addEventListener('mouseleave', function () {
 });
 
 // Set up audio with proper initial values
-audio.volume = 0.7 // A reasonable default volume
-const initialVolume = audio.volume
-audio.pause() // Ensure it's paused initially
+audio.volume = 0.7; // A reasonable default volume
+const initialVolume = audio.volume;
+audio.pause(); // Ensure it's paused initially
 
-const userVolume = 'on' // Default value, not loaded from localStorage
-if (userVolume === 'off') {
-  muteVolume()
+const userVolume = "on"; // Default value, not loaded from localStorage
+if (userVolume === "off") {
+  muteVolume();
 }
 
 btnVolume.addEventListener('click', function () {

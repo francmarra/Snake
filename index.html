@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
+<html lang="en">  <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/Favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta property="og:title" content="Snake 3D" />
     <title>Snake 3D Game</title>
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="difficulty-styles.css" />
   </head>
   <body>
     <!-- Snake‐segments HUD -->
@@ -114,7 +114,39 @@
           alt=""
         />
       </li>
-    </ul>
+    </ul>    <!-- Difficulty Selection Modal -->
+    <div id="difficulty-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+      <div class="bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 transform scale-90 transition-transform duration-300">
+        <h2 class="text-2xl font-bold text-white mb-6 text-center">Selecione a Dificuldade</h2>
+        
+        <div class="space-y-4">
+          <!-- Easy -->
+          <button id="difficulty-easy" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200">
+            <div class="text-lg">🟢 Fácil</div>
+            <div class="text-sm opacity-80">Velocidade: Lenta | Frutas: 2 | Bombas: 0 | Objetos: 10</div>
+          </button>
+          
+          <!-- Normal -->
+          <button id="difficulty-normal" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200">
+            <div class="text-lg">🟡 Normal</div>
+            <div class="text-sm opacity-80">Velocidade: Média | Frutas: 1 | Bombas: 1 | Objetos: 20</div>
+          </button>
+          
+          <!-- Hard -->
+          <button id="difficulty-hard" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200">
+            <div class="text-lg">🔴 Difícil</div>
+            <div class="text-sm opacity-80">Velocidade: Rápida | Frutas: 1 | Bombas: 3 | Objetos: 30 | Morte nas bordas</div>
+          </button>
+          
+          <!-- Custom -->
+          <button id="difficulty-custom" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200">
+            <div class="text-lg">⚙️ Personalizado</div>
+            <div class="text-sm opacity-80">Configure as definições manualmente</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Settings Tab -->
     <div id="settings-tab" class="settings-tab">
       <div class="settings-line"></div>

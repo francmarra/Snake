@@ -1,4 +1,5 @@
 import { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from '../src/Lights'
+import { currentDifficulty, DIFFICULTY_LEVELS } from '../config/DifficultyConfig.js'
 import gsap from 'gsap'
 
 // Helper function to toggle minimap visibility - moved up before it's used
@@ -34,6 +35,55 @@ export function toggleMinimap(visible) {
   }
 }
 
+// Função para atualizar a interface baseada nas configurações atuais
+export function updateSettingsUI(DEFAULT_SETTINGS) {
+  // Atualiza os sliders
+  const controls = [
+    { rangeId: 'fruits-range', valueId: 'fruits-value', setting: 'numFruits' },
+    { rangeId: 'bombs-range', valueId: 'bombs-value', setting: 'numBombs' },
+    { rangeId: 'objects-range', valueId: 'objects-value', setting: 'numObjects' },
+    { rangeId: 'speed-range', valueId: 'speed-value', setting: 'snakeSpeed' }
+  ]
+  
+  controls.forEach(({ rangeId, valueId, setting }) => {
+    const range = document.getElementById(rangeId)
+    const display = document.getElementById(valueId)
+    if (range && display) {
+      const value = setting === 'snakeSpeed' ? Math.round((400 - DEFAULT_SETTINGS[setting]) / 30) : DEFAULT_SETTINGS[setting]
+      range.value = value
+      display.textContent = value
+    }
+  })
+  
+  // Atualiza o checkbox de kill borders
+  const borderKillCheckbox = document.getElementById('kill-borders')
+  if (borderKillCheckbox) {
+    borderKillCheckbox.checked = DEFAULT_SETTINGS.killOnBorderTrespass
+  }
+  
+  // Atualiza checkboxes de luzes
+  const ambientLightCheckbox = document.getElementById('ambient-light')
+  if (ambientLightCheckbox) {
+    ambientLightCheckbox.checked = DEFAULT_SETTINGS.ambientLightEnabled
+  }
+  
+  const directionalLightCheckbox = document.getElementById('directional-light')
+  if (directionalLightCheckbox) {
+    directionalLightCheckbox.checked = DEFAULT_SETTINGS.directionalLightEnabled
+  }
+  
+  const pointLightCheckbox = document.getElementById('point-light')
+  if (pointLightCheckbox) {
+    pointLightCheckbox.checked = DEFAULT_SETTINGS.pointLightEnabled
+  }
+  
+  // Atualiza minimap
+  const minimapCheckbox = document.getElementById('show-minimap')
+  if (minimapCheckbox) {
+    minimapCheckbox.checked = DEFAULT_SETTINGS.showMinimap
+  }
+}
+
 export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, addEntity, candies, bombs, entities, animateSettingsTab, paletteName) {
   // Inicializa controlos de definições
   const controls = [
@@ -45,19 +95,26 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
   controls.forEach(({ rangeId, valueId, setting }) => {
     const range = document.getElementById(rangeId)
     const display = document.getElementById(valueId)
-    if (range && display) {
-      const defaultValue = setting === 'snakeSpeed' ? 5 : DEFAULT_SETTINGS[setting]
+    if (range && display) {      const defaultValue = setting === 'snakeSpeed' ? 5 : DEFAULT_SETTINGS[setting]
       range.value = defaultValue
       display.textContent = defaultValue
       range.addEventListener('input', () => {
-        // Impede alterações durante o jogo
-        if (window.isRunning) {
-          range.value = defaultValue
+          // Impede alterações durante o jogo
+          if (window.isRunning) {
+            range.value = defaultValue
+            display.textContent = range.value
+            return
+          }
+          
+          // Impede alterações se não estiver em modo personalizado
+          if (currentDifficulty !== DIFFICULTY_LEVELS.CUSTOM) {
+            range.value = defaultValue
+            display.textContent = range.value
+            return
+          }
+          
           display.textContent = range.value
-          return
-        }
-        display.textContent = range.value
-        const value = parseInt(range.value)
+          const value = parseInt(range.value)
         switch (setting) {
           case 'snakeSpeed':
             break
