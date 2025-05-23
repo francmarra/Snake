@@ -7,6 +7,9 @@ import Snake from './src/Snake'
 import Fruit from './src/Fruit'
 import Rock from './src/Rock'
 import Tree from './src/Tree'
+import Flower from './src/Flower'
+import Mushroom from './src/Mushroom'
+import Fence from './src/Fence'
 import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from './src/Lights'
 import gsap from 'gsap'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
@@ -21,6 +24,8 @@ import {
   COLOR_PALETTES,
   TREE_DATA,
   ROCK_DATA,
+  FLOWER_DATA,
+  MUSHROOM_DATA,
   CAMERA_FOV,
   CAMERA_NEAR,
   CAMERA_FAR
@@ -61,8 +66,8 @@ function applyPalette(name) {
   if (!palette) return
   
   // Don't save to localStorage
-  selectedPalette = palette
-
+  selectedPalette = palette;
+  
   const {
     groundColor,
     fogColor,
@@ -70,7 +75,11 @@ function applyPalette(name) {
     treeColor,
     fruitColor,
     snakeColor,
-    mouthColor
+    mouthColor,
+    flowerPetalColor,
+    flowerCenterColor,
+    mushroomCapColor,
+    mushroomSpotColor
   } = palette
 
   planeMaterial.color.set(groundColor)
@@ -85,6 +94,53 @@ function applyPalette(name) {
   entities.filter((e) => e instanceof Tree).forEach((tree) => {
     tree.foliage.material.color.set(treeColor)
   })
+  // Update flower colors to match palette - maintaining green stems and leaves
+  entities.filter((e) => e instanceof Flower).forEach((flower) => {
+    // Find center (sphere) - it's typically the second child after the stem
+    const center = flower.mesh.children.find(child => 
+      child.geometry instanceof THREE.SphereGeometry
+    );
+    
+    if (center) {
+      // Update the center color
+      center.material.color.set(palette.flowerCenterColor);
+    }
+      // Update all petals (avoiding stems and leaves which are green)
+    flower.mesh.children.forEach(child => {
+      // Skip stem and leaves which have these green color hex values
+      const childColor = child.material?.color?.getHex();
+      const isGreenPart = childColor === 0x2d5016 || childColor === 0x228B22;
+      
+      // If it's not stem or leaves and not the center, it's a petal
+      if (child.material && !isGreenPart && child !== center) {
+        // Use flowerPetalColor or fall back to fruitColor for backward compatibility
+        child.material.color.set(palette.flowerPetalColor || palette.fruitColor);
+      }
+    });
+  })
+  
+  // Update mushroom colors - maintaining natural stem color
+  entities.filter((e) => e instanceof Mushroom).forEach((mushroom) => {
+    // Find the cap (sphere) and update its color
+    const cap = mushroom.mesh.children.find(child => 
+      child.geometry instanceof THREE.SphereGeometry
+    );
+    
+    if (cap) {
+      cap.material.color.set(palette.mushroomCapColor || 0x8B4513);
+    }
+    
+    // Update all spot colors but keep the stem untouched
+    mushroom.mesh.children.forEach(child => {
+      // Skip the stem which is a cylinder but taller than spots (spots are very thin cylinders)
+      if (child.geometry instanceof THREE.CylinderGeometry && 
+          child !== cap && 
+          child.geometry.parameters.height <= 0.01) { // Only thin cylinders (spots)
+        child.material.color.set(palette.mushroomSpotColor || 0xFFFFFF);
+      }
+    });
+  })
+  
   candies[0].mesh.material.color.set(fruitColor)
   snake.body.head.data.mesh.material.color.set(snakeColor)
   snake.mouth.material.color.set(mouthColor)
@@ -529,10 +585,23 @@ function getFreeIndex() {
 }
 
 function addEntity() {
-  const entity =
-    Math.random() > 0.5
-      ? new Rock(resolution, selectedPalette.rockColor)
-      : new Tree(resolution, selectedPalette.treeColor)
+  const entityType = Math.random()
+  let entity
+  
+  if (entityType < 0.4) {
+    entity = new Rock(resolution, selectedPalette.rockColor)
+  } else if (entityType < 0.7) {
+    entity = new Tree(resolution, selectedPalette.treeColor)
+  } else if (entityType < 0.85) {
+    entity = new Flower(resolution, selectedPalette.flowerPetalColor, selectedPalette.flowerCenterColor)
+  } else {
+    entity = new Mushroom(
+      resolution, 
+      selectedPalette.mushroomCapColor, 
+      0xF5DEB3, // Stem color stays constant
+      selectedPalette.mushroomSpotColor
+    )
+  }
 
   let index = getFreeIndex()
 
@@ -581,6 +650,7 @@ generateEntities()
 
 scene.add(...lights)
 
+// Add static trees
 const tree = new Tree(resolution)
 TREE_DATA.forEach(([x, y, z, w]) => {
   let clone = tree.mesh.clone()
@@ -589,6 +659,7 @@ TREE_DATA.forEach(([x, y, z, w]) => {
   scene.add(clone)
 })
 
+// Add static rocks
 const rock = new Rock(resolution)
 ROCK_DATA.forEach(([posArr, scaleArr]) => {
   let clone = new Rock(resolution).mesh
@@ -597,6 +668,38 @@ ROCK_DATA.forEach(([posArr, scaleArr]) => {
   clone.rotation.y = scaleArr[3]
   scene.add(clone)
 })
+
+// Add static flowers
+FLOWER_DATA.forEach(([x, y, z, scale, color]) => {
+  // Use specified petal color or theme's petal color, and use the theme's center color
+  const flower = new Flower(
+    resolution, 
+    color || selectedPalette.flowerPetalColor,
+    selectedPalette.flowerCenterColor
+  )
+  flower.mesh.position.set(x, y, z)
+  flower.mesh.scale.setScalar(scale)
+  scene.add(flower.mesh)
+})
+
+// Add static mushrooms
+MUSHROOM_DATA.forEach(([x, y, z, scale, capColor, stemColor]) => {
+  // Use specified cap color or theme's cap color, and specified stem color or default
+  // Also add the theme's spot color
+  const mushroom = new Mushroom(
+    resolution,
+    capColor || selectedPalette.mushroomCapColor,
+    stemColor || 0xF5DEB3, // Stem color stays natural regardless of theme
+    selectedPalette.mushroomSpotColor
+  )
+  mushroom.mesh.position.set(x, y, z)
+  mushroom.mesh.scale.setScalar(scale)
+  scene.add(mushroom.mesh)
+})
+
+// Add fence around the perimeter - always light brown regardless of theme
+const fence = new Fence(resolution) // Use default light brown colors defined in the Fence class
+fence.addToScene(scene)
 
 // --------- Audio and Control Buttons Setup ---------
 // --- Áudio e controlos de volume ---
