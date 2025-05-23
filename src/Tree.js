@@ -29,7 +29,6 @@ export default class Tree extends Entity {
         // Create trunk
         const trunk = new Mesh(TRUNK_GEOMETRY, TRUNK_MATERIAL)
         trunk.scale.set(scale * 0.4, scale * 1.2, scale * 0.4)
-        trunk.position.y = 0
         
         // Create pine layers (3-4 layers for realistic look)
         const numLayers = 3 + Math.floor(Math.random() * 2) // 3 or 4 layers
@@ -43,7 +42,7 @@ export default class Tree extends Entity {
             const layerHeight = scale * (1.8 + i * 0.8) // Increasing height
             
             layer.scale.set(layerScale, layerScale * 0.8, layerScale)
-            layer.position.y = layerHeight
+            layer.position.y = layerHeight -0.3
             
             // Add slight rotation variation for natural look
             layer.rotation.y = Math.random() * Math.PI * 2
