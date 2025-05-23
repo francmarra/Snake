@@ -1,7 +1,5 @@
-// --- Classe Tree: representa uma árvore decorativa ---
-
 import {
-    IcosahedronGeometry,
+    ConeGeometry,
     Mesh,
     MeshStandardMaterial,
     CylinderGeometry,
@@ -9,50 +7,73 @@ import {
 } from 'three'
 import Entity from './Entity'
 
-const GEOMETRY = new IcosahedronGeometry(0.3)
-GEOMETRY.rotateX(Math.random() * Math.PI * 2)
-GEOMETRY.scale(3, 6, 3)
-const MATERIAL = new MeshStandardMaterial({
+// Shared geometries for performance
+const CONE_GEOMETRY = new ConeGeometry(1, 2, 8) // Base cone shape
+const TRUNK_GEOMETRY = new CylinderGeometry(0.4, 0.6, 1, 8)
+
+// Materials (will be colored from outside)
+const FOLIAGE_MATERIAL = new MeshStandardMaterial({
     flatShading: true,
-    color: 0xa2d109,
+    color: 0x2d5a3d, // Default pine green
 })
-const TRUNK_GEOMETRY = new CylinderGeometry(0.4, 0.6, 1, 25)
-const TRUNK_MATERIAL = new MeshStandardMaterial({ flatShading: true, color: 0x8b4513 })
+const TRUNK_MATERIAL = new MeshStandardMaterial({ 
+    flatShading: true, 
+    color: 0x8b4513 
+})
 
 export default class Tree extends Entity {
     constructor(resolution, color) {
-        // Cria uma árvore com tronco e folhagem
         const group = new Group()
         const scale = 0.6 + Math.random() * 0.6
-
-        // Folhagem
-        const foliage = new Mesh(GEOMETRY, MATERIAL)
-        foliage.scale.setScalar(scale)
-        foliage.rotation.y = Math.random() * Math.PI * 2
-        // Posiciona a folhagem sobre o tronco (tronco + metade da altura da folhagem)
-        foliage.position.y = scale * 1.9
-        if (color) {
-            MATERIAL.color.set(color)
-        }
-
-        // Tronco
+        
+        // Create trunk
         const trunk = new Mesh(TRUNK_GEOMETRY, TRUNK_MATERIAL)
-        // Ajusta altura do tronco com base na escala
-        trunk.scale.set(scale * 0.5, scale, scale * 0.5)
-        // Posiciona o tronco com sua base na origem
-        trunk.position.y = 0
+        trunk.scale.set(scale * 0.4, scale * 1.2, scale * 0.4)
+        trunk.position.y = scale * 0.6
+        
+        // Create pine layers (3-4 layers for realistic look)
+        const numLayers = 3 + Math.floor(Math.random() * 2) // 3 or 4 layers
+        const foliageLayers = []
+        
+        for (let i = 0; i < numLayers; i++) {
+            const layer = new Mesh(CONE_GEOMETRY, FOLIAGE_MATERIAL)
+            
+            // Each layer gets smaller and positioned higher
+            const layerScale = scale * (1.2 - i * 0.25) // Decreasing size
+            const layerHeight = scale * (1.8 + i * 0.8) // Increasing height
+            
+            layer.scale.set(layerScale, layerScale * 0.8, layerScale)
+            layer.position.y = layerHeight
+            
+            // Add slight rotation variation for natural look
+            layer.rotation.y = Math.random() * Math.PI * 2
+            
+            foliageLayers.push(layer)
+            group.add(layer)
+        }
+        
+        // Apply color if provided
+        if (color) {
+            FOLIAGE_MATERIAL.color.set(color)
+        }
         
         group.add(trunk)
-        group.add(foliage)
         
-        // Reposiciona todo o grupo para que o centro da base do tronco seja a origem
-        group.position.y = 0
-
-        // Inicializa Entity e expõe foliage para mudanças de cor
+        // Call super before accessing 'this'
         super(group, resolution)
-        // Permite alteração de cor da folhagem via mesh.material
-        this.foliage = foliage
-        // Exponha material para compatibilidade com applyPalette
+        
+        // Store references on 'this'
+        this.foliageLayers = foliageLayers
+        this.foliage = foliageLayers[0] // For compatibility
+        
+        // Expose material for compatibility with applyPalette
         this.mesh.material = this.foliage.material
+    }
+    
+    // Method to update all foliage colors when theme changes
+    updateFoliageColor(color) {
+        this.foliageLayers.forEach(layer => {
+            layer.material.color.set(color)
+        })
     }
 }
