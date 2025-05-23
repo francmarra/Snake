@@ -18,8 +18,8 @@ export default class Flower extends Entity {
     const center = new THREE.Mesh(centerGeometry, centerMaterial)
     
     // Position parts
-    stem.position.y = 0.4
-    center.position.y = 0.85
+    // stem.position.y = 0.4
+    center.position.y = 0.45
     
     // Create group to hold all parts
     const group = new THREE.Group()
@@ -62,7 +62,7 @@ export default class Flower extends Entity {
       const angle = (i / numPetals) * Math.PI * 2;
       
       // Position and rotate petal
-      petal.position.y = 0.85;
+      petal.position.y = 0.45;
       petal.rotation.x = Math.PI / 2; // Make petal flat (horizontal)
       petal.rotation.z = angle;       // Distribute around the center
       
@@ -76,7 +76,7 @@ export default class Flower extends Entity {
       const leaf = new THREE.Mesh(leafGeometry, leafMaterial)
       
       const angle = i * Math.PI + Math.PI / 4 // Position leaves on opposite sides
-      const leafHeight = 0.3 + (i * 0.15) // Vary height along stem
+      const leafHeight = (i * 0.15) // Vary height along stem
       
       // Position leaves along the stem
       leaf.position.x = Math.cos(angle) * 0.12

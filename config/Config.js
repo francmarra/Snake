@@ -18,12 +18,6 @@ export function getSetting(key) {
     return DEFAULT_SETTINGS[key];
 }
 
-// Guardar valor da definição - não guarda realmente em localStorage
-export function saveSetting(key, value) {
-    // Esta função é agora um no-op - não guarda em localStorage
-    console.log(`Setting ${key} would have been saved as ${value}`);
-}
-
 // --- Jogabilidade ---
 export const MOVEMENT_SPEED = getSetting('snakeSpeed') // ms por movimento da cobra
 export const INITIAL_SNAKE_LENGTH = 4

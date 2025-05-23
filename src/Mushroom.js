@@ -19,8 +19,8 @@ export default class Mushroom extends Entity {
     const cap = new THREE.Mesh(capGeometry, capMaterial)
     
     // Position parts
-    stem.position.y = 0.3
-    cap.position.y = 0.7
+    // stem.position.y = 0.3
+    cap.position.y = 0.4
     
     // Create group to hold all parts
     const group = new THREE.Group()
@@ -36,7 +36,7 @@ export default class Mushroom extends Entity {
       const radius = 0.25
       spot.position.x = Math.cos(angle) * radius
       spot.position.z = Math.sin(angle) * radius
-      spot.position.y = 0.75
+      spot.position.y = 0.55
       spot.scale.setScalar(Math.random() * 0.5 + 0.5)
       group.add(spot)
     }
