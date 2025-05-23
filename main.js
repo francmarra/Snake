@@ -1,6 +1,4 @@
-// --- Ficheiro principal do jogo Snake 3D ---
-// Inicializa a cena, câmara, luzes, entidades e lógica principal do jogo
-
+// --------- Imports ---------
 import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
@@ -9,6 +7,9 @@ import Snake from './src/Snake'
 import Fruit from './src/Fruit'
 import Rock from './src/Rock'
 import Tree from './src/Tree'
+import Flower from './src/Flower'
+import Mushroom from './src/Mushroom'
+import Fence from './src/Fence'
 import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from './src/Lights'
 import gsap from 'gsap'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
@@ -23,6 +24,8 @@ import {
   COLOR_PALETTES,
   TREE_DATA,
   ROCK_DATA,
+  FLOWER_DATA,
+  MUSHROOM_DATA,
   CAMERA_FOV,
   CAMERA_NEAR,
   CAMERA_FAR
@@ -30,8 +33,11 @@ import {
 import { animateButtonIn, animateButtonOut, animateCameraButtonIn, animateSettingsTab } from './src/Animations.js';
 import { initCameras, updateCamerasOnResize } from './managers/CameraManager'
 import { muteVolume, unmuteVolume } from './managers/AudioManager'
-import { initializeSettings } from './managers/SettingsManager'
+import { initializeSettings, toggleMinimap } from './managers/SettingsManager'
+import Minimap from './src/Minimap.js';
+import { animateCameraRotation } from './src/CameraRotation.js';
 
+// --------- Font Loader & Score Initialization ---------
 // Carrega a fonte para o texto da pontuação
 const loader = new FontLoader()
 let font
@@ -40,6 +46,7 @@ loader.load(fontSrc, (loadedFont) => {
   printScore()
 })
 
+// --------- Color Palette and Helper Functions ---------
 // --- Paletas de cores e seleção ---
 const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT)
 const palettes = COLOR_PALETTES
@@ -51,6 +58,7 @@ function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+// --------- Palette Application Function ---------
 // Aplica a paleta de cores selecionada
 function applyPalette(name) {
   paletteName = name
@@ -58,8 +66,8 @@ function applyPalette(name) {
   if (!palette) return
   
   // Don't save to localStorage
-  selectedPalette = palette
-
+  selectedPalette = palette;
+  
   const {
     groundColor,
     fogColor,
@@ -67,7 +75,11 @@ function applyPalette(name) {
     treeColor,
     fruitColor,
     snakeColor,
-    mouthColor
+    mouthColor,
+    flowerPetalColor,
+    flowerCenterColor,
+    mushroomCapColor,
+    mushroomSpotColor
   } = palette
 
   planeMaterial.color.set(groundColor)
@@ -82,6 +94,53 @@ function applyPalette(name) {
   entities.filter((e) => e instanceof Tree).forEach((tree) => {
     tree.foliage.material.color.set(treeColor)
   })
+  // Update flower colors to match palette - maintaining green stems and leaves
+  entities.filter((e) => e instanceof Flower).forEach((flower) => {
+    // Find center (sphere) - it's typically the second child after the stem
+    const center = flower.mesh.children.find(child => 
+      child.geometry instanceof THREE.SphereGeometry
+    );
+    
+    if (center) {
+      // Update the center color
+      center.material.color.set(palette.flowerCenterColor);
+    }
+      // Update all petals (avoiding stems and leaves which are green)
+    flower.mesh.children.forEach(child => {
+      // Skip stem and leaves which have these green color hex values
+      const childColor = child.material?.color?.getHex();
+      const isGreenPart = childColor === 0x2d5016 || childColor === 0x228B22;
+      
+      // If it's not stem or leaves and not the center, it's a petal
+      if (child.material && !isGreenPart && child !== center) {
+        // Use flowerPetalColor or fall back to fruitColor for backward compatibility
+        child.material.color.set(palette.flowerPetalColor || palette.fruitColor);
+      }
+    });
+  })
+  
+  // Update mushroom colors - maintaining natural stem color
+  entities.filter((e) => e instanceof Mushroom).forEach((mushroom) => {
+    // Find the cap (sphere) and update its color
+    const cap = mushroom.mesh.children.find(child => 
+      child.geometry instanceof THREE.SphereGeometry
+    );
+    
+    if (cap) {
+      cap.material.color.set(palette.mushroomCapColor || 0x8B4513);
+    }
+    
+    // Update all spot colors but keep the stem untouched
+    mushroom.mesh.children.forEach(child => {
+      // Skip the stem which is a cylinder but taller than spots (spots are very thin cylinders)
+      if (child.geometry instanceof THREE.CylinderGeometry && 
+          child !== cap && 
+          child.geometry.parameters.height <= 0.01) { // Only thin cylinders (spots)
+        child.material.color.set(palette.mushroomSpotColor || 0xFFFFFF);
+      }
+    });
+  })
+  
   candies[0].mesh.material.color.set(fruitColor)
   snake.body.head.data.mesh.material.color.set(snakeColor)
   snake.mouth.material.color.set(mouthColor)
@@ -93,14 +152,26 @@ function applyPalette(name) {
     `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Camera.svg`
   document.getElementById('btn-volume-img').src =
     `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Audio.svg`
-
   const vol = localStorage.getItem('volume')
   if (vol === 'off' || audio.volume === 0) {
     document.getElementById('btn-volume-img').src =
       `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}NoAudio.svg`
   }
+  
+  // Update minimap theme and colors
+  const minimapContainer = document.getElementById('minimap-container')
+  if (minimapContainer) {
+    minimapContainer.classList.remove('theme-green', 'theme-orange', 'theme-lilac')
+    minimapContainer.classList.add(`theme-${name.toLowerCase()}`)
+  }
+  
+  // Update minimap with new palette colors if it exists
+  if (minimap && gameStarted) {
+    minimap.update(snake, candies, bombs, selectedPalette)
+  }
 }
 
+// --------- Scene, Grid, Renderer, and Camera Setup ---------
 // --- Inicialização da cena, grelha e câmara ---
 const gridHelper = new THREE.GridHelper(
   resolution.x,
@@ -128,10 +199,11 @@ const initialPosition = new THREE.Vector3(
   resolution.y / 2 + 4
 )
 const finalPosition = new THREE.Vector3(
-  -8 + resolution.x / 2,
-  resolution.x / 2 + 4,
-  resolution.y + 6
+  (resolution.x / 2) - 8, // ajustar à direita
+  (resolution.x / 2) + 4, // altura da câmara
+  resolution.y + 9 // ajustar para a esquerda
 )
+
 const { camera, topCamera } = initCameras(resolution, sizes, initialPosition, finalPosition)
 let activeCamera = camera
 
@@ -158,6 +230,10 @@ controls.target.set(
   resolution.y / 2 + 2
 )
 
+// --------- Plane and Minimap Initialization ---------
+// Initialize the minimap
+let minimap = null;
+
 const planeGeometry = new THREE.PlaneGeometry(
   resolution.x * 50,
   resolution.y * 50
@@ -173,6 +249,7 @@ plane.position.y = -0.5
 scene.add(plane)
 plane.receiveShadow = true
 
+// --------- Snake Initialization and Game Logic ---------
 const snake = new Snake({
   scene,
   resolution,
@@ -258,6 +335,7 @@ snake.addEventListener('updated', updateSnakeSegmentsUI)
 let score = 0
 let scoreEntity
 
+// --------- Score Rendering Function ---------
 function printScore() {
   if (!font) {
     return
@@ -300,50 +378,94 @@ function printScore() {
   scene.add(scoreEntity.mesh)
 }
 
+// --------- Event Listeners ---------
 function registerEventListener() {
   window.addEventListener('keydown', function (e) {
-    const keyCode = e.code
+    const keyCode = e.code;
     const isMovementKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD'].includes(keyCode);
+    const settingsSidebar = document.getElementById('settings-sidebar');
     
-    // Set the direction regardless of whether the game is running
-    snake.setDirection(keyCode)
+    // If settings are open, ignore key input for settings changes
+    if (settingsSidebar && settingsSidebar.classList.contains('open')) {
+      // If the key is meant to start the game, close settings and start game without updating direction
+      if (keyCode === 'Space' || (!isRunning && isMovementKey && gameStarted)) {
+        closeSettings();
+        if (keyCode === 'Space') {
+          !isRunning ? startGame() : stopGame();
+        } else if (!isRunning && isMovementKey && gameStarted) {
+          startGame();
+        }
+      }
+      return; // Do not update the snake or settings values
+    }
+    
+    // Update snake direction if settings are not being shown
+    snake.setDirection(keyCode);
     
     if (keyCode === 'Space') {
-      !isRunning ? startGame() : stopGame()
+      !isRunning ? startGame() : stopGame();
     } else if (!isRunning && isMovementKey && gameStarted) {
-      // Only start the game if a movement key is pressed and the play button has been clicked
-      startGame()
-    }    
+      startGame();
+    }
     
     // Hide settings tab and sidebar when snake moves
     const settingsTab = document.getElementById('settings-tab');
-    const settingsSidebar = document.getElementById('settings-sidebar');
     if (settingsTab) {
       animateSettingsTab(settingsTab, false);
     }
     if (settingsSidebar && settingsSidebar.classList.contains('open')) {
-      settingsSidebar.classList.remove('open');
+      closeSettings();
     }
-  })
+  });
+}
+
+// Helper function to close settings and blur all inputs
+function closeSettings() {
+  const settingsSidebar = document.getElementById('settings-sidebar');
+  if (settingsSidebar) {
+    settingsSidebar.classList.remove('open');
+    
+    // Blur all input elements to prevent them from receiving keyboard events
+    const inputs = settingsSidebar.querySelectorAll('input');
+    inputs.forEach(input => input.blur());
+  }
 }
 
 let isRunning
 
 function startGame() {
   if (!snake.isMoving) {
+    // Ensure camera rotation is disabled when snake starts moving
+    cameraRotationActive = false;
+    
     // Hide settings tab when snake starts moving
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab && settingsTab.style.display !== 'none') {
       animateSettingsTab(settingsTab, false);
-    }    // Get speed setting from defaults
-    const speedValue = DEFAULT_SETTINGS.snakeSpeed / 28;
-    const moveInterval = 300 - (speedValue * 16); // Same scale as the speed setting
-    
+    }    // Use the current slider value to determine moveInterval for snake speed
+    const sliderVal = parseInt(document.getElementById('speed-range').value);
+    const moveInterval = 300 - (sliderVal * 16);
     isRunning = setInterval(() => {
-      snake.update()
-    }, moveInterval)
+      snake.update();
+    }, moveInterval);
   }
 }
+
+// New event listener for dynamic speed changes
+document.getElementById('speed-range').addEventListener('input', function() {
+  const sliderVal = parseInt(this.value);
+  document.getElementById('speed-value').textContent = sliderVal;
+  // Update the default setting in case other components rely on it
+  DEFAULT_SETTINGS.snakeSpeed = sliderVal;
+  // If the game is already running, restart the move interval with the new speed
+  if (isRunning) {
+    clearInterval(isRunning);
+    const newInterval = 300 - (sliderVal * 16);
+    isRunning = setInterval(() => {
+      snake.update();
+    }, newInterval);
+  }
+});
 
 function stopGame() {
   clearInterval(isRunning)
@@ -353,6 +475,11 @@ function stopGame() {
 function resetGame() {
   stopGame()
   score = 0
+  
+  // Enable camera rotation again if the player goes back to the main menu
+  if (!gameStarted) {
+    cameraRotationActive = true;
+  }
 
   // Wait for the player to press a movement key before starting again
   // gameStarted stays true, but the snake won't move until a key is pressed
@@ -398,8 +525,19 @@ function resetGame() {
     settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
     animateSettingsTab(settingsTab, true);
   }
+  
+  // Update minimap visibility based on settings
+  const showMinimap = document.getElementById('show-minimap').checked;
+  if (minimapContainer) {
+    if (showMinimap) {
+      minimapContainer.style.display = 'block';
+    } else {
+      minimapContainer.style.display = 'none';
+    }
+  }
 }
 
+// --------- Entity, Fruit, Bomb, and Object Functions ---------
 const candies = []
 const bombs = []
 const entities = []
@@ -447,10 +585,23 @@ function getFreeIndex() {
 }
 
 function addEntity() {
-  const entity =
-    Math.random() > 0.5
-      ? new Rock(resolution, selectedPalette.rockColor)
-      : new Tree(resolution, selectedPalette.treeColor)
+  const entityType = Math.random()
+  let entity
+  
+  if (entityType < 0.4) {
+    entity = new Rock(resolution, selectedPalette.rockColor)
+  } else if (entityType < 0.7) {
+    entity = new Tree(resolution, selectedPalette.treeColor)
+  } else if (entityType < 0.85) {
+    entity = new Flower(resolution, selectedPalette.flowerPetalColor, selectedPalette.flowerCenterColor)
+  } else {
+    entity = new Mushroom(
+      resolution, 
+      selectedPalette.mushroomCapColor, 
+      0xF5DEB3, // Stem color stays constant
+      selectedPalette.mushroomSpotColor
+    )
+  }
 
   let index = getFreeIndex()
 
@@ -499,6 +650,7 @@ generateEntities()
 
 scene.add(...lights)
 
+// Add static trees
 const tree = new Tree(resolution)
 TREE_DATA.forEach(([x, y, z, w]) => {
   let clone = tree.mesh.clone()
@@ -507,6 +659,7 @@ TREE_DATA.forEach(([x, y, z, w]) => {
   scene.add(clone)
 })
 
+// Add static rocks
 const rock = new Rock(resolution)
 ROCK_DATA.forEach(([posArr, scaleArr]) => {
   let clone = new Rock(resolution).mesh
@@ -516,6 +669,39 @@ ROCK_DATA.forEach(([posArr, scaleArr]) => {
   scene.add(clone)
 })
 
+// Add static flowers
+FLOWER_DATA.forEach(([x, y, z, scale, color]) => {
+  // Use specified petal color or theme's petal color, and use the theme's center color
+  const flower = new Flower(
+    resolution, 
+    color || selectedPalette.flowerPetalColor,
+    selectedPalette.flowerCenterColor
+  )
+  flower.mesh.position.set(x, y, z)
+  flower.mesh.scale.setScalar(scale)
+  scene.add(flower.mesh)
+})
+
+// Add static mushrooms
+MUSHROOM_DATA.forEach(([x, y, z, scale, capColor, stemColor]) => {
+  // Use specified cap color or theme's cap color, and specified stem color or default
+  // Also add the theme's spot color
+  const mushroom = new Mushroom(
+    resolution,
+    capColor || selectedPalette.mushroomCapColor,
+    stemColor || 0xF5DEB3, // Stem color stays natural regardless of theme
+    selectedPalette.mushroomSpotColor
+  )
+  mushroom.mesh.position.set(x, y, z)
+  mushroom.mesh.scale.setScalar(scale)
+  scene.add(mushroom.mesh)
+})
+
+// Add fence around the perimeter - always light brown regardless of theme
+const fence = new Fence(resolution) // Use default light brown colors defined in the Fence class
+fence.addToScene(scene)
+
+// --------- Audio and Control Buttons Setup ---------
 // --- Áudio e controlos de volume ---
 const audio = document.getElementById('audio')
 const btnVolume = document.getElementById('btn-volume')
@@ -537,6 +723,9 @@ btnPlay.addEventListener('click', function () {
   if (!gameStarted) {
     gameStarted = true
     
+    // Stop camera rotation when game starts
+    cameraRotationActive = false;
+    
     // Handle audio initialization and play
     const playAudio = async () => {
       try {
@@ -554,6 +743,36 @@ btnPlay.addEventListener('click', function () {
         muteVolume()
       }
     }
+    // Enhanced minimap animation with smoother timing
+    const minimapContainer = document.getElementById('minimap-container');
+    const showMinimap = document.getElementById('show-minimap').checked;
+    
+    if (showMinimap) {
+      minimapContainer.style.display = 'block';
+      minimapContainer.style.opacity = '0';
+      minimapContainer.style.transform = 'scale(0.7) translateY(30px)';
+      
+      gsap.to(minimapContainer, {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        duration: 1.2,
+        delay: 1.0,
+        ease: "back.out(1.7)",
+        onComplete: () => {
+          gsap.to(minimapContainer, {
+            scale: 1.05,
+            duration: 0.3,
+            repeat: 1,
+            yoyo: true,
+            ease: "sine.inOut"
+          });
+        }
+      });
+    } else {
+      minimapContainer.style.display = 'none';
+    }
+    
     playAudio()
     
     gsap.to(camera.position, { ...finalPosition, duration: 2 })
@@ -581,6 +800,9 @@ btnPlay.addEventListener('click', function () {
       // Add slight delay to show after camera movement starts
       setTimeout(() => animateSettingsTab(settingsTab, true), 1000);
     }
+    
+    // Initialize minimap
+    minimap = new Minimap(GRID_WIDTH, GRID_HEIGHT);
   }
 })
 
@@ -695,6 +917,7 @@ planeWasd.position.set(13, 0, 21)
 scene.add(planeArrows, planeWasd)
 manager.onLoad = () => {}
 
+// --------- Settings and Palette Update Functions ---------
 // Palette-aware settings icon
 function updateSettingsIcon(name) {
   if (!btnSettingsImg) return;
@@ -738,12 +961,19 @@ btnSettings.addEventListener('click', function () {
       ease: "power2.inOut"
     });
   }
+  
   // Toggle settings sidebar
-  document.getElementById('settings-sidebar').classList.toggle('open');
+  const settingsSidebar = document.getElementById('settings-sidebar');
+  if (settingsSidebar.classList.contains('open')) {
+    closeSettings();
+  } else {
+    settingsSidebar.classList.add('open');
+  }
 });
 
 initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, addEntity, candies, bombs, entities, animateSettingsTab, paletteName)
 
+// --------- Snake Update Modification ---------
 // Update snake's update method to respect border kill setting
 snake.update = function() {
   if (this.newDirection) {
@@ -802,6 +1032,7 @@ snake.update = function() {
 
 applyPalette(paletteName)
 
+// --------- Camera Toggle Button and Its Handlers ---------
 // --- Botão para alternar entre câmaras ---
 const btnToggleCamera = document.getElementById('btn-toggle-camera')
 
@@ -820,15 +1051,43 @@ btnToggleCamera.addEventListener('click', () => {
   activeCamera = activeCamera === camera ? topCamera : camera
 })
 
+// Center point for camera rotation
+const centerPoint = new THREE.Vector3(resolution.x / 2, 0, resolution.y / 2);
+
+// Flag to track if the camera rotation should be active
+let cameraRotationActive = true;
+
+// --------- Main Render Loop ---------
 // --- Ciclo principal de renderização ---
-function tic() {
-  controls.update()
+function tic() {  // If game hasn't started yet, animate camera rotation
+  if (!gameStarted && cameraRotationActive) {
+    // Set initial camera position when we start rotating, if needed
+    if (camera.position.equals(initialPosition)) {
+      // Set a closer starting position for the rotation
+      camera.position.set(
+        resolution.x / 2 + 10, // X position
+        3,                    // Y position (height - lowered)
+        resolution.y / 2      // Z position
+      );
+    }
+    animateCameraRotation(camera, controls, centerPoint, true);
+  } else {
+    controls.update();
+  }
+  
   renderer.render(scene, activeCamera)
+  
+  // Update minimap if the game has started, minimap is initialized, and it should be shown
+  if (gameStarted && minimap && document.getElementById('show-minimap').checked) {
+    minimap.update(snake, candies, bombs, selectedPalette)
+  }
+  
   requestAnimationFrame(tic)
 }
 
 requestAnimationFrame(tic)
 
+// --------- Window Resize Handler ---------
 window.addEventListener('resize', handleResize)
 
 function handleResize() {

@@ -281,6 +281,12 @@ export default class Snake extends EventDispatcher {
 			newPos.z = (newPos.z + this.resolution.y) % this.resolution.y
 			currentNode.data.mesh.position.copy(newPos)
 		}
+		// New alignment: set each segment's bottom to match the head's bottom
+		const headMesh = this.body.head.data.mesh
+		const headBottom = headMesh.position.y - headMesh.scale.x / 2
+		nodes.forEach((node) => {
+			node.data.mesh.position.y = headBottom + node.data.mesh.scale.x / 2
+		})
 	}
 }
 
@@ -289,5 +295,12 @@ class SnakeNode extends Entity {
 	constructor(resolution) {
 		const mesh = new Mesh(NODE_GEOMETRY, NODE_MATERIAL)
 		super(mesh, resolution)
+	}
+	// round the snake‐segment coords to nearest grid cell
+	getIndexByCoord() {
+		const p = this.mesh.position
+		const x = Math.round(p.x)
+		const z = Math.round(p.z)
+		return x + z * this.resolution.x
 	}
 }

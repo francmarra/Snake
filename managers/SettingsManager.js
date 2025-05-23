@@ -1,6 +1,41 @@
 import { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from '../src/Lights'
+import gsap from 'gsap'
+
+// Helper function to toggle minimap visibility - moved up before it's used
+export function toggleMinimap(visible) {
+  const minimapContainer = document.getElementById('minimap-container')
+  if (minimapContainer) {
+    if (visible) {
+      // Show with animation
+      minimapContainer.style.display = 'block'
+      minimapContainer.style.opacity = '0'
+      minimapContainer.style.transform = 'scale(0.7) translateY(30px)'
+      
+      gsap.to(minimapContainer, {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        duration: 0.5,
+        ease: "back.out(1.7)"
+      })
+    } else {
+      // Hide with animation
+      gsap.to(minimapContainer, {
+        opacity: 0,
+        scale: 0.7,
+        y: 30,
+        duration: 0.3,
+        ease: "power2.in",
+        onComplete: () => {
+          minimapContainer.style.display = 'none'
+        }
+      })
+    }
+  }
+}
 
 export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, addEntity, candies, bombs, entities, animateSettingsTab, paletteName) {
+  // Inicializa controlos de definições
   const controls = [
     { rangeId: 'fruits-range', valueId: 'fruits-value', setting: 'numFruits' },
     { rangeId: 'bombs-range', valueId: 'bombs-value', setting: 'numBombs' },
@@ -15,6 +50,7 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
       range.value = defaultValue
       display.textContent = defaultValue
       range.addEventListener('input', () => {
+        // Impede alterações durante o jogo
         if (window.isRunning) {
           range.value = defaultValue
           display.textContent = range.value
@@ -26,6 +62,7 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
           case 'snakeSpeed':
             break
           case 'numFruits':
+            // Adiciona ou remove frutas conforme necessário
             while (candies.length > value) {
               const fruit = candies.pop()
               scene.remove(fruit.mesh)
@@ -35,6 +72,7 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
             }
             break
           case 'numBombs':
+            // Adiciona ou remove bombas conforme necessário
             while (bombs.length > value) {
               const bomb = bombs.pop()
               scene.remove(bomb.mesh)
@@ -44,6 +82,7 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
             }
             break
           case 'numObjects':
+            // Adiciona ou remove entidades conforme necessário
             while (entities.length > value) {
               const entity = entities.pop()
               scene.remove(entity.mesh)
@@ -57,6 +96,7 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
     }
   })
 
+  // Checkbox para matar ao atravessar bordas
   const borderKillCheckbox = document.getElementById('kill-borders')
   if (borderKillCheckbox) {
     borderKillCheckbox.checked = DEFAULT_SETTINGS.killOnBorderTrespass
@@ -68,6 +108,7 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
     })
   }
 
+  // Checkbox para luz ambiente
   const ambientLightCheckbox = document.getElementById('ambient-light')
   if (ambientLightCheckbox) {
     ambientLightCheckbox.checked = DEFAULT_SETTINGS.ambientLightEnabled
@@ -76,6 +117,7 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
     })
   }
 
+  // Checkbox para luz direcional
   const directionalLightCheckbox = document.getElementById('directional-light')
   if (directionalLightCheckbox) {
     directionalLightCheckbox.checked = DEFAULT_SETTINGS.directionalLightEnabled
@@ -84,6 +126,7 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
     })
   }
 
+  // Checkbox para luz pontual
   const pointLightCheckbox = document.getElementById('point-light')
   if (pointLightCheckbox) {
     pointLightCheckbox.checked = DEFAULT_SETTINGS.pointLightEnabled
@@ -92,11 +135,22 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
     })
   }
 
+  // Checkbox for minimap visibility
+  const minimapCheckbox = document.getElementById('show-minimap')
+  if (minimapCheckbox) {
+    minimapCheckbox.checked = DEFAULT_SETTINGS.showMinimap
+    minimapCheckbox.addEventListener('change', () => {
+      toggleMinimap(minimapCheckbox.checked)
+    })
+  }
+
+  // Aplica tema ao sidebar de definições
   const settingsSidebar = document.getElementById('settings-sidebar')
   if (settingsSidebar) {
     settingsSidebar.classList.add(`theme-${paletteName.toLowerCase()}`)
   }
 
+  // Aplica tema ao separador de definições
   const settingsTab = document.getElementById('settings-tab')
   if (settingsTab) {
     settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`)
