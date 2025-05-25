@@ -2,6 +2,7 @@
 import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import * as dat from 'lil-gui'
 import Snake from './src/Snake'
 import Fruit from './src/Fruit'
@@ -79,12 +80,37 @@ function applyPalette(name) {
     flowerPetalColor,
     flowerCenterColor,
     mushroomCapColor,
-    mushroomSpotColor
-  } = palette
-
-  planeMaterial.color.set(groundColor)
-  scene.fog.color.set(fogColor)
-  scene.background.set(fogColor)
+    mushroomSpotColor  } = palette
+    // Update ground plane or island materials
+  if (groundPlane) {
+    // If we're using the fallback plane
+    groundPlane.material.color.set(groundColor);
+  }
+    // Update island materials if the island is loaded
+  if (island) {
+    island.traverse((child) => {
+      if (child.isMesh && child.material) {
+        const materialName = child.material.name?.toLowerCase() || '';
+        
+        // Check if it's likely a grass/top material
+        if (materialName.includes('grass') || materialName.includes('top') || child.name?.toLowerCase().includes('grass')) {
+          child.material.color.setHex(groundColor);
+        }
+        // Check if it's likely a dirt/base material
+        else if (materialName.includes('dirt') || materialName.includes('base') || materialName.includes('soil')) {
+          const darkGroundColor = new THREE.Color(groundColor);
+          darkGroundColor.multiplyScalar(0.7); // Make dirt darker
+          child.material.color.copy(darkGroundColor);
+        }
+        // Default case - apply ground color
+        else {
+          child.material.color.setHex(groundColor);
+        }
+      }
+    });
+  }
+  // Maintain fog color consistent with skybox instead of theme colors
+  // This ensures the skybox and fog blend seamlessly
 
   // Atualiza cor de rochas
   entities.filter((e) => e instanceof Rock).forEach((rock) => {
@@ -184,8 +210,31 @@ gridHelper.material.transparent = true
 gridHelper.material.opacity = 0.3
 
 const scene = new THREE.Scene()
-scene.background = new THREE.Color(params.fogColor)
-scene.fog = new THREE.Fog(params.fogColor, 5, 40)
+
+// --------- Enhanced Skybox Setup with Horizon Alignment ---------
+const skyTextureLoader = new THREE.TextureLoader()
+const skyTexture = skyTextureLoader.load('./cloudy_midday_8k.png')
+
+// Better mapping for horizon alignment
+skyTexture.mapping = THREE.EquirectangularReflectionMapping
+skyTexture.wrapS = THREE.RepeatWrapping
+skyTexture.wrapT = THREE.ClampToEdgeWrapping
+
+// Create a skybox sphere for better control over horizon alignment
+const skyGeometry = new THREE.SphereGeometry(500, 60, 40)
+const skyMaterial = new THREE.MeshBasicMaterial({
+  map: skyTexture,
+  side: THREE.BackSide,
+  fog: false
+})
+
+const skyBox = new THREE.Mesh(skyGeometry, skyMaterial)
+
+// Position the skybox to align horizon with your ground plane
+skyBox.position.set(resolution.x / 2 - 0.5, -50, resolution.y / 2 - 0.5) // Lowered Y position
+skyBox.rotation.y = Math.PI // Rotate if needed to align horizon
+
+scene.add(skyBox)
 scene.add(gridHelper)
 
 const sizes = {
@@ -193,19 +242,23 @@ const sizes = {
   height: window.innerHeight,
 }
 
-const initialPosition = new THREE.Vector3(
-  resolution.x / 2 + 5,
-  4,
-  resolution.y / 2 + 4
-)
-const finalPosition = new THREE.Vector3(
-  (resolution.x / 2) - 8, // ajustar à direita
-  (resolution.x / 2) + 4, // altura da câmara
-  resolution.y + 9 // ajustar para a esquerda
-)
+// --------- Camera Positioning Adjustments ---------
+const initialPosition = new THREE.Vector3(resolution.x / 2 + 5, 3, resolution.y / 2 + 4)
+const finalPosition = new THREE.Vector3((resolution.x / 2) - 8, (resolution.x / 2) + 3, resolution.y + 9)
 
 const { camera, topCamera } = initCameras(resolution, sizes, initialPosition, finalPosition)
 let activeCamera = camera
+
+// Camera mode tracking: 0 = perspective, 1 = orthographic, 2 = free orbit
+let cameraMode = 0
+
+// Create a third camera for free orbit mode
+const orbitCamera = new THREE.PerspectiveCamera(CAMERA_FOV, sizes.width / sizes.height, CAMERA_NEAR, CAMERA_FAR)
+orbitCamera.position.set(
+  resolution.x / 2 + 8,
+  6,
+  resolution.y / 2 + 8
+)
 
 const renderer = new THREE.WebGLRenderer({
   antialias: window.devicePixelRatio < 2,
@@ -230,24 +283,101 @@ controls.target.set(
   resolution.y / 2 + 2
 )
 
+// Create a separate OrbitControls instance for the free orbit camera
+const orbitControls = new OrbitControls(orbitCamera, renderer.domElement)
+orbitControls.enableDamping = true
+orbitControls.enableZoom = true
+orbitControls.enablePan = true
+orbitControls.enableRotate = true
+orbitControls.target.set(
+  resolution.x / 2,
+  0,
+  resolution.y / 2
+)
+orbitControls.minDistance = 3
+orbitControls.maxDistance = 100
+orbitControls.maxPolarAngle = Math.PI * 0.8 // Prevent camera from going below ground
+
 // --------- Plane and Minimap Initialization ---------
 // Initialize the minimap
 let minimap = null;
 
-const planeGeometry = new THREE.PlaneGeometry(
-  resolution.x * 50,
-  resolution.y * 50
-)
-planeGeometry.rotateX(-Math.PI * 0.5)
-const planeMaterial = new THREE.MeshStandardMaterial({
-  color: params.groundColor,
-})
-const plane = new THREE.Mesh(planeGeometry, planeMaterial)
-plane.position.x = resolution.x / 2 - 0.5
-plane.position.z = resolution.y / 2 - 0.5
-plane.position.y = -0.5
-scene.add(plane)
-plane.receiveShadow = true
+// Load the GLTF island model
+const gltfLoader = new GLTFLoader();
+let island = null;
+let groundPlane = null; // For fallback plane
+
+gltfLoader.load('./Island.gltf', (gltf) => {
+  console.log('Island GLTF loaded successfully!', gltf);
+  island = gltf.scene;
+    // Scale the island to fit the game grid (20x20)
+  // Make it bigger to cover more of the game area
+  const scale = Math.max(resolution.x, resolution.y) * 4; // Increased from 0.3 to 0.8
+  island.scale.set(scale, scale, scale);
+    // Position the island at the center of the game area
+  island.position.x = resolution.x / 2 - 0.5;
+  island.position.z = resolution.y / 2 - 0.5;
+  island.position.y = -60.2; // Lower the island to be below snake and objects (which are at y=0)
+
+    // Enable shadow receiving for all meshes in the island
+  island.traverse((child) => {
+    if (child.isMesh) {
+      console.log('Found mesh in island:', child.name, child.material?.name);
+      child.receiveShadow = true;
+      child.castShadow = true;
+      
+      // Update material colors to match the current palette
+      if (child.material) {
+        // Try to identify materials by name first, then fallback to primitive index
+        const materialName = child.material.name?.toLowerCase() || '';
+        
+        // Check if it's likely a grass/top material (usually the first primitive or has "grass" in name)
+        if (materialName.includes('grass') || materialName.includes('top') || child.name?.toLowerCase().includes('grass')) {
+          child.material.color.setHex(params.groundColor);
+          console.log('Applied grass color to:', child.name);
+        }
+        // Check if it's likely a dirt/base material
+        else if (materialName.includes('dirt') || materialName.includes('base') || materialName.includes('soil')) {
+          const dirtColor = new THREE.Color(0xa5756d); // Default dirt color
+          dirtColor.multiplyScalar(0.7); // Make dirt darker
+          child.material.color.copy(dirtColor);
+          console.log('Applied dirt color to:', child.name);
+        }
+        // If we can't identify by name, apply grass color to the first mesh, dirt to others
+        else {
+          // For the island model, we'll default to grass color for all surfaces
+          child.material.color.setHex(params.groundColor);
+          console.log('Applied default ground color to:', child.name);
+        }
+      }
+    }
+  });
+  
+  scene.add(island);
+  console.log('Island added to scene');
+}, 
+(progress) => {
+  console.log('Loading progress:', (progress.loaded / progress.total * 100) + '%');
+},
+(error) => {
+  console.error('Error loading island model:', error);
+    // Fallback to original plane if GLTF fails to load
+  console.log('Falling back to original plane');
+  const planeGeometry = new THREE.PlaneGeometry(
+    resolution.x * 50,
+    resolution.y * 50
+  );
+  planeGeometry.rotateX(-Math.PI * 0.5);
+  const planeMaterial = new THREE.MeshStandardMaterial({
+    color: params.groundColor,
+  });
+  groundPlane = new THREE.Mesh(planeGeometry, planeMaterial);
+  groundPlane.position.x = resolution.x / 2 - 0.5;
+  groundPlane.position.z = resolution.y / 2 - 0.5;
+  groundPlane.position.y = -0.5;
+  scene.add(groundPlane);
+  groundPlane.receiveShadow = true;
+});
 
 // --------- Snake Initialization and Game Logic ---------
 const snake = new Snake({
@@ -772,11 +902,10 @@ btnPlay.addEventListener('click', function () {
     } else {
       minimapContainer.style.display = 'none';
     }
-    
-    playAudio()
+      playAudio()
     
     gsap.to(camera.position, { ...finalPosition, duration: 2 })
-    gsap.to(scene.fog, { duration: 2, near: 20, far: 55 })
+    gsap.to(scene.fog, { duration: 2, near: 30, far: 80 })
     animateButtonOut(this)
     if (btnSettings) {
       animateButtonOut(btnSettings)
@@ -1048,7 +1177,33 @@ btnToggleCamera.addEventListener('mouseleave', function () {
 
 btnToggleCamera.addEventListener('click', () => {
   if (!gameStarted) return
-  activeCamera = activeCamera === camera ? topCamera : camera
+  
+  // Cycle through camera modes: perspective -> orthographic -> free orbit -> repeat
+  cameraMode = (cameraMode + 1) % 3
+  
+  switch (cameraMode) {
+    case 0: // Perspective mode
+      activeCamera = camera
+      controls.enabled = false
+      orbitControls.enabled = false
+      break
+    case 1: // Orthographic mode
+      activeCamera = topCamera
+      controls.enabled = false
+      orbitControls.enabled = false
+      break
+    case 2: // Free orbit mode
+      activeCamera = orbitCamera
+      controls.enabled = false
+      orbitControls.enabled = true
+      // Update orbit controls target to current game center
+      orbitControls.target.set(
+        resolution.x / 2,
+        0,
+        resolution.y / 2
+      )
+      break
+  }
 })
 
 // Center point for camera rotation
@@ -1072,7 +1227,14 @@ function tic() {  // If game hasn't started yet, animate camera rotation
     }
     animateCameraRotation(camera, controls, centerPoint, true);
   } else {
-    controls.update();
+    // Update controls based on current camera mode
+    if (gameStarted && cameraMode === 2) {
+      // Free orbit mode - update orbit controls
+      orbitControls.update();
+    } else {
+      // Perspective and orthographic modes - update regular controls
+      controls.update();
+    }
   }
   
   renderer.render(scene, activeCamera)
@@ -1094,6 +1256,11 @@ function handleResize() {
   sizes.width = window.innerWidth
   sizes.height = window.innerHeight
   updateCamerasOnResize({ camera, topCamera }, sizes, resolution)
+  
+  // Update orbit camera aspect ratio as well
+  orbitCamera.aspect = sizes.width / sizes.height
+  orbitCamera.updateProjectionMatrix()
+  
   renderer.setSize(sizes.width, sizes.height)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 }
