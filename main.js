@@ -235,14 +235,6 @@ skyBox.position.set(resolution.x / 2 - 0.5, -50, resolution.y / 2 - 0.5) // Lowe
 skyBox.rotation.y = Math.PI // Rotate if needed to align horizon
 
 scene.add(skyBox)
-
-// --------- Improved Fog Settings for Better Sky Integration ---------
-// Adjust fog to work better with the skybox
-scene.fog = new THREE.Fog(
-  new THREE.Color(0x87CEEB), // Sky blue color that matches your skybox
-  25, // Start distance - increased to let skybox show through
-  80  // End distance - increased for smoother transition
-)
 scene.add(gridHelper)
 
 const sizes = {
@@ -264,6 +256,17 @@ const finalPosition = new THREE.Vector3(
 
 const { camera, topCamera } = initCameras(resolution, sizes, initialPosition, finalPosition)
 let activeCamera = camera
+
+// Camera mode tracking: 0 = perspective, 1 = orthographic, 2 = free orbit
+let cameraMode = 0
+
+// Create a third camera for free orbit mode
+const orbitCamera = new THREE.PerspectiveCamera(CAMERA_FOV, sizes.width / sizes.height, CAMERA_NEAR, CAMERA_FAR)
+orbitCamera.position.set(
+  resolution.x / 2 + 8,
+  6,
+  resolution.y / 2 + 8
+)
 
 const renderer = new THREE.WebGLRenderer({
   antialias: window.devicePixelRatio < 2,
@@ -287,6 +290,21 @@ controls.target.set(
   0,
   resolution.y / 2 + 2
 )
+
+// Create a separate OrbitControls instance for the free orbit camera
+const orbitControls = new OrbitControls(orbitCamera, renderer.domElement)
+orbitControls.enableDamping = true
+orbitControls.enableZoom = true
+orbitControls.enablePan = true
+orbitControls.enableRotate = true
+orbitControls.target.set(
+  resolution.x / 2,
+  0,
+  resolution.y / 2
+)
+orbitControls.minDistance = 3
+orbitControls.maxDistance = 100
+orbitControls.maxPolarAngle = Math.PI * 0.8 // Prevent camera from going below ground
 
 // --------- Plane and Minimap Initialization ---------
 // Initialize the minimap
@@ -1167,7 +1185,33 @@ btnToggleCamera.addEventListener('mouseleave', function () {
 
 btnToggleCamera.addEventListener('click', () => {
   if (!gameStarted) return
-  activeCamera = activeCamera === camera ? topCamera : camera
+  
+  // Cycle through camera modes: perspective -> orthographic -> free orbit -> repeat
+  cameraMode = (cameraMode + 1) % 3
+  
+  switch (cameraMode) {
+    case 0: // Perspective mode
+      activeCamera = camera
+      controls.enabled = false
+      orbitControls.enabled = false
+      break
+    case 1: // Orthographic mode
+      activeCamera = topCamera
+      controls.enabled = false
+      orbitControls.enabled = false
+      break
+    case 2: // Free orbit mode
+      activeCamera = orbitCamera
+      controls.enabled = false
+      orbitControls.enabled = true
+      // Update orbit controls target to current game center
+      orbitControls.target.set(
+        resolution.x / 2,
+        0,
+        resolution.y / 2
+      )
+      break
+  }
 })
 
 // Center point for camera rotation
@@ -1191,7 +1235,14 @@ function tic() {  // If game hasn't started yet, animate camera rotation
     }
     animateCameraRotation(camera, controls, centerPoint, true);
   } else {
-    controls.update();
+    // Update controls based on current camera mode
+    if (gameStarted && cameraMode === 2) {
+      // Free orbit mode - update orbit controls
+      orbitControls.update();
+    } else {
+      // Perspective and orthographic modes - update regular controls
+      controls.update();
+    }
   }
   
   renderer.render(scene, activeCamera)
@@ -1213,6 +1264,11 @@ function handleResize() {
   sizes.width = window.innerWidth
   sizes.height = window.innerHeight
   updateCamerasOnResize({ camera, topCamera }, sizes, resolution)
+  
+  // Update orbit camera aspect ratio as well
+  orbitCamera.aspect = sizes.width / sizes.height
+  orbitCamera.updateProjectionMatrix()
+  
   renderer.setSize(sizes.width, sizes.height)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 }
