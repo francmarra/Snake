@@ -4,20 +4,20 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import * as dat from 'lil-gui'
-import Snake from './src/Snake'
-import Fruit from './src/Fruit'
-import Rock from './src/Rock'
-import Tree from './src/Tree'
-import Flower from './src/Flower'
-import Mushroom from './src/Mushroom'
-import Fence from './src/Fence'
-import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from './src/Lights'
+import Snake from './src/components/Snake'
+import Fruit from './src/components/Fruit'
+import Rock from './src/components/Rock'
+import Tree from './src/components/Tree'
+import Flower from './src/components/Flower'
+import Mushroom from './src/components/Mushroom'
+import Fence from './src/components/Fence'
+import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from './src/utils/Lights'
 import gsap from 'gsap'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
-import Entity from './src/Entity'
-import Bomb from './src/Bomb'
+import Entity from './src/components/Entity'
+import Bomb from './src/components/Bomb'
 import { MOVEMENT_SPEED, NUM_ENTITIES, DEFAULT_SETTINGS } from './config/Config.js'
 import {
   GRID_WIDTH,
@@ -31,12 +31,12 @@ import {
   CAMERA_NEAR,
   CAMERA_FAR
 } from './config/StaticData.js'
-import { animateButtonIn, animateButtonOut, animateCameraButtonIn, animateSettingsTab } from './src/Animations.js';
+import { animateButtonIn, animateButtonOut, animateCameraButtonIn, animateSettingsTab } from './src/utils/Animations.js';
 import { initCameras, updateCamerasOnResize } from './managers/CameraManager'
 import { muteVolume, unmuteVolume } from './managers/AudioManager'
 import { initializeSettings, toggleMinimap } from './managers/SettingsManager'
-import Minimap from './src/Minimap.js';
-import { animateCameraRotation } from './src/CameraRotation.js';
+import Minimap from './src/components/Minimap.js';
+import { animateCameraRotation } from './src/utils/CameraRotation.js';
 
 // --------- Font Loader & Score Initialization ---------
 // Carrega a fonte para o texto da pontuação
@@ -170,30 +170,27 @@ function applyPalette(name) {
   candies[0].mesh.material.color.set(fruitColor)
   snake.body.head.data.mesh.material.color.set(snakeColor)
   snake.mouth.material.color.set(mouthColor)
-
   updateSnakeSegmentsUI()
 
-  btnPlayImg.src = `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Play.svg`
+  btnPlayImg.src = `/assets/images/themes/${name.toLowerCase()}/${capitalize(name)}Play.svg`;
   document.getElementById('btn-toggle-camera-img').src =
-    `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Camera.svg`
+    `/assets/images/themes/${name.toLowerCase()}/${capitalize(name)}Camera.svg`;
   document.getElementById('btn-volume-img').src =
-    `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Audio.svg`
-  const vol = localStorage.getItem('volume')
+    `/assets/images/themes/${name.toLowerCase()}/${capitalize(name)}Audio.svg`;
+  const vol = localStorage.getItem('volume');
   if (vol === 'off' || audio.volume === 0) {
     document.getElementById('btn-volume-img').src =
-      `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}NoAudio.svg`
+      `/assets/images/themes/${name.toLowerCase()}/${capitalize(name)}NoAudio.svg`;
   }
-  
-  // Update minimap theme and colors
-  const minimapContainer = document.getElementById('minimap-container')
+    // Update minimap theme and colors
+  const minimapContainer = document.getElementById('minimap-container');
   if (minimapContainer) {
-    minimapContainer.classList.remove('theme-green', 'theme-orange', 'theme-lilac')
-    minimapContainer.classList.add(`theme-${name.toLowerCase()}`)
+    minimapContainer.classList.remove('theme-green', 'theme-orange', 'theme-lilac');
+    minimapContainer.classList.add(`theme-${name.toLowerCase()}`);
   }
-  
-  // Update minimap with new palette colors if it exists
+    // Update minimap with new palette colors if it exists
   if (minimap && gameStarted) {
-    minimap.update(snake, candies, bombs, selectedPalette)
+    minimap.update(snake, candies, bombs, selectedPalette);
   }
 }
 
@@ -213,7 +210,7 @@ const scene = new THREE.Scene()
 
 // --------- Enhanced Skybox Setup with Horizon Alignment ---------
 const skyTextureLoader = new THREE.TextureLoader()
-const skyTexture = skyTextureLoader.load('./cloudy_midday_8k.png')
+const skyTexture = skyTextureLoader.load('./assets/images/cloudy_midday_8k.png')
 
 // Better mapping for horizon alignment
 skyTexture.mapping = THREE.EquirectangularReflectionMapping
@@ -307,7 +304,7 @@ const gltfLoader = new GLTFLoader();
 let island = null;
 let groundPlane = null; // For fallback plane
 
-gltfLoader.load('./Island.gltf', (gltf) => {
+gltfLoader.load('./assets/models/Island.gltf', (gltf) => {
   console.log('Island GLTF loaded successfully!', gltf);
   island = gltf.scene;
     // Scale the island to fit the game grid (20x20)
@@ -863,9 +860,9 @@ btnPlay.addEventListener('click', function () {
         if (audio.volume !== 0) {
           await audio.play()
           // Update the icon just to be safe
-          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`
+          document.getElementById('btn-volume-img').src = `/assets/images/themes/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`
         } else {
-          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
+          document.getElementById('btn-volume-img').src = `/assets/images/themes/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
         }
       } catch (err) {
         console.log('Audio could not play automatically:', err)
@@ -1021,8 +1018,8 @@ paletteSelectors.forEach((selector) =>
 
 const manager = new THREE.LoadingManager()
 const textureLoader = new THREE.TextureLoader(manager)
-const wasd = textureLoader.load('/wasd.png')
-const arrows = textureLoader.load('/arrows.png')
+const wasd = textureLoader.load('/assets/images/wasd.png')
+const arrows = textureLoader.load('/assets/images/arrows.png')
 const wasdGeometry = new THREE.PlaneGeometry(3.5, 2)
 wasdGeometry.rotateX(-Math.PI * 0.5)
 const planeWasd = new THREE.Mesh(
@@ -1050,7 +1047,7 @@ manager.onLoad = () => {}
 // Palette-aware settings icon
 function updateSettingsIcon(name) {
   if (!btnSettingsImg) return;
-  btnSettingsImg.src = `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Settings.svg`;
+  btnSettingsImg.src = `/assets/images/themes/${name.toLowerCase()}/${capitalize(name)}Settings.svg`;
 }
 
 // Update settings icon when palette changes

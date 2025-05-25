@@ -1,4 +1,4 @@
-import { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from '../src/Lights'
+import { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from '../src/utils/Lights'
 import gsap from 'gsap'
 
 // Helper function to toggle minimap visibility - moved up before it's used
