@@ -243,16 +243,8 @@ const sizes = {
 }
 
 // --------- Camera Positioning Adjustments ---------
-const initialPosition = new THREE.Vector3(
-  resolution.x / 2 + 5,
-  3, // Lowered from 4 to bring horizon closer to natural eye level
-  resolution.y / 2 + 4
-)
-const finalPosition = new THREE.Vector3(
-  (resolution.x / 2) - 8, // ajustar à direita
-  (resolution.x / 2) + 3, // Lowered camera height slightly
-  resolution.y + 9 // ajustar para a esquerda
-)
+const initialPosition = new THREE.Vector3(resolution.x / 2 + 5, 3, resolution.y / 2 + 4)
+const finalPosition = new THREE.Vector3((resolution.x / 2) - 8, (resolution.x / 2) + 3, resolution.y + 9)
 
 const { camera, topCamera } = initCameras(resolution, sizes, initialPosition, finalPosition)
 let activeCamera = camera
