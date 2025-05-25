@@ -101,10 +101,12 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
   if (borderKillCheckbox) {
     borderKillCheckbox.checked = DEFAULT_SETTINGS.killOnBorderTrespass
     borderKillCheckbox.addEventListener('change', () => {
-      if (window.isRunning) {
-        borderKillCheckbox.checked = DEFAULT_SETTINGS.killOnBorderTrespass
-        return
-      }
+        if (window.isRunning) {
+            borderKillCheckbox.checked = DEFAULT_SETTINGS.killOnBorderTrespass
+            return
+        }
+        // Update the default setting when not running
+        DEFAULT_SETTINGS.killOnBorderTrespass = borderKillCheckbox.checked
     })
   }
 
