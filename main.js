@@ -2,6 +2,7 @@
 import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import * as dat from 'lil-gui'
 import Snake from './src/Snake'
 import Fruit from './src/Fruit'
@@ -80,8 +81,34 @@ function applyPalette(name) {
     flowerCenterColor,
     mushroomCapColor,
     mushroomSpotColor  } = palette
-  
-  planeMaterial.color.set(groundColor)
+    // Update ground plane or island materials
+  if (groundPlane) {
+    // If we're using the fallback plane
+    groundPlane.material.color.set(groundColor);
+  }
+    // Update island materials if the island is loaded
+  if (island) {
+    island.traverse((child) => {
+      if (child.isMesh && child.material) {
+        const materialName = child.material.name?.toLowerCase() || '';
+        
+        // Check if it's likely a grass/top material
+        if (materialName.includes('grass') || materialName.includes('top') || child.name?.toLowerCase().includes('grass')) {
+          child.material.color.setHex(groundColor);
+        }
+        // Check if it's likely a dirt/base material
+        else if (materialName.includes('dirt') || materialName.includes('base') || materialName.includes('soil')) {
+          const darkGroundColor = new THREE.Color(groundColor);
+          darkGroundColor.multiplyScalar(0.7); // Make dirt darker
+          child.material.color.copy(darkGroundColor);
+        }
+        // Default case - apply ground color
+        else {
+          child.material.color.setHex(groundColor);
+        }
+      }
+    });
+  }
   // Maintain fog color consistent with skybox instead of theme colors
   // This ensures the skybox and fog blend seamlessly
 
@@ -186,7 +213,7 @@ const scene = new THREE.Scene()
 
 // --------- Enhanced Skybox Setup with Horizon Alignment ---------
 const skyTextureLoader = new THREE.TextureLoader()
-const skyTexture = skyTextureLoader.load('./clear_midday_4k.png')
+const skyTexture = skyTextureLoader.load('./cloudy_midday_8k.png')
 
 // Better mapping for horizon alignment
 skyTexture.mapping = THREE.EquirectangularReflectionMapping
@@ -265,20 +292,82 @@ controls.target.set(
 // Initialize the minimap
 let minimap = null;
 
-const planeGeometry = new THREE.PlaneGeometry(
-  resolution.x * 50,
-  resolution.y * 50
-)
-planeGeometry.rotateX(-Math.PI * 0.5)
-const planeMaterial = new THREE.MeshStandardMaterial({
-  color: params.groundColor,
-})
-const plane = new THREE.Mesh(planeGeometry, planeMaterial)
-plane.position.x = resolution.x / 2 - 0.5
-plane.position.z = resolution.y / 2 - 0.5
-plane.position.y = -0.5
-scene.add(plane)
-plane.receiveShadow = true
+// Load the GLTF island model
+const gltfLoader = new GLTFLoader();
+let island = null;
+let groundPlane = null; // For fallback plane
+
+gltfLoader.load('./Island.gltf', (gltf) => {
+  console.log('Island GLTF loaded successfully!', gltf);
+  island = gltf.scene;
+    // Scale the island to fit the game grid (20x20)
+  // Make it bigger to cover more of the game area
+  const scale = Math.max(resolution.x, resolution.y) * 4; // Increased from 0.3 to 0.8
+  island.scale.set(scale, scale, scale);
+    // Position the island at the center of the game area
+  island.position.x = resolution.x / 2 - 0.5;
+  island.position.z = resolution.y / 2 - 0.5;
+  island.position.y = -60.2; // Lower the island to be below snake and objects (which are at y=0)
+
+    // Enable shadow receiving for all meshes in the island
+  island.traverse((child) => {
+    if (child.isMesh) {
+      console.log('Found mesh in island:', child.name, child.material?.name);
+      child.receiveShadow = true;
+      child.castShadow = true;
+      
+      // Update material colors to match the current palette
+      if (child.material) {
+        // Try to identify materials by name first, then fallback to primitive index
+        const materialName = child.material.name?.toLowerCase() || '';
+        
+        // Check if it's likely a grass/top material (usually the first primitive or has "grass" in name)
+        if (materialName.includes('grass') || materialName.includes('top') || child.name?.toLowerCase().includes('grass')) {
+          child.material.color.setHex(params.groundColor);
+          console.log('Applied grass color to:', child.name);
+        }
+        // Check if it's likely a dirt/base material
+        else if (materialName.includes('dirt') || materialName.includes('base') || materialName.includes('soil')) {
+          const dirtColor = new THREE.Color(0xa5756d); // Default dirt color
+          dirtColor.multiplyScalar(0.7); // Make dirt darker
+          child.material.color.copy(dirtColor);
+          console.log('Applied dirt color to:', child.name);
+        }
+        // If we can't identify by name, apply grass color to the first mesh, dirt to others
+        else {
+          // For the island model, we'll default to grass color for all surfaces
+          child.material.color.setHex(params.groundColor);
+          console.log('Applied default ground color to:', child.name);
+        }
+      }
+    }
+  });
+  
+  scene.add(island);
+  console.log('Island added to scene');
+}, 
+(progress) => {
+  console.log('Loading progress:', (progress.loaded / progress.total * 100) + '%');
+},
+(error) => {
+  console.error('Error loading island model:', error);
+    // Fallback to original plane if GLTF fails to load
+  console.log('Falling back to original plane');
+  const planeGeometry = new THREE.PlaneGeometry(
+    resolution.x * 50,
+    resolution.y * 50
+  );
+  planeGeometry.rotateX(-Math.PI * 0.5);
+  const planeMaterial = new THREE.MeshStandardMaterial({
+    color: params.groundColor,
+  });
+  groundPlane = new THREE.Mesh(planeGeometry, planeMaterial);
+  groundPlane.position.x = resolution.x / 2 - 0.5;
+  groundPlane.position.z = resolution.y / 2 - 0.5;
+  groundPlane.position.y = -0.5;
+  scene.add(groundPlane);
+  groundPlane.receiveShadow = true;
+});
 
 // --------- Snake Initialization and Game Logic ---------
 const snake = new Snake({
