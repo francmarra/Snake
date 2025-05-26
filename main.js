@@ -57,7 +57,30 @@ loader.load(fontSrc, (loadedFont) => {
 // --- Paletas de cores e seleção ---
 const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT)
 const palettes = COLOR_PALETTES
-let paletteName = 'day' // Default palette, not loaded from localStorage
+
+// Function to load theme from localStorage
+function loadThemeFromStorage() {
+  try {
+    const savedTheme = localStorage.getItem('snakeGameTheme')
+    if (savedTheme && palettes[savedTheme]) {
+      return savedTheme
+    }
+  } catch (error) {
+    console.warn('Could not load theme from localStorage:', error)
+  }
+  return 'day' // Default fallback
+}
+
+// Function to save theme to localStorage
+function saveThemeToStorage(themeName) {
+  try {
+    localStorage.setItem('snakeGameTheme', themeName)
+  } catch (error) {
+    console.warn('Could not save theme to localStorage:', error)
+  }
+}
+
+let paletteName = loadThemeFromStorage() // Load theme from localStorage
 let selectedPalette = palettes[paletteName]
 const params = { ...selectedPalette }
 
@@ -72,7 +95,8 @@ function applyPalette(name) {
   const palette = palettes[name]
   if (!palette) return
   
-  // Don't save to localStorage
+  // Save theme to localStorage for persistence
+  saveThemeToStorage(name)
   selectedPalette = palette;
     const {
     groundColor,
