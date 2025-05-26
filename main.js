@@ -8,7 +8,7 @@ import Tree from './src/components/Tree'
 import Flower from './src/components/Flower'
 import Mushroom from './src/components/Mushroom'
 import Fence from './src/components/Fence'
-import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight, applyThemeLights } from './src/utils/Lights'
+import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight, applyThemeLights, areAllLightsOff, setLightChangeCallback } from './src/utils/Lights'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
@@ -221,6 +221,7 @@ const skyboxImages = {
 const skyboxTextureCache = {}
 let skyboxLoadingPromise = null
 let skyBox // Global reference to the skybox for updates
+let skyboxOverlay // Global reference to the dark overlay
 
 // Set up loading manager callbacks
 skyboxLoadingManager.onLoad = () => {
@@ -302,12 +303,42 @@ function updateSkybox(themeName) {
     skyBox.position.set(resolution.x / 2 - 0.5, -50, resolution.y / 2 - 0.5)
     skyBox.rotation.y = Math.PI
 
-    scene.add(skyBox)
-  } else {
+    scene.add(skyBox)  } else {
     // Instantly update existing skybox material
     skyBox.material.map = texture
     skyBox.material.needsUpdate = true
   }
+}
+
+// Function to create or update skybox dark overlay
+function updateSkyboxOverlay(darken = false) {
+  if (!skyboxOverlay && darken) {
+    // Create the overlay if it doesn't exist and we need to darken
+    const overlayGeometry = new THREE.SphereGeometry(499, 60, 40) // Slightly smaller than skybox
+    const overlayMaterial = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.7, // Adjust this value to control darkness (0.0 = no effect, 1.0 = completely black)
+      side: THREE.BackSide,
+      fog: false
+    })
+
+    skyboxOverlay = new THREE.Mesh(overlayGeometry, overlayMaterial)
+    
+    // Position the overlay same as skybox
+    skyboxOverlay.position.set(resolution.x / 2 - 0.5, -50, resolution.y / 2 - 0.5)
+    skyboxOverlay.rotation.y = Math.PI
+
+    scene.add(skyboxOverlay)  } else if (skyboxOverlay) {
+    // Update existing overlay visibility
+    skyboxOverlay.visible = darken
+  }
+}
+
+// Function to check lighting state and update skybox overlay
+function updateSkyboxLighting() {
+  const allLightsOff = areAllLightsOff()
+  updateSkyboxOverlay(allLightsOff)
 }
 
 // Start preloading skybox textures immediately
@@ -734,6 +765,12 @@ function generateEntities() {
 generateEntities()
 
 scene.add(...lights)
+
+// Set up the callback for light changes to update skybox overlay
+setLightChangeCallback(updateSkyboxLighting)
+
+// Initialize skybox lighting state
+updateSkyboxLighting()
 
 // Add static trees
 const tree = new Tree(resolution)

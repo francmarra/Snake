@@ -32,19 +32,37 @@ pointLight.visible = DEFAULT_SETTINGS.pointLightEnabled
 
 const lights = [dirLight, ambLight, pointLight]
 
+// Callback function to notify when lights change (to be set externally)
+let lightChangeCallback = null
+
+// Set the callback function
+export function setLightChangeCallback(callback) {
+  lightChangeCallback = callback
+}
+
+// Helper function to call the callback if it exists
+function notifyLightChange() {
+  if (lightChangeCallback && typeof lightChangeCallback === 'function') {
+    lightChangeCallback()
+  }
+}
+
 // Função para alternar luz ambiente
 export function toggleAmbientLight(enabled) {
   ambLight.visible = enabled;
+  notifyLightChange()
 }
 
 // Função para alternar luz direcional
 export function toggleDirectionalLight(enabled) {
   dirLight.visible = enabled;
+  notifyLightChange()
 }
 
 // Função para alternar luz pontual
 export function togglePointLight(enabled) {
   pointLight.visible = enabled;
+  notifyLightChange()
 }
 
 // Função para aplicar as cores do tema às luzes
@@ -59,6 +77,11 @@ export function applyThemeLights(themeName) {
   ambLight.color.setHex(palette.ambientLightColor);
   dirLight.color.setHex(palette.directionalLightColor);
   pointLight.color.setHex(palette.pointLightColor);
+}
+
+// Função para verificar se todas as luzes estão desligadas
+export function areAllLightsOff() {
+  return !ambLight.visible && !dirLight.visible && !pointLight.visible;
 }
 
 // Initialize with day theme colors by default
