@@ -1,0 +1,262 @@
+{
+  "accessors": [
+    {
+      "name": "Island01_Cylinder-Mesh_0_positions",
+      "componentType": 5126,
+      "count": 128,
+      "min": [
+        -0.4464479982852936,
+        -0.009568000212311745,
+        -0.44175800681114197
+      ],
+      "max": [
+        0.4406239986419678,
+        0.7300660014152527,
+        0.46669599413871765
+      ],
+      "type": "VEC3",
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "name": "Island01_Cylinder-Mesh_0_normals",
+      "componentType": 5126,
+      "count": 128,
+      "min": [
+        -0.9436018466949463,
+        -0.9810054898262024,
+        -0.9464276432991028
+      ],
+      "max": [
+        0.9662479162216187,
+        -0.18009912967681885,
+        0.9190930724143982
+      ],
+      "type": "VEC3",
+      "bufferView": 1,
+      "byteOffset": 0
+    },
+    {
+      "name": "Island01_Cylinder-Mesh_0_texcoords",
+      "componentType": 5126,
+      "count": 128,
+      "min": [
+        0,
+        0
+      ],
+      "max": [
+        1,
+        0.9900000095367432
+      ],
+      "type": "VEC2",
+      "bufferView": 2,
+      "byteOffset": 0
+    },
+    {
+      "name": "Island01_Cylinder-Mesh_0_indices",
+      "componentType": 5123,
+      "count": 186,
+      "min": [
+        0
+      ],
+      "max": [
+        127
+      ],
+      "type": "SCALAR",
+      "bufferView": 3,
+      "byteOffset": 0
+    },
+    {
+      "name": "Island01_Cylinder-Mesh_1_positions",
+      "componentType": 5126,
+      "count": 40,
+      "min": [
+        -0.4464530050754547,
+        0.6687459945678711,
+        -0.4417620003223419
+      ],
+      "max": [
+        0.4406239986419678,
+        0.7448949813842773,
+        0.46669599413871765
+      ],
+      "type": "VEC3",
+      "bufferView": 0,
+      "byteOffset": 1536
+    },
+    {
+      "name": "Island01_Cylinder-Mesh_1_normals",
+      "componentType": 5126,
+      "count": 40,
+      "min": [
+        -0.8984308242797852,
+        -0.00020000686345156282,
+        -0.9321809411048889
+      ],
+      "max": [
+        0.8977617621421814,
+        0.9999998807907104,
+        0.8672938346862793
+      ],
+      "type": "VEC3",
+      "bufferView": 1,
+      "byteOffset": 1536
+    },
+    {
+      "name": "Island01_Cylinder-Mesh_1_texcoords",
+      "componentType": 5126,
+      "count": 40,
+      "min": [
+        0,
+        0
+      ],
+      "max": [
+        1,
+        0.9900000095367432
+      ],
+      "type": "VEC2",
+      "bufferView": 2,
+      "byteOffset": 1024
+    },
+    {
+      "name": "Island01_Cylinder-Mesh_1_indices",
+      "componentType": 5123,
+      "count": 66,
+      "min": [
+        0
+      ],
+      "max": [
+        39
+      ],
+      "type": "SCALAR",
+      "bufferView": 3,
+      "byteOffset": 372
+    }
+  ],
+  "asset": {
+    "generator": "obj2gltf",
+    "version": "2.0"
+  },
+  "buffers": [
+    {
+      "uri": "Island_data.bin",
+      "byteLength": 5880
+    }
+  ],
+  "bufferViews": [
+    {
+      "name": "bufferView_0",
+      "buffer": 0,
+      "byteLength": 2016,
+      "byteOffset": 0,
+      "byteStride": 12,
+      "target": 34962
+    },
+    {
+      "name": "bufferView_1",
+      "buffer": 0,
+      "byteLength": 2016,
+      "byteOffset": 2016,
+      "byteStride": 12,
+      "target": 34962
+    },
+    {
+      "name": "bufferView_2",
+      "buffer": 0,
+      "byteLength": 1344,
+      "byteOffset": 4032,
+      "byteStride": 8,
+      "target": 34962
+    },
+    {
+      "name": "bufferView_3",
+      "buffer": 0,
+      "byteLength": 504,
+      "byteOffset": 5376,
+      "target": 34963
+    }
+  ],
+  "materials": [
+    {
+      "name": "Dirt",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.581463,
+          0.277158,
+          0.245836,
+          1
+        ],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.972437496
+      },
+      "emissiveFactor": [
+        0,
+        0,
+        0
+      ],
+      "alphaMode": "OPAQUE",
+      "doubleSided": false
+    },
+    {
+      "name": "Grass",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.137576,
+          0.735659,
+          0.101631,
+          1
+        ],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.964000004
+      },
+      "emissiveFactor": [
+        0,
+        0,
+        0
+      ],
+      "alphaMode": "OPAQUE",
+      "doubleSided": false
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Island01_Cylinder-Mesh",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3,
+          "material": 0,
+          "mode": 4
+        },
+        {
+          "attributes": {
+            "POSITION": 4,
+            "NORMAL": 5,
+            "TEXCOORD_0": 6
+          },
+          "indices": 7,
+          "material": 1,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "Island01_Cylinder",
+      "mesh": 0
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [
+        0
+      ]
+    }
+  ]
+}

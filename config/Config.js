@@ -1,6 +1,6 @@
-// --- Configurações de Gameplay ---
+// --- Definições de Jogabilidade ---
 
-// Default settings that can be overridden
+// Definições por defeito que podem ser sobrescritas
 export const DEFAULT_SETTINGS = {
     numFruits: 1,
     numBombs: 1,
@@ -9,28 +9,23 @@ export const DEFAULT_SETTINGS = {
     killOnBorderTrespass: false,
     ambientLightEnabled: true,
     directionalLightEnabled: true,
-    pointLightEnabled: false
+    pointLightEnabled: false,
+    showMinimap: true
 }
 
-// Get current setting value - always returns the default value
+// Obter valor da definição atual - devolve sempre o valor por defeito
 export function getSetting(key) {
     return DEFAULT_SETTINGS[key];
 }
 
-// Save setting value - doesn't actually save to localStorage
-export function saveSetting(key, value) {
-    // This function is now a no-op - doesn't save to localStorage
-    console.log(`Setting ${key} would have been saved as ${value}`);
-}
-
-// --- Gameplay ---
-export const MOVEMENT_SPEED = getSetting('snakeSpeed') // ms per snake move
+// --- Jogabilidade ---
+export const MOVEMENT_SPEED = getSetting('snakeSpeed') // ms por movimento da cobra
 export const INITIAL_SNAKE_LENGTH = 4
-export const NUM_ENTITIES = getSetting('numObjects') // number of rocks + trees spawned
-export const NUM_FRUITS = getSetting('numFruits') // number of fruits present at a time
+export const NUM_ENTITIES = getSetting('numObjects') // número de rochas + árvores geradas
+export const NUM_FRUITS = getSetting('numFruits') // número de frutas presentes ao mesmo tempo
 export const FRUIT_MIN_POINTS = 1
 export const FRUIT_MAX_POINTS = 3
 
-// --- Animation ---
-export const ENTITY_IN_DURATION = 1 // seconds
+// --- Animação ---
+export const ENTITY_IN_DURATION = 1 // segundos
 export const ENTITY_IN_EASE = 'elastic.out(1.5, 0.5)'
