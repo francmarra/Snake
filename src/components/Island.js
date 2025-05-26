@@ -50,6 +50,7 @@ export default class Island {
               // If we can't identify by name, apply grass color to the first mesh, dirt to others
               else {
                 // For the island model, we'll default to grass color for all surfaces
+                console.log(`Applying ground color to unrecognized material: ${child.material.name}`);
                 child.material.color.setHex(groundColor);
               }
             }
