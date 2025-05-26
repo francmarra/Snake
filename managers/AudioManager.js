@@ -1,4 +1,6 @@
-export function muteVolume(audio, btnVolumeImg, paletteName, capitalize, gsap) {
+import gsap from 'gsap';
+
+export function muteVolume(audio, btnVolumeImg, paletteName, capitalize) {
   // Silencia o áudio
   gsap.to(audio, { volume: 0, duration: 0.3 })
   if (btnVolumeImg) {
@@ -7,7 +9,7 @@ export function muteVolume(audio, btnVolumeImg, paletteName, capitalize, gsap) {
   }
 }
 
-export function unmuteVolume(audio, btnVolumeImg, paletteName, initialVolume, capitalize, gsap) {
+export function unmuteVolume(audio, btnVolumeImg, paletteName, initialVolume, capitalize) {
   // Ativa o áudio
   if (btnVolumeImg) {
     gsap.killTweensOf(btnVolumeImg)

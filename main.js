@@ -2,7 +2,6 @@
 import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import * as dat from 'lil-gui'
 import Snake from './src/components/Snake'
 import Fruit from './src/components/Fruit'
@@ -12,7 +11,6 @@ import Flower from './src/components/Flower'
 import Mushroom from './src/components/Mushroom'
 import Fence from './src/components/Fence'
 import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from './src/utils/Lights'
-import gsap from 'gsap'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
@@ -31,12 +29,24 @@ import {
   CAMERA_NEAR,
   CAMERA_FAR
 } from './config/StaticData.js'
-import { animateButtonIn, animateButtonOut, animateCameraButtonIn, animateSettingsTab } from './src/utils/Animations.js';
+import { 
+  animateButtonIn, 
+  animateButtonOut, 
+  animateCameraButtonIn, 
+  animateSettingsTab,
+  animateEntitiesIn,
+  animateMinimapIn,
+  animateCameraPosition,
+  animateButtonClick,
+  animatePaletteSelectors,
+  animateSettingsGear 
+} from './src/utils/Animations.js';
 import { initCameras, updateCamerasOnResize } from './managers/CameraManager'
 import { muteVolume, unmuteVolume } from './managers/AudioManager'
 import { initializeSettings, toggleMinimap } from './managers/SettingsManager'
 import Minimap from './src/components/Minimap.js';
 import { animateCameraRotation } from './src/utils/CameraRotation.js';
+import Island from './src/components/Island.js';
 
 // --------- Font Loader & Score Initialization ---------
 // Carrega a fonte para o texto da pontuação
@@ -68,10 +78,8 @@ function applyPalette(name) {
   
   // Don't save to localStorage
   selectedPalette = palette;
-  
-  const {
+    const {
     groundColor,
-    fogColor,
     rockColor,
     treeColor,
     fruitColor,
@@ -80,37 +88,13 @@ function applyPalette(name) {
     flowerPetalColor,
     flowerCenterColor,
     mushroomCapColor,
-    mushroomSpotColor  } = palette
-    // Update ground plane or island materials
-  if (groundPlane) {
-    // If we're using the fallback plane
-    groundPlane.material.color.set(groundColor);
-  }
-    // Update island materials if the island is loaded
+    mushroomSpotColor
+  } = palette
+  
+  // Update island materials if the island is loaded
   if (island) {
-    island.traverse((child) => {
-      if (child.isMesh && child.material) {
-        const materialName = child.material.name?.toLowerCase() || '';
-        
-        // Check if it's likely a grass/top material
-        if (materialName.includes('grass') || materialName.includes('top') || child.name?.toLowerCase().includes('grass')) {
-          child.material.color.setHex(groundColor);
-        }
-        // Check if it's likely a dirt/base material
-        else if (materialName.includes('dirt') || materialName.includes('base') || materialName.includes('soil')) {
-          const darkGroundColor = new THREE.Color(groundColor);
-          darkGroundColor.multiplyScalar(0.7); // Make dirt darker
-          child.material.color.copy(darkGroundColor);
-        }
-        // Default case - apply ground color
-        else {
-          child.material.color.setHex(groundColor);
-        }
-      }
-    });
+    island.updateColors(groundColor);
   }
-  // Maintain fog color consistent with skybox instead of theme colors
-  // This ensures the skybox and fog blend seamlessly
 
   // Atualiza cor de rochas
   entities.filter((e) => e instanceof Rock).forEach((rock) => {
@@ -129,7 +113,7 @@ function applyPalette(name) {
     
     if (center) {
       // Update the center color
-      center.material.color.set(palette.flowerCenterColor);
+      center.material.color.set(flowerCenterColor);
     }
       // Update all petals (avoiding stems and leaves which are green)
     flower.mesh.children.forEach(child => {
@@ -140,7 +124,7 @@ function applyPalette(name) {
       // If it's not stem or leaves and not the center, it's a petal
       if (child.material && !isGreenPart && child !== center) {
         // Use flowerPetalColor or fall back to fruitColor for backward compatibility
-        child.material.color.set(palette.flowerPetalColor || palette.fruitColor);
+        child.material.color.set(flowerPetalColor || fruitColor);
       }
     });
   })
@@ -153,7 +137,7 @@ function applyPalette(name) {
     );
     
     if (cap) {
-      cap.material.color.set(palette.mushroomCapColor || 0x8B4513);
+      cap.material.color.set(mushroomCapColor || 0x8B4513);
     }
     
     // Update all spot colors but keep the stem untouched
@@ -162,7 +146,7 @@ function applyPalette(name) {
       if (child.geometry instanceof THREE.CylinderGeometry && 
           child !== cap && 
           child.geometry.parameters.height <= 0.01) { // Only thin cylinders (spots)
-        child.material.color.set(palette.mushroomSpotColor || 0xFFFFFF);
+        child.material.color.set(mushroomSpotColor || 0xFFFFFF);
       }
     });
   })
@@ -299,82 +283,8 @@ orbitControls.maxPolarAngle = Math.PI * 0.8 // Prevent camera from going below g
 // Initialize the minimap
 let minimap = null;
 
-// Load the GLTF island model
-const gltfLoader = new GLTFLoader();
-let island = null;
-let groundPlane = null; // For fallback plane
-
-gltfLoader.load('./assets/models/Island.gltf', (gltf) => {
-  console.log('Island GLTF loaded successfully!', gltf);
-  island = gltf.scene;
-    // Scale the island to fit the game grid (20x20)
-  // Make it bigger to cover more of the game area
-  const scale = Math.max(resolution.x, resolution.y) * 4; // Increased from 0.3 to 0.8
-  island.scale.set(scale, scale, scale);
-    // Position the island at the center of the game area
-  island.position.x = resolution.x / 2 - 0.5;
-  island.position.z = resolution.y / 2 - 0.5;
-  island.position.y = -60.2; // Lower the island to be below snake and objects (which are at y=0)
-
-    // Enable shadow receiving for all meshes in the island
-  island.traverse((child) => {
-    if (child.isMesh) {
-      console.log('Found mesh in island:', child.name, child.material?.name);
-      child.receiveShadow = true;
-      child.castShadow = true;
-      
-      // Update material colors to match the current palette
-      if (child.material) {
-        // Try to identify materials by name first, then fallback to primitive index
-        const materialName = child.material.name?.toLowerCase() || '';
-        
-        // Check if it's likely a grass/top material (usually the first primitive or has "grass" in name)
-        if (materialName.includes('grass') || materialName.includes('top') || child.name?.toLowerCase().includes('grass')) {
-          child.material.color.setHex(params.groundColor);
-          console.log('Applied grass color to:', child.name);
-        }
-        // Check if it's likely a dirt/base material
-        else if (materialName.includes('dirt') || materialName.includes('base') || materialName.includes('soil')) {
-          const dirtColor = new THREE.Color(0xa5756d); // Default dirt color
-          dirtColor.multiplyScalar(0.7); // Make dirt darker
-          child.material.color.copy(dirtColor);
-          console.log('Applied dirt color to:', child.name);
-        }
-        // If we can't identify by name, apply grass color to the first mesh, dirt to others
-        else {
-          // For the island model, we'll default to grass color for all surfaces
-          child.material.color.setHex(params.groundColor);
-          console.log('Applied default ground color to:', child.name);
-        }
-      }
-    }
-  });
-  
-  scene.add(island);
-  console.log('Island added to scene');
-}, 
-(progress) => {
-  console.log('Loading progress:', (progress.loaded / progress.total * 100) + '%');
-},
-(error) => {
-  console.error('Error loading island model:', error);
-    // Fallback to original plane if GLTF fails to load
-  console.log('Falling back to original plane');
-  const planeGeometry = new THREE.PlaneGeometry(
-    resolution.x * 50,
-    resolution.y * 50
-  );
-  planeGeometry.rotateX(-Math.PI * 0.5);
-  const planeMaterial = new THREE.MeshStandardMaterial({
-    color: params.groundColor,
-  });
-  groundPlane = new THREE.Mesh(planeGeometry, planeMaterial);
-  groundPlane.position.x = resolution.x / 2 - 0.5;
-  groundPlane.position.z = resolution.y / 2 - 0.5;
-  groundPlane.position.y = -0.5;
-  scene.add(groundPlane);
-  groundPlane.receiveShadow = true;
-});
+// Initialize the island
+let island = new Island(scene, resolution, params.groundColor);
 
 // --------- Snake Initialization and Game Logic ---------
 const snake = new Snake({
@@ -652,9 +562,9 @@ function resetGame() {
     settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
     animateSettingsTab(settingsTab, true);
   }
-  
-  // Update minimap visibility based on settings
+    // Update minimap visibility based on settings
   const showMinimap = document.getElementById('show-minimap').checked;
+  const minimapContainer = document.getElementById('minimap-container');
   if (minimapContainer) {
     if (showMinimap) {
       minimapContainer.style.display = 'block';
@@ -756,21 +666,7 @@ function generateEntities() {
 
     return distanceA - distanceB
   })
-
-  gsap.from(
-    entities.map((entity) => entity.mesh.scale),
-    {
-      x: 0,
-      y: 0,
-      z: 0,
-      duration: 1,
-      ease: 'elastic.out(1.5, 0.5)',
-      stagger: {
-        grid: [20, 20],
-        amount: 0.7,
-      },
-    }
-  )
+  animateEntitiesIn(entities)
 }
 
 generateEntities()
@@ -865,7 +761,6 @@ btnPlay.addEventListener('click', function () {
           document.getElementById('btn-volume-img').src = `/assets/images/themes/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
         }
       } catch (err) {
-        console.log('Audio could not play automatically:', err)
         // In case of autoplay failure, we keep the mute icon
         muteVolume()
       }
@@ -873,36 +768,14 @@ btnPlay.addEventListener('click', function () {
     // Enhanced minimap animation with smoother timing
     const minimapContainer = document.getElementById('minimap-container');
     const showMinimap = document.getElementById('show-minimap').checked;
-    
-    if (showMinimap) {
-      minimapContainer.style.display = 'block';
-      minimapContainer.style.opacity = '0';
-      minimapContainer.style.transform = 'scale(0.7) translateY(30px)';
-      
-      gsap.to(minimapContainer, {
-        opacity: 1,
-        scale: 1,
-        y: 0,
-        duration: 1.2,
-        delay: 1.0,
-        ease: "back.out(1.7)",
-        onComplete: () => {
-          gsap.to(minimapContainer, {
-            scale: 1.05,
-            duration: 0.3,
-            repeat: 1,
-            yoyo: true,
-            ease: "sine.inOut"
-          });
-        }
-      });
+      if (showMinimap) {
+      animateMinimapIn(minimapContainer);
     } else {
       minimapContainer.style.display = 'none';
     }
       playAudio()
     
-    gsap.to(camera.position, { ...finalPosition, duration: 2 })
-    gsap.to(scene.fog, { duration: 2, near: 30, far: 80 })
+    animateCameraPosition(camera, finalPosition)
     animateButtonOut(this)
     if (btnSettings) {
       animateButtonOut(btnSettings)
@@ -960,25 +833,13 @@ if (userVolume === 'off') {
   muteVolume()
 }
 
-btnVolume.addEventListener('click', function () {
-  // Add a small scale animation for feedback
-  gsap.to(this, {
-    scale: 0.9,
-    duration: 0.1,
-    onComplete: () => {
-      gsap.to(this, {
-        scale: 1,
-        duration: 0.3,
-        ease: "elastic.out(1.2, 0.7)"
-      })
-    }
-  })
-  
-  // Check if audio is muted
+btnVolume.addEventListener('click', function () {  // Add a small scale animation for feedback
+  animateButtonClick(this)
+    // Check if audio is muted
   if (audio.volume === 0) {
-    unmuteVolume(audio, document.getElementById('btn-volume-img'), paletteName, initialVolume, capitalize, gsap)
+    unmuteVolume(audio, document.getElementById('btn-volume-img'), paletteName, initialVolume, capitalize)
   } else {
-    muteVolume(audio, document.getElementById('btn-volume-img'), paletteName, capitalize, gsap)
+    muteVolume(audio, document.getElementById('btn-volume-img'), paletteName, capitalize)
   }
 })
 
@@ -993,21 +854,9 @@ btnVolume.addEventListener('mouseleave', function () {
 
 const sideBar = document.querySelector('.top-bar')
 const paletteSelectors = document.querySelectorAll('[data-color]')
-gsap.to(sideBar, {
-  opacity: 1,
-  delay: 0.5,
-  onComplete: () => {
-    gsap.to(paletteSelectors, {
-      duration: 1,
-      x: 0,
-      autoAlpha: 1,
-      ease: `elastic.out(1.2, 0.9)`,
-      stagger: {
-        amount: 0.2,
-      },
-    })
-  },
-})
+
+// Animate palette selectors with or without sidebar
+animatePaletteSelectors(paletteSelectors, sideBar)
 
 paletteSelectors.forEach((selector) =>
   selector.addEventListener('click', function () {
@@ -1081,11 +930,7 @@ updateSettingsIcon(paletteName);
 btnSettings.addEventListener('click', function () {
   const gear = btnSettings.querySelector('img[alt="Settings Gear"]');
   if (gear) {
-    gsap.to(gear, {
-      rotation: "+=360",
-      duration: 1,
-      ease: "power2.inOut"
-    });
+    animateSettingsGear(gear);
   }
   
   // Toggle settings sidebar
@@ -1261,3 +1106,29 @@ function handleResize() {
   renderer.setSize(sizes.width, sizes.height)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 }
+
+// --------- Prevent Dragging on UI Elements ---------
+// This ensures UI elements can't be dragged by the user
+function preventDragging() {
+  // Get all UI elements that should not be draggable
+  const uiElements = document.querySelectorAll('button, img, .theme-selector, #settings-tab, .settings-sidebar, #minimap-container, canvas');
+  
+  // Add dragstart event listener to prevent dragging
+  uiElements.forEach(element => {
+    element.addEventListener('dragstart', (e) => {
+      e.preventDefault();
+      return false;
+    });
+    
+    // Prevent text selection when double-clicking
+    element.addEventListener('mousedown', (e) => {
+      if (e.detail > 1) { // Check for double click
+        e.preventDefault();
+        return false;
+      }
+    });
+  });
+}
+
+// Call the function after the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', preventDragging);

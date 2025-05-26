@@ -1,4 +1,4 @@
-# Snake 3D Game
+# Snake em Three.js
 
 A 3D Snake game built with Three.js, Vite, and TailwindCSS.
 
@@ -17,7 +17,6 @@ A 3D Snake game built with Three.js, Vite, and TailwindCSS.
 ├── src/                  # Source code
 │   ├── components/       # Game components
 │   └── utils/            # Utility functions
-├── public/               # Public files
 ├── index.html            # Entry HTML file
 ├── main.js               # Main application file
 ├── style.css             # Global CSS styles
