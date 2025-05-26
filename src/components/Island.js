@@ -1,12 +1,12 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 
-export default class Island {
-  constructor(scene, resolution, groundColor) {
+export default class Island {  constructor(scene, resolution, groundColor, dirtColor) {
     this.scene = scene
     this.resolution = resolution
     this.island = null
     this.gltfLoader = new GLTFLoader()
+    this.dirtColor = dirtColor || 0xa5756d // Use provided dirtColor or default
     
     this.loadIsland(groundColor)
   }
@@ -40,12 +40,11 @@ export default class Island {
               // Check if it's likely a grass/top material (usually the first primitive or has "grass" in name)
               if (materialName.includes('grass') || materialName.includes('top') || child.name?.toLowerCase().includes('grass')) {
                 child.material.color.setHex(groundColor);
-              }
-              // Check if it's likely a dirt/base material
+              }              // Check if it's likely a dirt/base material
               else if (materialName.includes('dirt') || materialName.includes('base') || materialName.includes('soil')) {
-                const dirtColor = new THREE.Color(0xa5756d); // Default dirt color
-                dirtColor.multiplyScalar(0.7); // Make dirt darker
-                child.material.color.copy(dirtColor);
+                const dirtColorObj = new THREE.Color(this.dirtColor);
+                dirtColorObj.multiplyScalar(0.7); // Make dirt darker for better visual contrast
+                child.material.color.copy(dirtColorObj);
               }
               // If we can't identify by name, apply grass color to the first mesh, dirt to others
               else {
@@ -56,15 +55,18 @@ export default class Island {
             }
           }
         });
-        
         this.scene.add(this.island);
       }
     );
   }
-
-  updateColors(groundColor) {
+  updateColors(groundColor, dirtColor) {
     // Update island materials if the island is loaded
     if (this.island) {
+      // Update the dirt color if provided
+      if (dirtColor) {
+        this.dirtColor = dirtColor;
+      }
+      
       this.island.traverse((child) => {
         if (child.isMesh && child.material) {
           const materialName = child.material.name?.toLowerCase() || '';
@@ -75,9 +77,9 @@ export default class Island {
           }
           // Check if it's likely a dirt/base material
           else if (materialName.includes('dirt') || materialName.includes('base') || materialName.includes('soil')) {
-            const darkGroundColor = new THREE.Color(groundColor);
-            darkGroundColor.multiplyScalar(0.7); // Make dirt darker
-            child.material.color.copy(darkGroundColor);
+            const dirtColorObj = new THREE.Color(this.dirtColor);
+            dirtColorObj.multiplyScalar(0.7); // Make dirt darker for better visual contrast
+            child.material.color.copy(dirtColorObj);
           }
           // Default case - apply ground color
           else {

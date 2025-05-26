@@ -8,7 +8,7 @@ import Tree from './src/components/Tree'
 import Flower from './src/components/Flower'
 import Mushroom from './src/components/Mushroom'
 import Fence from './src/components/Fence'
-import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from './src/utils/Lights'
+import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight, applyThemeLights } from './src/utils/Lights'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
@@ -94,12 +94,12 @@ function applyPalette(name) {
   paletteName = name
   const palette = palettes[name]
   if (!palette) return
-  
-  // Save theme to localStorage for persistence
-  saveThemeToStorage(name)
+    // Save theme to localStorage for persistence
+  saveThemeToStorage(name);
   selectedPalette = palette;
     const {
     groundColor,
+    dirtColor,
     rockColor,
     treeColor,
     fruitColor,
@@ -112,11 +112,13 @@ function applyPalette(name) {
   } = palette
     // Update island materials if the island is loaded
   if (island) {
-    island.updateColors(groundColor);
+    island.updateColors(groundColor, dirtColor);
   }
-
   // Update skybox based on theme
   updateSkybox(name)
+
+  // Apply theme lighting
+  applyThemeLights(name)
 
   // Atualiza cor de rochas
   entities.filter((e) => e instanceof Rock).forEach((rock) => {
@@ -351,7 +353,7 @@ renderer.shadowMap.type = THREE.VSMShadowMap
 let minimap = null;
 
 // Initialize the island
-let island = new Island(scene, resolution, params.groundColor);
+let island = new Island(scene, resolution, params.groundColor, params.dirtColor);
 
 // --------- Snake Initialization and Game Logic ---------
 const snake = new Snake({

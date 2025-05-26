@@ -10,9 +10,9 @@ export const CAMERA_NEAR = 0.1
 export const CAMERA_FAR = 1000
 
 // --- Paletas ---
-export const COLOR_PALETTES = {	
-	day: {
+export const COLOR_PALETTES = {		day: {
 		groundColor: 0x56f854,
+		dirtColor: 0xa5756d,
 		fogColor: 0x39c09f,
 		rockColor: 0xebebeb,
 		treeColor: 0x639541,
@@ -23,27 +23,35 @@ export const COLOR_PALETTES = {
 		flowerCenterColor: 0xFFA500,
 		mushroomCapColor: 0x8B4513,
 		mushroomSpotColor: 0xFFFFE0,
+		// Light configuration
+		ambientLightColor: 0xffffff,
+		directionalLightColor: 0xffffff,
+		pointLightColor: 0xffaa00,
 	},
-	
-	sunset: {
-		groundColor: 0xd68a4c,
+		sunset: {
+		groundColor: 0xaf4e69,
+		dirtColor: 0xa5756d,
 		fogColor: 0xffac38,
-		rockColor: 0xacacac,
-		treeColor: 0xa2d109,
+		rockColor: 0x7a454b,
+		treeColor: 0x795c24,
 		fruitColor: 0x614bdd,
 		snakeColor: 0xff470a,
-		mouthColor: 0x614bdd,
+		mouthColor: 0xb35069,
 		flowerPetalColor: 0xf48c06,
 		flowerCenterColor: 0xffea00,
 		mushroomCapColor: 0xe5383b,
 		mushroomSpotColor: 0xFFFF99,
+		// Light configuration - warm sunset colors
+		ambientLightColor: 0xffd4a3,
+		directionalLightColor: 0xffb366,
+		pointLightColor: 0xff6b35,
 	},
-	
 	night: {
-		groundColor: 0xd199ff,
+		groundColor: 0xBC6595,
+		dirtColor: 0xa5756d,
 		fogColor: 0xb04ce6,
 		rockColor: 0xebebeb,
-		treeColor: 0x53d0c1,
+		treeColor: 0x347f83,
 		fruitColor: 0x9900ff,
 		snakeColor: 0xff2ed2,
 		mouthColor: 0x614bdd,
@@ -51,6 +59,10 @@ export const COLOR_PALETTES = {
 		flowerCenterColor: 0xffd6ff,
 		mushroomCapColor: 0x1F44EA,
 		mushroomSpotColor: 0x4CC9F0,
+		// Light configuration - darker night colors
+		ambientLightColor: 0x4d4d66,
+		directionalLightColor: 0x6666b3,
+		pointLightColor: 0x9d4edd,
 	},
 }
 
