@@ -11,7 +11,7 @@ export const CAMERA_FAR = 1000
 
 // --- Paletas ---
 export const COLOR_PALETTES = {	
-	green: {
+	day: {
 		groundColor: 0x56f854,
 		fogColor: 0x39c09f,
 		rockColor: 0xebebeb,
@@ -25,7 +25,7 @@ export const COLOR_PALETTES = {
 		mushroomSpotColor: 0xFFFFE0,
 	},
 	
-	orange: {
+	sunset: {
 		groundColor: 0xd68a4c,
 		fogColor: 0xffac38,
 		rockColor: 0xacacac,
@@ -39,7 +39,7 @@ export const COLOR_PALETTES = {
 		mushroomSpotColor: 0xFFFF99,
 	},
 	
-	lilac: {
+	night: {
 		groundColor: 0xd199ff,
 		fogColor: 0xb04ce6,
 		rockColor: 0xebebeb,

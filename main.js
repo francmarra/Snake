@@ -57,7 +57,7 @@ loader.load(fontSrc, (loadedFont) => {
 // --- Paletas de cores e seleção ---
 const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT)
 const palettes = COLOR_PALETTES
-let paletteName = 'green' // Default palette, not loaded from localStorage
+let paletteName = 'day' // Default palette, not loaded from localStorage
 let selectedPalette = palettes[paletteName]
 const params = { ...selectedPalette }
 
@@ -86,11 +86,13 @@ function applyPalette(name) {
     mushroomCapColor,
     mushroomSpotColor
   } = palette
-  
-  // Update island materials if the island is loaded
+    // Update island materials if the island is loaded
   if (island) {
     island.updateColors(groundColor);
   }
+
+  // Update skybox based on theme
+  updateSkybox(name)
 
   // Atualiza cor de rochas
   entities.filter((e) => e instanceof Rock).forEach((rock) => {
@@ -151,11 +153,10 @@ function applyPalette(name) {
   snake.mouth.material.color.set(mouthColor)
   updateSnakeSegmentsUI()
 
-  btnPlayImg.src = `/assets/images/themes/${name.toLowerCase()}/${capitalize(name)}Play.svg`;
-    // Update minimap theme and colors
+  btnPlayImg.src = `/assets/images/themes/${name.toLowerCase()}/${capitalize(name)}Play.svg`;    // Update minimap theme and colors
   const minimapContainer = document.getElementById('minimap-container');
   if (minimapContainer) {
-    minimapContainer.classList.remove('theme-green', 'theme-orange', 'theme-lilac');
+    minimapContainer.classList.remove('theme-day', 'theme-sunset', 'theme-night');
     minimapContainer.classList.add(`theme-${name.toLowerCase()}`);
   }
     // Update minimap with new palette colors if it exists
@@ -179,29 +180,120 @@ gridHelper.material.opacity = 0.3
 const scene = new THREE.Scene()
 
 // --------- Enhanced Skybox Setup with Horizon Alignment ---------
-const skyTextureLoader = new THREE.TextureLoader()
-const skyTexture = skyTextureLoader.load('./assets/images/cloudy_midday_8k.png')
+// Create a dedicated loading manager for skybox textures
+const skyboxLoadingManager = new THREE.LoadingManager()
+const skyTextureLoader = new THREE.TextureLoader(skyboxLoadingManager)
 
-// Better mapping for horizon alignment
-skyTexture.mapping = THREE.EquirectangularReflectionMapping
-skyTexture.wrapS = THREE.RepeatWrapping
-skyTexture.wrapT = THREE.ClampToEdgeWrapping
+// Skybox image mapping for different themes
+const skyboxImages = {
+  day: './assets/images/cloudy_midday_4k.png',
+  sunset: './assets/images/cloudy_sunset_4k.png',
+  night: './assets/images/cloudy2_night_4k.png'
+}
 
-// Create a skybox sphere for better control over horizon alignment
-const skyGeometry = new THREE.SphereGeometry(500, 60, 40)
-const skyMaterial = new THREE.MeshBasicMaterial({
-  map: skyTexture,
-  side: THREE.BackSide,
-  fog: false
+// Cache for preloaded skybox textures
+const skyboxTextureCache = {}
+let skyboxLoadingPromise = null
+let skyBox // Global reference to the skybox for updates
+
+// Set up loading manager callbacks
+skyboxLoadingManager.onLoad = () => {
+  console.log('All skybox textures loaded successfully')
+}
+
+skyboxLoadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+  console.log(`Loading skybox textures: ${itemsLoaded}/${itemsTotal} - ${url}`)
+}
+
+skyboxLoadingManager.onError = (url) => {
+  console.error(`Failed to load skybox texture: ${url}`)
+}
+
+// Function to preload all skybox textures
+function preloadSkyboxTextures() {
+  if (skyboxLoadingPromise) return skyboxLoadingPromise
+
+  const loadPromises = Object.entries(skyboxImages).map(([theme, imagePath]) => {
+    return new Promise((resolve, reject) => {
+      const texture = skyTextureLoader.load(
+        imagePath,
+        () => {
+          // Configure texture settings
+          texture.mapping = THREE.EquirectangularReflectionMapping
+          texture.wrapS = THREE.RepeatWrapping
+          texture.wrapT = THREE.ClampToEdgeWrapping
+          
+          // Cache the texture
+          skyboxTextureCache[theme] = texture
+          console.log(`Skybox texture cached: ${theme}`)
+          resolve(texture)
+        },
+        undefined, // onProgress
+        (error) => {
+          console.error(`Failed to load skybox texture: ${theme}`, error)
+          reject(error)
+        }
+      )
+    })
+  })
+
+  skyboxLoadingPromise = Promise.all(loadPromises)
+  return skyboxLoadingPromise
+}
+
+// Function to create or update skybox (now instant with preloaded textures)
+function updateSkybox(themeName) {
+  const texture = skyboxTextureCache[themeName] || skyboxTextureCache.day
+  
+  if (!texture) {
+    console.warn(`Skybox texture not loaded for theme: ${themeName}, falling back to loading on demand`)
+    // Fallback: load on demand if not preloaded
+    const imagePath = skyboxImages[themeName] || skyboxImages.day
+    const fallbackTexture = skyTextureLoader.load(imagePath, () => {
+      if (skyBox) {
+        skyBox.material.map = fallbackTexture
+        skyBox.material.needsUpdate = true
+      }
+    })
+    fallbackTexture.mapping = THREE.EquirectangularReflectionMapping
+    fallbackTexture.wrapS = THREE.RepeatWrapping
+    fallbackTexture.wrapT = THREE.ClampToEdgeWrapping
+    return
+  }
+
+  // Create skybox if it doesn't exist
+  if (!skyBox) {
+    const skyGeometry = new THREE.SphereGeometry(500, 60, 40)
+    const skyMaterial = new THREE.MeshBasicMaterial({
+      map: texture,
+      side: THREE.BackSide,
+      fog: false
+    })
+
+    skyBox = new THREE.Mesh(skyGeometry, skyMaterial)
+
+    // Position the skybox to align horizon with your ground plane
+    skyBox.position.set(resolution.x / 2 - 0.5, -50, resolution.y / 2 - 0.5)
+    skyBox.rotation.y = Math.PI
+
+    scene.add(skyBox)
+  } else {
+    // Instantly update existing skybox material
+    skyBox.material.map = texture
+    skyBox.material.needsUpdate = true
+  }
+}
+
+// Start preloading skybox textures immediately
+preloadSkyboxTextures().then(() => {
+  console.log('All skybox textures preloaded and ready for instant switching')
+  // Initialize skybox with default theme once textures are loaded
+  updateSkybox(paletteName)
+}).catch((error) => {
+  console.error('Failed to preload some skybox textures:', error)
+  // Fallback: try to initialize with default theme anyway
+  updateSkybox(paletteName)
 })
-
-const skyBox = new THREE.Mesh(skyGeometry, skyMaterial)
-
-// Position the skybox to align horizon with your ground plane
-skyBox.position.set(resolution.x / 2 - 0.5, -50, resolution.y / 2 - 0.5) // Lowered Y position
-skyBox.rotation.y = Math.PI // Rotate if needed to align horizon
-
-scene.add(skyBox)
 scene.add(gridHelper)
 
 const sizes = {
