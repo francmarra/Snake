@@ -210,11 +210,11 @@ const scene = new THREE.Scene()
 const skyboxLoadingManager = new THREE.LoadingManager()
 const skyTextureLoader = new THREE.TextureLoader(skyboxLoadingManager)
 
-// Skybox image mapping for different themes
+// Skybox image mapping for different themes - using centralized paths from StaticData.js
 const skyboxImages = {
-  day: './assets/images/cloudy_midday_4k.png',
-  sunset: './assets/images/cloudy_sunset_4k.png',
-  night: './assets/images/cloudy2_night_4k.png'
+  day: COLOR_PALETTES.day.skyboxPath,
+  sunset: COLOR_PALETTES.sunset.skyboxPath,
+  night: COLOR_PALETTES.night.skyboxPath
 }
 
 // Cache for preloaded skybox textures
