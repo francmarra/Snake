@@ -240,12 +240,11 @@ export class UIController {
   updatePaletteTheme(paletteName) {
     this.paletteName = paletteName
     this.updateSettingsIcon(paletteName)
-    
-    // Update settings tab theme
+      // Update settings tab theme
     const settingsTab = document.getElementById('settings-tab')
     if (settingsTab) {
       // Remove all theme classes
-      settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange')
+      settingsTab.classList.remove('theme-day', 'theme-night', 'theme-sunset')
       // Add the current theme class
       settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`)
     }
@@ -254,7 +253,7 @@ export class UIController {
     const settingsSidebar = document.getElementById('settings-sidebar')
     if (settingsSidebar) {
       // Remove all theme classes
-      settingsSidebar.classList.remove('theme-green', 'theme-lilac', 'theme-orange')
+      settingsSidebar.classList.remove('theme-day', 'theme-night', 'theme-sunset')
       // Add the current theme class
       settingsSidebar.classList.add(`theme-${paletteName.toLowerCase()}`)
     }

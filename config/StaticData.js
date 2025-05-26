@@ -10,47 +10,95 @@ export const CAMERA_NEAR = 0.1
 export const CAMERA_FAR = 1000
 
 // --- Paletas ---
-export const COLOR_PALETTES = {	
-	green: {
-		groundColor: 0x56f854,
-		fogColor: 0x39c09f,
-		rockColor: 0xebebeb,
-		treeColor: 0x639541,
-		fruitColor: 0x1d5846,
+export const COLOR_PALETTES = {
+	day: {
+		// --- Snake ---
 		snakeColor: 0x1d5846,
 		mouthColor: 0x39c09f,
+
+		// --- Fruit ---
+		fruitColor: 0x1d5846,
+
+		// --- Ground ---
+		groundColor: 0x56f854,
+		dirtColor: 0xa5756d,
+		fogColor: 0x39c09f,
+
+		// --- Objects ---
+		treeColor: 0x639541,
+		rockColor: 0xebebeb,
 		flowerPetalColor: 0xff69b4,
 		flowerCenterColor: 0xFFA500,
 		mushroomCapColor: 0x8B4513,
 		mushroomSpotColor: 0xFFFFE0,
+
+		// --- Light ---
+		ambientLightColor: 0xffffff,
+		directionalLightColor: 0xffffff,
+		pointLightColor: 0xffaa00,
+
+		// --- Skybox ---
+		skyboxPath: './assets/images/themes/day/cloudy_midday_4k.png',
 	},
-	
-	orange: {
-		groundColor: 0xd68a4c,
-		fogColor: 0xffac38,
-		rockColor: 0xacacac,
-		treeColor: 0xa2d109,
-		fruitColor: 0x614bdd,
+
+	sunset: {
+		// --- Snake ---
 		snakeColor: 0xff470a,
-		mouthColor: 0x614bdd,
+		mouthColor: 0xb35069,
+
+		// --- Fruit ---
+		fruitColor: 0x614bdd,
+
+		// --- Ground ---
+		groundColor: 0xaf4e69,
+		dirtColor: 0xa5756d,
+		fogColor: 0xffac38,
+
+		// --- Objects ---
+		treeColor: 0x795c24,
+		rockColor: 0x7a454b,
 		flowerPetalColor: 0xf48c06,
 		flowerCenterColor: 0xffea00,
 		mushroomCapColor: 0xe5383b,
 		mushroomSpotColor: 0xFFFF99,
+
+		// --- Light ---
+		ambientLightColor: 0xffd4a3,
+		directionalLightColor: 0xffb366,
+		pointLightColor: 0xff6b35,
+
+		// --- Skybox ---
+		skyboxPath: './assets/images/themes/sunset/cloudy_sunset_4k.png',
 	},
-	
-	lilac: {
-		groundColor: 0xd199ff,
-		fogColor: 0xb04ce6,
-		rockColor: 0xebebeb,
-		treeColor: 0x53d0c1,
-		fruitColor: 0x9900ff,
+
+	night: {
+		// --- Snake ---
 		snakeColor: 0xff2ed2,
 		mouthColor: 0x614bdd,
+
+		// --- Fruit ---
+		fruitColor: 0x9900ff,
+
+		// --- Ground ---
+		groundColor: 0xBC6595,
+		dirtColor: 0xa5756d,
+		fogColor: 0xb04ce6,
+
+		// --- Objects ---
+		treeColor: 0x347f83,
+		rockColor: 0xebebeb,
 		flowerPetalColor: 0x9d4edd,
 		flowerCenterColor: 0xffd6ff,
 		mushroomCapColor: 0x1F44EA,
 		mushroomSpotColor: 0x4CC9F0,
+
+		// --- Light ---
+		ambientLightColor: 0x4d4d66,
+		directionalLightColor: 0x6666b3,
+		pointLightColor: 0x9d4edd,
+
+		// --- Skybox ---
+		skyboxPath: './assets/images/themes/night/cloudy2_night_4k.png',
 	},
 }
 
