@@ -253,3 +253,73 @@ input[type="checkbox"]:checked:after {
   top: 1px;
   left: 5px;
 }
+
+/*-----------------------------------------------------------
+  UI Non-Draggable & Non-Selectable Elements
+------------------------------------------------------------*/
+button, 
+.theme-selector,
+button img {
+  user-select: none;         /* Standard - prevents text selection */
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE10+/Edge */
+  
+  -webkit-user-drag: none;   /* Webkit browsers */
+  -khtml-user-drag: none;    /* Konqueror */
+  -moz-user-drag: none;      /* Firefox */
+  -o-user-drag: none;        /* Opera */
+  
+  /* This ensures clicks still work */
+  pointer-events: auto;
+}
+
+/* Ensure theme selectors remain clickable but not draggable */
+.theme-selector img {
+  user-select: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  pointer-events: auto;
+}
+
+/* Extend non-selectable/non-draggable behavior to settings and other UI text */
+.settings-sidebar,
+.settings-tab,
+.btn-text,
+#snake-segments-ui,
+#minimap-container,
+label,
+h1, h2, h3, h4, h5, h6,
+#segments-counter,
+#segments-container,
+span {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  pointer-events: auto;
+}
+
+/* Ensure canvas elements cannot be dragged */
+canvas {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+}
+
+/* Make sure input elements are still selectable/interactive */
+input[type="range"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="text"],
+input[type="number"],
+select {
+  user-select: auto;
+  -webkit-user-select: auto;
+  -moz-user-select: auto;
+  -ms-user-select: auto;
+  pointer-events: auto;
+}

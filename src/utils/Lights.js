@@ -1,6 +1,6 @@
 import { AmbientLight, DirectionalLight, PointLight } from 'three'
-import { GRID_WIDTH, GRID_HEIGHT } from '../config/StaticData.js'
-import { DEFAULT_SETTINGS } from '../config/Config.js'
+import { GRID_WIDTH, GRID_HEIGHT } from '../../config/StaticData.js'
+import { DEFAULT_SETTINGS } from '../../config/Config.js'
 
 const ambLight = new AmbientLight(0xffffff, 0.6) // luz branca suave
 const dirLight = new DirectionalLight(0xffffff, 0.7) // luz direcional
