@@ -408,16 +408,10 @@ snake.addEventListener('updated', function () {
     const fruit = candies[fruitIndex]
     scene.remove(fruit.mesh)
     candies.splice(fruitIndex, 1)
+    fruit.mesh.visible = false
+    fruitPool.push(fruit)
     snake.body.head.data.fruit = fruit
     addFruit()
-      // Only add a bomb if we're below the bombs setting
-    const bombsSetting = DEFAULT_SETTINGS.numBombs;
-    if (bombs.length < bombsSetting) {
-      addBomb();
-    }
-    
-    score += fruit.points
-    printScore()
   }
 
   const bombIndex = bombs.findIndex(
@@ -427,26 +421,28 @@ snake.addEventListener('updated', function () {
     const bomb = bombs[bombIndex]
     scene.remove(bomb.mesh)
     bombs.splice(bombIndex, 1)
-    if (snake.body.end !== snake.body.head) {
-      const tail = snake.body.end
-      scene.remove(tail.data.mesh)
-      snake.body.end = tail.prev
-      snake.body.end.next = null
-      snake.indexes.pop()
-      if (snake.indexes.length <= 2) {
-        snake.die()
-        resetGame()
-        return
-      }    }
-    score = Math.max(0, score - bomb.points)
-      // Only add a new bomb if we're below the bombs setting
-    const bombsSetting = DEFAULT_SETTINGS.numBombs;
-    if (bombs.length < bombsSetting) {
-      addBomb();
-    }
-    
-    printScore()
-  }
+    bomb.mesh.visible = false
+    bombPool.push(bomb)
+     if (snake.body.end !== snake.body.head) {
+       const tail = snake.body.end
+       scene.remove(tail.data.mesh)
+       snake.body.end = tail.prev
+       snake.body.end.next = null
+       snake.indexes.pop()
+       if (snake.indexes.length <= 2) {
+         snake.die()
+         resetGame()
+         return
+       }    }
+     score = Math.max(0, score - bomb.points)
+       // Only add a new bomb if we're below the bombs setting
+     const bombsSetting = DEFAULT_SETTINGS.numBombs;
+     if (bombs.length < bombsSetting) {
+       addBomb();
+     }
+     
+     printScore()
+   }
 })
 
 function updateSnakeSegmentsUI() {
@@ -612,25 +608,29 @@ function resetGame() {
     cameraController.cameraRotationActive = true
   }
 
-  // Wait for the player to press a movement key before starting again
-  // gameStarted stays true, but the snake won't move until a key is pressed
-
-  let fruit = candies.pop()
-  while (fruit) {
+  // Remove existing fruits, bombs, and entities returning them to pools
+  let fruit
+  while (fruit = candies.pop()) {
     scene.remove(fruit.mesh)
-    fruit = candies.pop()
+    fruit.mesh.visible = false
+    fruitPool.push(fruit)
   }
 
-  let bomb = bombs.pop()
-  while (bomb) {
+  let bomb
+  while (bomb = bombs.pop()) {
     scene.remove(bomb.mesh)
-    bomb = bombs.pop()
+    bomb.mesh.visible = false
+    bombPool.push(bomb)
   }
 
-  let entity = entities.pop()
-  while (entity) {
+  let entity
+  while (entity = entities.pop()) {
     scene.remove(entity.mesh)
-    entity = entities.pop()
+    entity.mesh.visible = false
+    const type = entity.constructor.name
+    if (entityPools[type]) {
+      entityPools[type].push(entity)
+    }
   }
   // Add entities based on default settings
   const numFruits = DEFAULT_SETTINGS.numFruits;
@@ -672,8 +672,23 @@ const candies = []
 const bombs = []
 const entities = []
 
+// Add object pools for fruits, bombs, and entities
+const fruitPool = []
+const bombPool = []
+const entityPools = { Rock: [], Tree: [], Flower: [], Mushroom: [] }
+
 function addFruit() {
-  const fruit = new Fruit(resolution, selectedPalette.fruitColor)
+  let fruit
+  if (fruitPool.length > 0) {
+    fruit = fruitPool.pop()
+    // Reset properties
+    fruit.points = Math.floor(Math.random() * 3) + 1
+    fruit.mesh.scale.setScalar(0.5 + (fruit.points * 0.5) / 3)
+    fruit.mesh.material.color.set(selectedPalette.fruitColor)
+    fruit.mesh.visible = true
+  } else {
+    fruit = new Fruit(resolution, selectedPalette.fruitColor)
+  }
   let index = getFreeIndex()
   fruit.mesh.position.x = index % resolution.x
   fruit.mesh.position.z = Math.floor(index / resolution.x)
@@ -683,8 +698,16 @@ function addFruit() {
 }
 
 function addBomb() {
-  // Remove the bombs.length === 0 condition to allow multiple bombs
-  const bomb = new Bomb(resolution)
+  let bomb
+  if (bombPool.length > 0) {
+    bomb = bombPool.pop()
+    // Reset properties
+    bomb.points = Math.floor(Math.random() * 3) + 1
+    bomb.mesh.scale.setScalar(0.5 + (bomb.points * 0.5) / 3)
+    bomb.mesh.visible = true
+  } else {
+    bomb = new Bomb(resolution)
+  }
   let index = getFreeIndex()
   bomb.mesh.position.x = index % resolution.x
   bomb.mesh.position.z = Math.floor(index / resolution.x)
@@ -715,26 +738,29 @@ function getFreeIndex() {
 }
 
 function addEntity() {
-  const entityType = Math.random()
+  const rand = Math.random()
+  let EntityClass, key
+  if (rand < 0.4) { EntityClass = Rock; key = 'Rock' }
+  else if (rand < 0.7) { EntityClass = Tree; key = 'Tree' }
+  else if (rand < 0.85) { EntityClass = Flower; key = 'Flower' }
+  else { EntityClass = Mushroom; key = 'Mushroom' }
+
   let entity
-  
-  if (entityType < 0.4) {
-    entity = new Rock(resolution, selectedPalette.rockColor)
-  } else if (entityType < 0.7) {
-    entity = new Tree(resolution, selectedPalette.treeColor)
-  } else if (entityType < 0.85) {
-    entity = new Flower(resolution, selectedPalette.flowerPetalColor, selectedPalette.flowerCenterColor)
+  if (entityPools[key] && entityPools[key].length > 0) {
+    entity = entityPools[key].pop()
+    entity.mesh.visible = true
+    // Update color if needed
+    if (entity.updateFoliageColor && key === 'Tree') entity.updateFoliageColor(selectedPalette.treeColor)
   } else {
-    entity = new Mushroom(
-      resolution, 
-      selectedPalette.mushroomCapColor, 
-      0xF5DEB3, // Stem color stays constant
-      selectedPalette.mushroomSpotColor
-    )
+    const colorArgs = {
+      Rock: [resolution, selectedPalette.rockColor],
+      Tree: [resolution, selectedPalette.treeColor],
+      Flower: [resolution, selectedPalette.flowerPetalColor, selectedPalette.flowerCenterColor],
+      Mushroom: [resolution, selectedPalette.mushroomCapColor, 0xF5DEB3, selectedPalette.mushroomSpotColor]
+    }
+    entity = new EntityClass(...colorArgs[key])
   }
-
   let index = getFreeIndex()
-
   entity.mesh.position.x = index % resolution.x
   entity.mesh.position.z = Math.floor(index / resolution.x)
 
@@ -781,15 +807,23 @@ TREE_DATA.forEach(([x, y, z, w]) => {
   scene.add(clone)
 })
 
-// Add static rocks
-const rock = new Rock(resolution)
-ROCK_DATA.forEach(([posArr, scaleArr]) => {
-  let clone = new Rock(resolution).mesh
-  clone.position.set(...posArr)
-  clone.scale.set(...scaleArr.slice(0, 3))
-  clone.rotation.y = scaleArr[3]
-  scene.add(clone)
-})
+// Add static rocks via instanced mesh
+{
+  const rockProto = new Rock(resolution)
+  const rockGeometry = rockProto.mesh.geometry
+  const rockMaterial = rockProto.mesh.material
+  const rockInstances = new THREE.InstancedMesh(rockGeometry, rockMaterial, ROCK_DATA.length)
+  const matrix = new THREE.Matrix4()
+  ROCK_DATA.forEach(([posArr, scaleArr], i) => {
+    const position = new THREE.Vector3(...posArr)
+    const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, scaleArr[3], 0))
+    const scale = new THREE.Vector3(scaleArr[0], scaleArr[1], scaleArr[2])
+    matrix.compose(position, quaternion, scale)
+    rockInstances.setMatrixAt(i, matrix)
+  })
+  rockInstances.instanceMatrix.needsUpdate = true
+  scene.add(rockInstances)
+}
 
 // Add static flowers
 FLOWER_DATA.forEach(([x, y, z, scale, color]) => {
