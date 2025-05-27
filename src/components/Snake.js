@@ -10,11 +10,11 @@ import {
 	Vector2,
 	Vector3,
 } from 'three'
-import LinkedKList from './LinkedList'
+import LinkedKList from '../utils/LinkedList'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry'
-import ListNode from './ListNode'
+import ListNode from '../utils/ListNode'
 import Entity from './Entity'
-import { INITIAL_SNAKE_LENGTH } from '../config/Config.js'
+import { INITIAL_SNAKE_LENGTH } from '../../config/Config.js'
 
 const NODE_GEOMETRY = new RoundedBoxGeometry(0.9, 0.9, 0.9, 5, 0.1)
 const NODE_MATERIAL = new MeshStandardMaterial({
@@ -295,5 +295,12 @@ class SnakeNode extends Entity {
 	constructor(resolution) {
 		const mesh = new Mesh(NODE_GEOMETRY, NODE_MATERIAL)
 		super(mesh, resolution)
+	}
+	// round the snake‐segment coords to nearest grid cell
+	getIndexByCoord() {
+		const p = this.mesh.position
+		const x = Math.round(p.x)
+		const z = Math.round(p.z)
+		return x + z * this.resolution.x
 	}
 }

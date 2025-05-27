@@ -80,11 +80,10 @@ body {
   right: -16rem; /* Start offscreen */
   left: auto;
   top: 45%; /* Moved up for less overlap */
-  transform: translateY(-50%);
-  width: 16rem;
+  transform: translateY(-50%);  width: 16rem;
   height: auto;
   max-height: calc(100% - 5rem);
-  background: #1D5846; /* Default green theme */
+  background: #1D5846; /* Default day theme */
   padding: 1rem 0.75rem;
   border-radius: 1rem 0 0 1rem;
   box-shadow: -2px 0 8px rgba(0,0,0,0.5);
@@ -103,10 +102,9 @@ body {
   position: fixed;
   top: 45%; /* Moved up for less overlap */
   right: 0;
-  transform: translateY(-50%);
-  width: 1.5rem;
+  transform: translateY(-50%);  width: 1.5rem;
   height: 8rem;
-  background: #1D5846; /* Default green theme */
+  background: #1D5846; /* Default day theme */
   border-radius: 1rem 0 0 1rem;
   display: none; /* Hidden by default */
   justify-content: center;
@@ -130,7 +128,7 @@ body {
 .settings-line {
   width: 0.5rem;
   height: 4rem;
-  background: #39C09F; /* Default green accent */
+  background: #39C09F; /* Default day accent */
   border-radius: 999px;
   transition: height 0.2s ease;
 }
@@ -165,42 +163,42 @@ body {
 /*-----------------------------------------------------------
   Theme Specific Styles
 ------------------------------------------------------------*/
-.theme-green .settings-line {
+.theme-day .settings-line {
   background: #39C09F;
 }
 
-.theme-lilac .settings-line {
+.theme-night .settings-line {
   background: #9D4EDD;
 }
 
-.theme-orange .settings-line {
+.theme-sunset .settings-line {
   background: #F48C06;
 }
 
-.theme-green #minimap-container {
+.theme-day #minimap-container {
   border-color: #39C09F;
 }
 
-.theme-orange #minimap-container {
+.theme-sunset #minimap-container {
   border-color: #FFAC38;
 }
 
-.theme-lilac #minimap-container {
+.theme-night #minimap-container {
   border-color: #B04CE6;
 }
 
-.settings-sidebar.theme-green,
-.settings-tab.theme-green {
+.settings-sidebar.theme-day,
+.settings-tab.theme-day {
   background: #1D5846;
 }
 
-.settings-sidebar.theme-lilac,
-.settings-tab.theme-lilac {
+.settings-sidebar.theme-night,
+.settings-tab.theme-night {
   background: #5A189A;
 }
 
-.settings-sidebar.theme-orange,
-.settings-tab.theme-orange {
+.settings-sidebar.theme-sunset,
+.settings-tab.theme-sunset {
   background: #DC2F02;
 }
 
@@ -223,7 +221,7 @@ input[type="range"]::-webkit-slider-thumb {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  background: #39C09F; /* Default green */
+  background: #39C09F; /* Default day */
   cursor: pointer;
 }
 
@@ -254,4 +252,74 @@ input[type="checkbox"]:checked:after {
   transform: rotate(45deg);
   top: 1px;
   left: 5px;
+}
+
+/*-----------------------------------------------------------
+  UI Non-Draggable & Non-Selectable Elements
+------------------------------------------------------------*/
+button, 
+.theme-selector,
+button img {
+  user-select: none;         /* Standard - prevents text selection */
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE10+/Edge */
+  
+  -webkit-user-drag: none;   /* Webkit browsers */
+  -khtml-user-drag: none;    /* Konqueror */
+  -moz-user-drag: none;      /* Firefox */
+  -o-user-drag: none;        /* Opera */
+  
+  /* This ensures clicks still work */
+  pointer-events: auto;
+}
+
+/* Ensure theme selectors remain clickable but not draggable */
+.theme-selector img {
+  user-select: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  pointer-events: auto;
+}
+
+/* Extend non-selectable/non-draggable behavior to settings and other UI text */
+.settings-sidebar,
+.settings-tab,
+.btn-text,
+#snake-segments-ui,
+#minimap-container,
+label,
+h1, h2, h3, h4, h5, h6,
+#segments-counter,
+#segments-container,
+span {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  pointer-events: auto;
+}
+
+/* Ensure canvas elements cannot be dragged */
+canvas {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+}
+
+/* Make sure input elements are still selectable/interactive */
+input[type="range"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="text"],
+input[type="number"],
+select {
+  user-select: auto;
+  -webkit-user-select: auto;
+  -moz-user-select: auto;
+  -ms-user-select: auto;
+  pointer-events: auto;
 }

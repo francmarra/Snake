@@ -9,18 +9,13 @@ export const DEFAULT_SETTINGS = {
     killOnBorderTrespass: false,
     ambientLightEnabled: true,
     directionalLightEnabled: true,
-    pointLightEnabled: false
+    pointLightEnabled: false,
+    showMinimap: true
 }
 
 // Obter valor da definição atual - devolve sempre o valor por defeito
 export function getSetting(key) {
     return DEFAULT_SETTINGS[key];
-}
-
-// Guardar valor da definição - não guarda realmente em localStorage
-export function saveSetting(key, value) {
-    // Esta função é agora um no-op - não guarda em localStorage
-    console.log(`Setting ${key} would have been saved as ${value}`);
 }
 
 // --- Jogabilidade ---
