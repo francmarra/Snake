@@ -56,8 +56,9 @@ loader.load(fontSrc, (loadedFont) => {
 
 // --------- Color Palette and Helper Functions ---------
 // --- Paletas de cores e seleção ---
-const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT)
+const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT);
 const palettes = COLOR_PALETTES
+const gridTotal = resolution.x * resolution.y;  // Precompute total cells early
 
 // Function to load theme from localStorage
 function loadThemeFromStorage() {
@@ -202,16 +203,16 @@ function applyPalette(name) {
 }
 
 // --------- Scene, Grid, Renderer, and Camera Setup ---------
-// --- Inicialização da cena, grelha e câmara ---
-const gridHelper = new THREE.GridHelper(
-  resolution.x,
-  resolution.y,
-  0xffffff,
-  0xffffff
-)
-gridHelper.position.set(resolution.x / 2 - 0.5, -0.49, resolution.y / 2 - 0.5)
-gridHelper.material.transparent = true
-gridHelper.material.opacity = 0.3
+// Remove grid helper to disable grid display
+// const gridHelper = new THREE.GridHelper(
+//   resolution.x,
+//   resolution.y,
+//   0xffffff,
+//   0xffffff
+// )
+// gridHelper.position.set(resolution.x / 2 - 0.5, -0.49, resolution.y / 2 - 0.5)
+// gridHelper.material.transparent = true
+// gridHelper.material.opacity = 0.3
 
 const scene = new THREE.Scene()
 
@@ -361,7 +362,7 @@ preloadSkyboxTextures().then(() => {
   // Fallback: try to initialize with default theme anyway
   updateSkybox(paletteName)
 })
-scene.add(gridHelper)
+// scene.add(gridHelper)
 
 const sizes = {
   width: window.innerWidth,
@@ -745,22 +746,22 @@ addFruit()
 addBomb()
 
 function getFreeIndex() {
-  let index
-  let fruitIndexes = candies.map((fruit) => fruit.getIndexByCoord())
-  let entityIndexes = entities.map((entity) => entity.getIndexByCoord())
-  let bombIndexes = bombs.map((bomb) => bomb.getIndexByCoord())
-
+  // Use a Set for faster occupancy checks
+  const occupied = new Set([
+    ...snake.indexes,
+    ...candies.map((f) => f.getIndexByCoord()),
+    ...entities.map((e) => e.getIndexByCoord()),
+    ...bombs.map((b) => b.getIndexByCoord()),
+  ]);
+  let index;
   do {
-    index = Math.floor(Math.random() * resolution.x * resolution.y)
-  } while (
-    snake.indexes.includes(index) ||
-    fruitIndexes.includes(index) ||
-    entityIndexes.includes(index) ||
-    bombIndexes.includes(index)
-  )
-
-  return index
+    index = Math.floor(Math.random() * gridTotal);
+  } while (occupied.has(index));
+  return index;
 }
+
+// Precompute center for sorting entities
+const entitySortCenter = new THREE.Vector3(resolution.x / 2 - 0.5, 0, resolution.y / 2 - 0.5);
 
 function addEntity() {
   const rand = Math.random()
@@ -795,21 +796,14 @@ function addEntity() {
 
 function generateEntities() {
   for (let i = 0; i < NUM_ENTITIES; i++) {
-    addEntity()
+    addEntity();
   }
 
   entities.sort((a, b) => {
-    const c = new THREE.Vector3(
-      resolution.x / 2 - 0.5,
-      0,
-      resolution.y / 2 - 0.5
-    )
-
-    const distanceA = a.position.clone().sub(c).length()
-    const distanceB = b.position.clone().sub(c).length()
-
-    return distanceA - distanceB
-  })
+    const da = a.mesh.position.distanceToSquared(entitySortCenter);
+    const db = b.mesh.position.distanceToSquared(entitySortCenter);
+    return da - db;
+  });
   animateEntitiesIn(entities)
 }
 
@@ -1317,6 +1311,22 @@ function handleResize() {
   renderer.setSize(sizes.width, sizes.height)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 }
+
+// Debounce utility to limit frequent calls
+function debounce(fn, delay) {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), delay);
+  };
+}
+
+// Precompute total grid cells
+// const gridTotal = resolution.x * resolution.y;  // Removed duplicate definition
+
+// Replace resize listener with debounced handler
+const debouncedResize = debounce(handleResize, 200);
+window.addEventListener('resize', debouncedResize);
 
 // --------- Prevent Dragging on UI Elements ---------
 // This ensures UI elements can't be dragged by the user
