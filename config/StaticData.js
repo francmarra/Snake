@@ -17,7 +17,7 @@ export const COLOR_PALETTES = {
 		mouthColor: 0x39c09f,
 
 		// --- Fruit ---
-		fruitColor: 0x1d5846,
+		fruitColor: 0x57cc99,
 
 		// --- Ground ---
 		groundColor: 0x56f854,
