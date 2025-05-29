@@ -56,8 +56,9 @@ loader.load(fontSrc, (loadedFont) => {
 
 // --------- Color Palette and Helper Functions ---------
 // --- Paletas de cores e seleção ---
-const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT)
+const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT);
 const palettes = COLOR_PALETTES
+const gridTotal = resolution.x * resolution.y;  // Precompute total cells early
 
 // Function to load theme from localStorage
 function loadThemeFromStorage() {
@@ -202,16 +203,16 @@ function applyPalette(name) {
 }
 
 // --------- Scene, Grid, Renderer, and Camera Setup ---------
-// --- Inicialização da cena, grelha e câmara ---
-const gridHelper = new THREE.GridHelper(
-  resolution.x,
-  resolution.y,
-  0xffffff,
-  0xffffff
-)
-gridHelper.position.set(resolution.x / 2 - 0.5, -0.49, resolution.y / 2 - 0.5)
-gridHelper.material.transparent = true
-gridHelper.material.opacity = 0.3
+// Remove grid helper to disable grid display
+// const gridHelper = new THREE.GridHelper(
+//   resolution.x,
+//   resolution.y,
+//   0xffffff,
+//   0xffffff
+// )
+// gridHelper.position.set(resolution.x / 2 - 0.5, -0.49, resolution.y / 2 - 0.5)
+// gridHelper.material.transparent = true
+// gridHelper.material.opacity = 0.3
 
 const scene = new THREE.Scene()
 
@@ -361,7 +362,7 @@ preloadSkyboxTextures().then(() => {
   // Fallback: try to initialize with default theme anyway
   updateSkybox(paletteName)
 })
-scene.add(gridHelper)
+// scene.add(gridHelper)
 
 const sizes = {
   width: window.innerWidth,
@@ -418,16 +419,10 @@ snake.addEventListener('updated', function () {
     const fruit = candies[fruitIndex]
     scene.remove(fruit.mesh)
     candies.splice(fruitIndex, 1)
+    fruit.mesh.visible = false
+    fruitPool.push(fruit)
     snake.body.head.data.fruit = fruit
     addFruit()
-      // Only add a bomb if we're below the bombs setting
-    const bombsSetting = DEFAULT_SETTINGS.numBombs;
-    if (bombs.length < bombsSetting) {
-      addBomb();
-    }
-    
-    score += fruit.points
-    printScore()
   }
 
   const bombIndex = bombs.findIndex(
@@ -437,26 +432,28 @@ snake.addEventListener('updated', function () {
     const bomb = bombs[bombIndex]
     scene.remove(bomb.mesh)
     bombs.splice(bombIndex, 1)
-    if (snake.body.end !== snake.body.head) {
-      const tail = snake.body.end
-      scene.remove(tail.data.mesh)
-      snake.body.end = tail.prev
-      snake.body.end.next = null
-      snake.indexes.pop()
-      if (snake.indexes.length <= 2) {
-        snake.die()
-        resetGame()
-        return
-      }    }
-    score = Math.max(0, score - bomb.points)
-      // Only add a new bomb if we're below the bombs setting
-    const bombsSetting = DEFAULT_SETTINGS.numBombs;
-    if (bombs.length < bombsSetting) {
-      addBomb();
-    }
-    
-    printScore()
-  }
+    bomb.mesh.visible = false
+    bombPool.push(bomb)
+     if (snake.body.end !== snake.body.head) {
+       const tail = snake.body.end
+       scene.remove(tail.data.mesh)
+       snake.body.end = tail.prev
+       snake.body.end.next = null
+       snake.indexes.pop()
+       if (snake.indexes.length <= 2) {
+         snake.die()
+         resetGame()
+         return
+       }    }
+     score = Math.max(0, score - bomb.points)
+       // Only add a new bomb if we're below the bombs setting
+     const bombsSetting = DEFAULT_SETTINGS.numBombs;
+     if (bombs.length < bombsSetting) {
+       addBomb();
+     }
+     
+     printScore()
+   }
 })
 
 function updateSnakeSegmentsUI() {
@@ -527,10 +524,22 @@ function printScore() {
 
 // --------- Event Listeners ---------
 function registerEventListener() {
+  // Mouse movement tracking for grass interaction
+  window.addEventListener('mousemove', function(e) {
+    mousePosition.x = e.clientX
+    mousePosition.y = e.clientY
+  })
+  
   window.addEventListener('keydown', function (e) {
     const keyCode = e.code;
     const isMovementKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD'].includes(keyCode);
     const settingsSidebar = document.getElementById('settings-sidebar');
+      // Manual wind gust trigger (G key)
+    if (keyCode === 'KeyG' && gameStarted) {
+      triggerWindGust()
+      console.log('🌬️ Manual wind gust triggered! Watch the grass sway.')
+      return
+    }
     
     // If settings are open, ignore key input for settings changes
     if (settingsSidebar && settingsSidebar.classList.contains('open')) {
@@ -622,25 +631,29 @@ function resetGame() {
     cameraController.cameraRotationActive = true
   }
 
-  // Wait for the player to press a movement key before starting again
-  // gameStarted stays true, but the snake won't move until a key is pressed
-
-  let fruit = candies.pop()
-  while (fruit) {
+  // Remove existing fruits, bombs, and entities returning them to pools
+  let fruit
+  while (fruit = candies.pop()) {
     scene.remove(fruit.mesh)
-    fruit = candies.pop()
+    fruit.mesh.visible = false
+    fruitPool.push(fruit)
   }
 
-  let bomb = bombs.pop()
-  while (bomb) {
+  let bomb
+  while (bomb = bombs.pop()) {
     scene.remove(bomb.mesh)
-    bomb = bombs.pop()
+    bomb.mesh.visible = false
+    bombPool.push(bomb)
   }
 
-  let entity = entities.pop()
-  while (entity) {
+  let entity
+  while (entity = entities.pop()) {
     scene.remove(entity.mesh)
-    entity = entities.pop()
+    entity.mesh.visible = false
+    const type = entity.constructor.name
+    if (entityPools[type]) {
+      entityPools[type].push(entity)
+    }
   }
   // Add entities based on default settings
   const numFruits = DEFAULT_SETTINGS.numFruits;
@@ -654,10 +667,13 @@ function resetGame() {
   for (let i = 0; i < numBombs; i++) {
     addBomb();
   }
-  
-  for (let i = 0; i < numObjects; i++) {
+    for (let i = 0; i < numObjects; i++) {
     addEntity();
   }
+  
+  // Reset all grass instances to their original state
+  resetGrassStates();
+  
     // Show settings tab after reset
   const settingsTab = document.getElementById('settings-tab');
   if (settingsTab) {
@@ -682,8 +698,23 @@ const candies = []
 const bombs = []
 const entities = []
 
+// Add object pools for fruits, bombs, and entities
+const fruitPool = []
+const bombPool = []
+const entityPools = { Rock: [], Tree: [], Flower: [], Mushroom: [] }
+
 function addFruit() {
-  const fruit = new Fruit(resolution, selectedPalette.fruitColor)
+  let fruit
+  if (fruitPool.length > 0) {
+    fruit = fruitPool.pop()
+    // Reset properties
+    fruit.points = Math.floor(Math.random() * 3) + 1
+    fruit.mesh.scale.setScalar(0.5 + (fruit.points * 0.5) / 3)
+    fruit.mesh.material.color.set(selectedPalette.fruitColor)
+    fruit.mesh.visible = true
+  } else {
+    fruit = new Fruit(resolution, selectedPalette.fruitColor)
+  }
   let index = getFreeIndex()
   fruit.mesh.position.x = index % resolution.x
   fruit.mesh.position.z = Math.floor(index / resolution.x)
@@ -693,8 +724,16 @@ function addFruit() {
 }
 
 function addBomb() {
-  // Remove the bombs.length === 0 condition to allow multiple bombs
-  const bomb = new Bomb(resolution)
+  let bomb
+  if (bombPool.length > 0) {
+    bomb = bombPool.pop()
+    // Reset properties
+    bomb.points = Math.floor(Math.random() * 3) + 1
+    bomb.mesh.scale.setScalar(0.5 + (bomb.points * 0.5) / 3)
+    bomb.mesh.visible = true
+  } else {
+    bomb = new Bomb(resolution)
+  }
   let index = getFreeIndex()
   bomb.mesh.position.x = index % resolution.x
   bomb.mesh.position.z = Math.floor(index / resolution.x)
@@ -707,44 +746,47 @@ addFruit()
 addBomb()
 
 function getFreeIndex() {
-  let index
-  let fruitIndexes = candies.map((fruit) => fruit.getIndexByCoord())
-  let entityIndexes = entities.map((entity) => entity.getIndexByCoord())
-  let bombIndexes = bombs.map((bomb) => bomb.getIndexByCoord())
-
+  // Use a Set for faster occupancy checks
+  const occupied = new Set([
+    ...snake.indexes,
+    ...candies.map((f) => f.getIndexByCoord()),
+    ...entities.map((e) => e.getIndexByCoord()),
+    ...bombs.map((b) => b.getIndexByCoord()),
+  ]);
+  let index;
   do {
-    index = Math.floor(Math.random() * resolution.x * resolution.y)
-  } while (
-    snake.indexes.includes(index) ||
-    fruitIndexes.includes(index) ||
-    entityIndexes.includes(index) ||
-    bombIndexes.includes(index)
-  )
-
-  return index
+    index = Math.floor(Math.random() * gridTotal);
+  } while (occupied.has(index));
+  return index;
 }
 
+// Precompute center for sorting entities
+const entitySortCenter = new THREE.Vector3(resolution.x / 2 - 0.5, 0, resolution.y / 2 - 0.5);
+
 function addEntity() {
-  const entityType = Math.random()
+  const rand = Math.random()
+  let EntityClass, key
+  if (rand < 0.4) { EntityClass = Rock; key = 'Rock' }
+  else if (rand < 0.7) { EntityClass = Tree; key = 'Tree' }
+  else if (rand < 0.85) { EntityClass = Flower; key = 'Flower' }
+  else { EntityClass = Mushroom; key = 'Mushroom' }
+
   let entity
-  
-  if (entityType < 0.4) {
-    entity = new Rock(resolution, selectedPalette.rockColor)
-  } else if (entityType < 0.7) {
-    entity = new Tree(resolution, selectedPalette.treeColor)
-  } else if (entityType < 0.85) {
-    entity = new Flower(resolution, selectedPalette.flowerPetalColor, selectedPalette.flowerCenterColor)
+  if (entityPools[key] && entityPools[key].length > 0) {
+    entity = entityPools[key].pop()
+    entity.mesh.visible = true
+    // Update color if needed
+    if (entity.updateFoliageColor && key === 'Tree') entity.updateFoliageColor(selectedPalette.treeColor)
   } else {
-    entity = new Mushroom(
-      resolution, 
-      selectedPalette.mushroomCapColor, 
-      0xF5DEB3, // Stem color stays constant
-      selectedPalette.mushroomSpotColor
-    )
+    const colorArgs = {
+      Rock: [resolution, selectedPalette.rockColor],
+      Tree: [resolution, selectedPalette.treeColor],
+      Flower: [resolution, selectedPalette.flowerPetalColor, selectedPalette.flowerCenterColor],
+      Mushroom: [resolution, selectedPalette.mushroomCapColor, 0xF5DEB3, selectedPalette.mushroomSpotColor]
+    }
+    entity = new EntityClass(...colorArgs[key])
   }
-
   let index = getFreeIndex()
-
   entity.mesh.position.x = index % resolution.x
   entity.mesh.position.z = Math.floor(index / resolution.x)
 
@@ -754,21 +796,14 @@ function addEntity() {
 
 function generateEntities() {
   for (let i = 0; i < NUM_ENTITIES; i++) {
-    addEntity()
+    addEntity();
   }
 
   entities.sort((a, b) => {
-    const c = new THREE.Vector3(
-      resolution.x / 2 - 0.5,
-      0,
-      resolution.y / 2 - 0.5
-    )
-
-    const distanceA = a.position.clone().sub(c).length()
-    const distanceB = b.position.clone().sub(c).length()
-
-    return distanceA - distanceB
-  })
+    const da = a.mesh.position.distanceToSquared(entitySortCenter);
+    const db = b.mesh.position.distanceToSquared(entitySortCenter);
+    return da - db;
+  });
   animateEntitiesIn(entities)
 }
 
@@ -791,15 +826,23 @@ TREE_DATA.forEach(([x, y, z, w]) => {
   scene.add(clone)
 })
 
-// Add static rocks
-const rock = new Rock(resolution)
-ROCK_DATA.forEach(([posArr, scaleArr]) => {
-  let clone = new Rock(resolution).mesh
-  clone.position.set(...posArr)
-  clone.scale.set(...scaleArr.slice(0, 3))
-  clone.rotation.y = scaleArr[3]
-  scene.add(clone)
-})
+// Add static rocks via instanced mesh
+{
+  const rockProto = new Rock(resolution)
+  const rockGeometry = rockProto.mesh.geometry
+  const rockMaterial = rockProto.mesh.material
+  const rockInstances = new THREE.InstancedMesh(rockGeometry, rockMaterial, ROCK_DATA.length)
+  const matrix = new THREE.Matrix4()
+  ROCK_DATA.forEach(([posArr, scaleArr], i) => {
+    const position = new THREE.Vector3(...posArr)
+    const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, scaleArr[3], 0))
+    const scale = new THREE.Vector3(scaleArr[0], scaleArr[1], scaleArr[2])
+    matrix.compose(position, quaternion, scale)
+    rockInstances.setMatrixAt(i, matrix)
+  })
+  rockInstances.instanceMatrix.needsUpdate = true
+  scene.add(rockInstances)
+}
 
 // Add static flowers
 FLOWER_DATA.forEach(([x, y, z, scale, color]) => {
@@ -894,8 +937,82 @@ function generateGrass() {
     )
     grassInstances.push(grassInstance)
   }
+    console.log(`Generated ${grassInstances.length} grass instances for complete ground coverage`)
+}
+
+// --------- Grass Management Functions ---------
+// Function to trigger wind gust across all grass instances
+function triggerWindGust() {
+  if (!grassInstances || grassInstances.length === 0) return
   
-  console.log(`Generated ${grassInstances.length} grass instances for complete ground coverage`)
+  const windDirection = {
+    x: (Math.random() - 0.5) * 2,
+    z: (Math.random() - 0.5) * 2
+  }
+  const windStrength = 0.8 + Math.random() * 0.4
+  
+  grassInstances.forEach(grassInstance => {
+    grassInstance.windGust(windDirection, windStrength)
+  })
+  
+  console.log(`Wind gust triggered: direction(${windDirection.x.toFixed(2)}, ${windDirection.z.toFixed(2)}), strength: ${windStrength.toFixed(2)}`)
+}
+
+// Function to update all grass hover interactions
+function updateGrassHoverInteractions() {
+  if (!grassInstances || grassInstances.length === 0 || !gameStarted) return
+  
+  // Performance optimization: only update if mouse has moved significantly
+  const mouseMoveThreshold = 5 // pixels
+  if (mousePosition.lastX !== undefined && mousePosition.lastY !== undefined) {
+    const deltaX = Math.abs(mousePosition.x - mousePosition.lastX)
+    const deltaY = Math.abs(mousePosition.y - mousePosition.lastY)
+    if (deltaX < mouseMoveThreshold && deltaY < mouseMoveThreshold) {
+      return // Skip update if mouse hasn't moved enough
+    }
+  }
+  
+  grassInstances.forEach(grassInstance => {
+    grassInstance.onMouseHover(activeCamera, mousePosition)
+  })
+  
+  // Store last mouse position for next frame
+  mousePosition.lastX = mousePosition.x
+  mousePosition.lastY = mousePosition.y
+}
+
+// Function to reset all grass instances to their original state
+function resetGrassStates() {
+  if (!grassInstances || grassInstances.length === 0) return
+  
+  grassInstances.forEach(grassInstance => {
+    if (grassInstance.isTrampled) {
+      // Force immediate recovery for reset
+      grassInstance.isTrampled = false
+      grassInstance.isHovered = false
+      
+      if (grassInstance.grass) {
+        // Reset scale
+        grassInstance.grass.scale.set(
+          grassInstance.baseScale.x,
+          grassInstance.baseScale.y,
+          grassInstance.baseScale.z
+        )
+        
+        // Reset rotation
+        grassInstance.grass.rotation.set(
+          grassInstance.originalRotation.x,
+          grassInstance.originalRotation.y,
+          grassInstance.originalRotation.z
+        )
+        
+        // Reset brightness
+        grassInstance.brightensGrass(1.0)
+      }
+    }
+  })
+  
+  console.log(`Reset ${grassInstances.length} grass instances to original state`)
 }
 
 generateGrass()
@@ -916,6 +1033,7 @@ const btnPlay = document.getElementById('btn-play')
 const btnPlayImg = document.getElementById('btn-play-img')
 const btnSettings = document.getElementById('btn-settings')
 const btnSettingsImg = document.getElementById('btn-settings-img')
+
 
 // Play button animation
 animateButtonIn(btnPlay);
@@ -962,16 +1080,14 @@ btnPlay.addEventListener('click', function () {
     // The snake will start moving when the player presses a movement key
     registerEventListener()
     
-    // Show settings tab after game starts with a slight delay
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab) {
       setTimeout(() => animateSettingsTab(settingsTab, true), 1500);
     }
     
-    // Initialize minimap
     minimap = new Minimap(GRID_WIDTH, GRID_HEIGHT);
   }
-})
+});
 
 btnPlay.addEventListener('mouseenter', function () {
   this.style.transform = 'translate(-50%, -50%) scale(1.15)';
@@ -1106,7 +1222,34 @@ snake.update = function() {
       headPos.x = this.resolution.x - 1;
     } else if (headPos.x > this.resolution.x - 1) {
       headPos.x = 0;
-    }
+    }  }
+  
+  // --------- Grass Trampling Detection ---------
+  // Check if snake segments are trampling grass
+  if (typeof grassInstances !== 'undefined' && grassInstances.length > 0) {
+    // Get all current snake positions
+    const snakePositions = this.indexes.map(index => {
+      const x = index % this.resolution.x
+      const z = Math.floor(index / this.resolution.x)
+      return { x, z }
+    })
+    
+    // Check each grass instance for trampling
+    grassInstances.forEach(grassInstance => {
+      if (!grassInstance.grass) return
+      
+      const grassX = Math.round(grassInstance.position.x)
+      const grassZ = Math.round(grassInstance.position.z)
+      
+      // Check if any snake segment is on this grass position
+      const isTrampled = snakePositions.some(pos => 
+        Math.abs(pos.x - grassX) < 0.5 && Math.abs(pos.z - grassZ) < 0.5
+      )
+      
+      if (isTrampled && !grassInstance.isTrampled) {
+        grassInstance.trample()
+      }
+    })
   }
   
   this.updateIndexes();
@@ -1116,6 +1259,11 @@ snake.update = function() {
 
 applyPalette(paletteName)
 
+// --------- Grass Interaction Variables ---------
+let mousePosition = { x: 0, y: 0 }
+let lastWindGustTime = 0
+const WIND_GUST_INTERVAL = 8000 // Wind gusts every 8 seconds
+
 // --------- Main Render Loop ---------
 // --- Ciclo principal de renderização ---
 function tic() {
@@ -1124,6 +1272,19 @@ function tic() {
   
   // Update active camera reference
   activeCamera = cameraController.activeCamera
+  
+  // Update grass interactions if game has started
+  if (gameStarted && grassInstances.length > 0) {
+    // Handle mouse hover interactions
+    updateGrassHoverInteractions()
+    
+    // Handle periodic wind gusts
+    const currentTime = Date.now()
+    if (currentTime - lastWindGustTime > WIND_GUST_INTERVAL) {
+      triggerWindGust()
+      lastWindGustTime = currentTime
+    }
+  }
   
   renderer.render(scene, activeCamera)
   
@@ -1151,6 +1312,22 @@ function handleResize() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 }
 
+// Debounce utility to limit frequent calls
+function debounce(fn, delay) {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), delay);
+  };
+}
+
+// Precompute total grid cells
+// const gridTotal = resolution.x * resolution.y;  // Removed duplicate definition
+
+// Replace resize listener with debounced handler
+const debouncedResize = debounce(handleResize, 200);
+window.addEventListener('resize', debouncedResize);
+
 // --------- Prevent Dragging on UI Elements ---------
 // This ensures UI elements can't be dragged by the user
 function preventDragging() {
@@ -1176,3 +1353,24 @@ function preventDragging() {
 
 // Call the function after the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', preventDragging);
+
+// Test function to verify grass system integration (for debugging)
+function testGrassSystem() {
+  console.log('🌱 Grass System Integration Test')
+  console.log(`- Grass instances created: ${grassInstances.length}`)
+  console.log(`- Mouse position tracking: ${mousePosition.x}, ${mousePosition.y}`)
+  console.log(`- Game started: ${gameStarted}`)
+  console.log(`- Wind gust interval: ${WIND_GUST_INTERVAL}ms`)
+  
+  if (grassInstances.length > 0) {
+    const sampleGrass = grassInstances[0]
+    console.log(`- Sample grass loaded: ${sampleGrass.grass !== null}`)
+    console.log(`- Sample grass trampled: ${sampleGrass.isTrampled}`)
+    console.log(`- Sample grass hovered: ${sampleGrass.isHovered}`)
+  }
+  
+  console.log('✅ Grass system integration test complete')
+}
+
+// Make test function available globally for console testing
+window.testGrassSystem = testGrassSystem
