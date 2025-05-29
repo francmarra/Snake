@@ -10,6 +10,10 @@ export default class Entity {
 		mesh.receiveShadow = true
 		this.resolution = resolution
 		this.option = option
+		
+		// Properties for pulsating animation
+		this.originalScale = null
+		this.isPulsating = false
 	}
 
 	// Devolve a posição da entidade
@@ -36,4 +40,67 @@ export default class Entity {
 
 	// Placeholder para animação de saída
 	out() {}
+	
+	// Start pulsating animation
+	startPulsating(minScale = 0.9, maxScale = 1.3, duration = 1.2) {
+		// Store original scale if not already stored
+		if (!this.originalScale) {
+			this.originalScale = {
+				x: this.mesh.scale.x,
+				y: this.mesh.scale.y,
+				z: this.mesh.scale.z
+			}
+		}
+		
+		// If already pulsating, don't start again
+		if (this.isPulsating) return;
+		
+		this.isPulsating = true;
+		
+		// Create the pulsating animation
+		const timeline = gsap.timeline({
+			repeat: -1, // Infinitely repeat
+			yoyo: true, // Go back and forth
+			onComplete: () => {
+				this.isPulsating = false;
+			}
+		});
+		
+		// Scale up and down smoothly
+		timeline.to(this.mesh.scale, {
+			x: this.originalScale.x * maxScale,
+			y: this.originalScale.y * maxScale,
+			z: this.originalScale.z * maxScale,
+			duration: duration / 2,
+			ease: 'sine.inOut'
+		}).to(this.mesh.scale, {
+			x: this.originalScale.x * minScale,
+			y: this.originalScale.y * minScale,
+			z: this.originalScale.z * minScale,
+			duration: duration / 2,
+			ease: 'sine.inOut'
+		});
+		
+		// Store the timeline for potential future reference
+		this.pulseTween = timeline;
+	}
+	
+	// Stop pulsating animation
+	stopPulsating() {
+		if (this.pulseTween) {
+			this.pulseTween.kill();
+			this.isPulsating = false;
+			
+			// Reset to original scale if available
+			if (this.originalScale) {
+				gsap.to(this.mesh.scale, {
+					x: this.originalScale.x,
+					y: this.originalScale.y,
+					z: this.originalScale.z,
+					duration: 0.3,
+					ease: 'power2.out'
+				});
+			}
+		}
+	}
 }

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>    <meta charset="UTF-8" />
+  <head>
+    <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/assets/images/Favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta property="og:title" content="Snake 3D" />
@@ -18,20 +19,23 @@
         id="segments-counter"
         class="text-white font-bold text-2xl lg:text-3xl"
       ></span>
-    </div>    <script type="module" src="/main.js"></script>
+    </div>
+    <script type="module" src="/main.js"></script>
     <audio
       id="audio"
       class="fixed top-0 left-0 z-50"
       controls
       loop="true"
       src="/assets/audio/short-audio.mp3"
-    ></audio>    <button
+    ></audio>
+    <button
       id="btn-settings"
       type="button"
       class="fixed w-max drop-shadow-xl top-[80%] lg:top-[65%] z-50 flex items-center justify-center"
       draggable="false"
     >
-      <!-- Gear icon overlay -->         <img
+      <!-- Gear icon overlay -->
+       <img
         src="/assets/images/Gear.svg"
         class="absolute w-10 h-10 lg:w-16 lg:h-16 pointer-events-none z-10"
         alt="Settings Gear"
@@ -45,7 +49,8 @@
         draggable="false"
       />
       <span class="absolute btn-text">settings</span>
-    </button>    <button
+    </button>
+    <button
       id="btn-play"
       type="button"
       class="fixed w-max drop-shadow-xl top-[80%] lg:top-[65%] left-1/2"
@@ -58,12 +63,14 @@
         draggable="false"
       />
       <span class="absolute btn-text">play</span>
-    </button>    <button
+    </button>
+    <button
       id="btn-volume"
       type="button"
       class="fixed w-max drop-shadow-xl hover:bg-black/30 rounded-[7px] left-4 bottom-20 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-20 after:rotate-45 after:absolute after:top-1/2"
       draggable="false"
-    ><img
+    >
+      <img
         id="btn-volume-img"
         class="aspect-square w-20"
         src="/assets/images/themes/day/DayAudio.svg"
@@ -71,12 +78,14 @@
         draggable="false"
       />
       <span class="absolute btn-text">mute</span>
-    </button>    <button
+    </button>
+    <button
       id="btn-toggle-camera"
       type="button"
       class="fixed w-max drop-shadow-xl hover:bg-black/30 rounded-[7px] left-4 bottom-40 mb-6 after:hidden after:content-[''] after:bg-red-500 after:h-1 after:w-20 after:rotate-45 after:absolute after:top-1/2"
       draggable="false"
-    ><img
+    >
+      <img
         id="btn-toggle-camera-img"
         class="aspect-square w-20"
         src="/assets/images/themes/day/DayCamera.svg"
@@ -84,17 +93,21 @@
         draggable="false"
       />
       <span class="absolute btn-text">camera</span>
-    </button>    <ul class="fixed left-4 flex lg:flex-col gap-3 lg:gap-4 bottom-4 lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2 z-50" draggable="false">      <li
+    </button>
+    <ul class="fixed left-4 flex lg:flex-col gap-3 lg:gap-4 bottom-4 lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2 z-50" draggable="false">
+      <li
         data-color="day"
         class="cursor-pointer theme-selector"
         draggable="false"
-      ><img
+      >
+        <img
           class="aspect-square hover:scale-110 transition-transform duration-150 ease-in-out rounded-full w-14 h-14 lg:w-20 lg:h-20"
           src="/assets/images/themes/day/DayTheme.svg"
           alt=""
           draggable="false"
         />
-      </li>      <li
+      </li>
+      <li
         data-color="sunset"
         class="cursor-pointer theme-selector"
         draggable="false"
@@ -115,7 +128,8 @@
           draggable="false"
         />
       </li>
-    </ul>    <!-- Settings Tab -->
+    </ul>
+    <!-- Settings Tab -->
     <div id="settings-tab" class="settings-tab" draggable="false">
       <div class="settings-line" draggable="false"></div>
     </div>
@@ -157,14 +171,31 @@
         <label class="text-white inline-flex items-center">
           <input id="point-light" type="checkbox" checked class="mr-2" /> Point Light
         </label>
-      </div>
-        <h3 class="text-lg font-bold text-white mt-6 mb-3">Minimap</h3>
+      </div>        <h3 class="text-lg font-bold text-white mt-6 mb-3">Minimap</h3>
       <div class="setting-item mt-2">
         <label class="text-white inline-flex items-center">
           <input id="show-minimap" type="checkbox" checked class="mr-2" /> Show Minimap
         </label>
       </div>
-    </div>    <div id="minimap-container" style="display: none; transform-origin: bottom right;" class="fixed bottom-4 right-4 z-50 bg-black/50 rounded-md p-2 theme-green" draggable="false">
+      
+      <!-- <h3 class="text-lg font-bold text-white mt-6 mb-3">Controls</h3>
+      <div class="setting-item mb-2">
+        <p class="text-white text-sm">
+          <strong>Movement:</strong> Arrow Keys or WASD
+        </p>
+      </div>
+      <div class="setting-item mb-2">
+        <p class="text-white text-sm">
+          <strong>Start/Pause:</strong> Space bar
+        </p>
+      </div>
+      <div class="setting-item">
+        <p class="text-white text-sm">
+          <strong>Wind Effect:</strong> Press G to trigger wind gusts on grass
+        </p>
+      </div> -->
+    </div>
+    <div id="minimap-container" style="display: none; transform-origin: bottom right;" class="fixed bottom-4 right-4 z-50 bg-black/50 rounded-md p-2 theme-green" draggable="false">
       <div class="text-white text-xs mb-1 font-bold text-center" draggable="false">Minimap</div>
       <canvas id="minimap" width="200" height="200" draggable="false"></canvas>
     </div>

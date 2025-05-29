@@ -1,6 +1,4 @@
 // --- Classe Fruit: representa uma fruta colecionável ---
-
-
 import {
     Group,
     Mesh,
@@ -36,5 +34,26 @@ export default class Fruit extends Entity {
         // Define pontos aleatórios para a fruta
         this.points = Math.floor(Math.random() * 3) + 1
         fruit.scale.setScalar(0.5 + (this.points * 0.5) / 3)
+        
+        // Inicia o efeito de pulsação após um pequeno atraso
+        setTimeout(() => {
+            this.startPulsating(0.92, 1.08, 1.2);
+        }, 500);
+    }
+    
+    // Sobrescreve o método in para adicionar efeito de pulsação após a animação de entrada
+    in() {
+        super.in(); // Chama primeiro o método da classe pai
+        
+        // Inicia a pulsação após a conclusão da animação de entrada
+        setTimeout(() => {
+            this.startPulsating(0.92, 1.2, 1.2);
+        }, 1000);
+    }
+    
+    // Sobrescreve o método out para parar a pulsação antes de sair
+    out() {
+        this.stopPulsating();
+        super.out();
     }
 }
