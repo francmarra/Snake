@@ -100,6 +100,7 @@ function applyPalette(name) {
   selectedPalette = palette;
     const {
     groundColor,
+    grassColor,
     dirtColor,
     rockColor,
     treeColor,
@@ -179,7 +180,7 @@ function applyPalette(name) {
   // Update grass colors to match ground color
   if (typeof grassInstances !== 'undefined') {
     grassInstances.forEach((grassInstance) => {
-      grassInstance.updateColor(groundColor);
+      grassInstance.updateColor(grassColor);
     });
   }
   

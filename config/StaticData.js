@@ -21,6 +21,7 @@ export const COLOR_PALETTES = {
 
 		// --- Ground ---
 		groundColor: 0x56f854,
+		grassColor: 0x058e3f,
 		dirtColor: 0xa5756d,
 		fogColor: 0x39c09f,
 
@@ -51,6 +52,7 @@ export const COLOR_PALETTES = {
 
 		// --- Ground ---
 		groundColor: 0xaf4e69,
+		grassColor: 0xf9c74f,
 		dirtColor: 0xa5756d,
 		fogColor: 0xffac38,
 
@@ -81,6 +83,7 @@ export const COLOR_PALETTES = {
 
 		// --- Ground ---
 		groundColor: 0xBC6595,
+		grassColor: 0x184e77,
 		dirtColor: 0xa5756d,
 		fogColor: 0xb04ce6,
 
