@@ -417,6 +417,10 @@ snake.addEventListener('updated', function () {
   )
   if (fruitIndex >= 0) {
     const fruit = candies[fruitIndex]
+    // Stop pulsating animation before removing the fruit
+    if (fruit.stopPulsating) {
+      fruit.stopPulsating();
+    }
     scene.remove(fruit.mesh)
     candies.splice(fruitIndex, 1)
     fruit.mesh.visible = false
@@ -424,12 +428,15 @@ snake.addEventListener('updated', function () {
     snake.body.head.data.fruit = fruit
     addFruit()
   }
-
   const bombIndex = bombs.findIndex(
     (bomb) => bomb.getIndexByCoord() === headIndex
   )
   if (bombIndex >= 0) {
     const bomb = bombs[bombIndex]
+    // Stop pulsating animation before removing the bomb
+    if (bomb.stopPulsating) {
+      bomb.stopPulsating();
+    }
     scene.remove(bomb.mesh)
     bombs.splice(bombIndex, 1)
     bomb.mesh.visible = false
@@ -630,10 +637,13 @@ function resetGame() {
   if (!gameStarted) {
     cameraController.cameraRotationActive = true
   }
-
   // Remove existing fruits, bombs, and entities returning them to pools
   let fruit
   while (fruit = candies.pop()) {
+    // Stop any ongoing animations
+    if (fruit.stopPulsating) {
+      fruit.stopPulsating();
+    }
     scene.remove(fruit.mesh)
     fruit.mesh.visible = false
     fruitPool.push(fruit)
@@ -641,6 +651,10 @@ function resetGame() {
 
   let bomb
   while (bomb = bombs.pop()) {
+    // Stop any ongoing animations
+    if (bomb.stopPulsating) {
+      bomb.stopPulsating();
+    }
     scene.remove(bomb.mesh)
     bomb.mesh.visible = false
     bombPool.push(bomb)
@@ -648,6 +662,10 @@ function resetGame() {
 
   let entity
   while (entity = entities.pop()) {
+    // Stop any ongoing animations if it's a pulsating entity
+    if (entity.stopPulsating) {
+      entity.stopPulsating();
+    }
     scene.remove(entity.mesh)
     entity.mesh.visible = false
     const type = entity.constructor.name
@@ -712,6 +730,13 @@ function addFruit() {
     fruit.mesh.scale.setScalar(0.5 + (fruit.points * 0.5) / 3)
     fruit.mesh.material.color.set(selectedPalette.fruitColor)
     fruit.mesh.visible = true
+    
+    // Store original scale for pulsating effect
+    fruit.originalScale = {
+      x: fruit.mesh.scale.x,
+      y: fruit.mesh.scale.y,
+      z: fruit.mesh.scale.z
+    }
   } else {
     fruit = new Fruit(resolution, selectedPalette.fruitColor)
   }
@@ -719,7 +744,7 @@ function addFruit() {
   fruit.mesh.position.x = index % resolution.x
   fruit.mesh.position.z = Math.floor(index / resolution.x)
   candies.push(fruit)
-  fruit.in()
+  fruit.in() // This will trigger the pulsating effect after the entrance animation
   scene.add(fruit.mesh)
 }
 
@@ -731,6 +756,13 @@ function addBomb() {
     bomb.points = Math.floor(Math.random() * 3) + 1
     bomb.mesh.scale.setScalar(0.5 + (bomb.points * 0.5) / 3)
     bomb.mesh.visible = true
+    
+    // Store original scale for pulsating effect
+    bomb.originalScale = {
+      x: bomb.mesh.scale.x,
+      y: bomb.mesh.scale.y,
+      z: bomb.mesh.scale.z
+    }
   } else {
     bomb = new Bomb(resolution)
   }
@@ -738,7 +770,7 @@ function addBomb() {
   bomb.mesh.position.x = index % resolution.x
   bomb.mesh.position.z = Math.floor(index / resolution.x)
   bombs.push(bomb)
-  bomb.in()
+  bomb.in() // This will trigger the pulsating effect after the entrance animation
   scene.add(bomb.mesh)
 }
 
@@ -971,10 +1003,6 @@ function updateGrassHoverInteractions() {
       return // Skip update if mouse hasn't moved enough
     }
   }
-  
-  grassInstances.forEach(grassInstance => {
-    grassInstance.onMouseHover(activeCamera, mousePosition)
-  })
   
   // Store last mouse position for next frame
   mousePosition.lastX = mousePosition.x
