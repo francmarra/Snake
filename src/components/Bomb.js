@@ -36,5 +36,26 @@ export default class Bomb extends Entity {
         // Define pontos negativos aleatórios para a bomba
         this.points = Math.floor(Math.random() * 3) + 1
         bomb.scale.setScalar(0.5 + (this.points * 0.5) / 3)
+        
+        // Inicia o efeito de pulsação após um pequeno atraso
+        setTimeout(() => {
+            this.startPulsating(0.9, 1.1, 1.5);
+        }, 500);
+    }
+    
+    // Sobrescreve o método in para adicionar efeito de pulsação após a animação de entrada
+    in() {
+        super.in(); // Chama o método pai primeiro
+        
+        // Começa a pulsar após a animação de entrada ser concluída
+        setTimeout(() => {
+            this.startPulsating(0.9, 1.1, 1.5);
+        }, 1000);
+    }
+    
+    // Sobrescreve o método out para parar a pulsação antes de sair
+    out() {
+        this.stopPulsating();
+        super.out();
     }
 }
