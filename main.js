@@ -8,6 +8,7 @@ import Tree from './src/components/Tree'
 import Flower from './src/components/Flower'
 import Mushroom from './src/components/Mushroom'
 import Fence from './src/components/Fence'
+import Grass from './src/components/Grass'
 import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight, applyThemeLights, areAllLightsOff, setLightChangeCallback } from './src/utils/Lights'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
@@ -99,6 +100,7 @@ function applyPalette(name) {
   selectedPalette = palette;
     const {
     groundColor,
+    grassColor,
     dirtColor,
     rockColor,
     treeColor,
@@ -174,7 +176,15 @@ function applyPalette(name) {
       }
     });
   })
-    candies[0].mesh.material.color.set(fruitColor)
+  
+  // Update grass colors to match ground color
+  if (typeof grassInstances !== 'undefined') {
+    grassInstances.forEach((grassInstance) => {
+      grassInstance.updateColor(grassColor);
+    });
+  }
+  
+  candies[0].mesh.material.color.set(fruitColor)
   snake.body.head.data.mesh.material.color.set(snakeColor)
   snake.mouth.material.color.set(mouthColor)
   updateSnakeSegmentsUI()
@@ -852,6 +862,77 @@ MUSHROOM_DATA.forEach(([x, y, z, scale, capColor, stemColor]) => {
   mushroom.mesh.scale.setScalar(scale)
   scene.add(mushroom.mesh)
 })
+
+// Add static grass instances
+const grassInstances = []
+
+function generateGrass() {
+  // Generate dense grass coverage to completely hide the ground
+  const totalCells = resolution.x * resolution.y
+  
+  // Get all occupied positions to avoid conflicts with game objects
+  let occupiedIndexes = new Set([
+    ...snake.indexes,
+    ...candies.map(fruit => fruit.getIndexByCoord()),
+    ...entities.map(entity => entity.getIndexByCoord()),
+    ...bombs.map(bomb => bomb.getIndexByCoord())
+  ])
+  
+  // First pass: Fill every available cell with grass
+  for (let index = 0; index < totalCells; index++) {
+    // Skip if position is occupied by game objects
+    if (occupiedIndexes.has(index)) {
+      continue
+    }
+    
+    const x = index % resolution.x
+    const z = Math.floor(index / resolution.x)
+    const y = 0
+    
+    // Random scale for variety
+    const scale = 0.6 + Math.random() * 0.4
+    
+    const grassPosition = new THREE.Vector3(x, y, z)
+    const grassInstance = new Grass(
+      scene,
+      grassPosition,
+      scale,
+      selectedPalette.groundColor
+    )
+    grassInstances.push(grassInstance)
+  }
+  
+  // Second pass: Add overlapping grass instances for complete coverage
+  const overlapCount = Math.floor(totalCells * 0.4) // 40% additional coverage
+  for (let i = 0; i < overlapCount; i++) {
+    const index = Math.floor(Math.random() * totalCells)
+    
+    // Skip if position has game objects
+    if (occupiedIndexes.has(index)) {
+      continue
+    }
+    
+    const x = index % resolution.x
+    const z = Math.floor(index / resolution.x)
+    const y = 0
+    
+    // Smaller grass instances for filling gaps
+    const scale = 0.4 + Math.random() * 0.3
+    
+    const grassPosition = new THREE.Vector3(x, y, z)
+    const grassInstance = new Grass(
+      scene,
+      grassPosition,
+      scale,
+      selectedPalette.groundColor
+    )
+    grassInstances.push(grassInstance)
+  }
+  
+  console.log(`Generated ${grassInstances.length} grass instances for complete ground coverage`)
+}
+
+generateGrass()
 
 // Add fence around the perimeter - always light brown regardless of theme
 const fence = new Fence(resolution) // Use default light brown colors defined in the Fence class
