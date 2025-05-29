@@ -1,36 +1,49 @@
 // --------- Imports ---------
 import './style.css'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import * as dat from 'lil-gui'
-import Snake from './src/Snake'
-import Fruit from './src/Fruit'
-import Rock from './src/Rock'
-import Tree from './src/Tree'
-import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from './src/Lights'
-import gsap from 'gsap'
+import Snake from './src/components/Snake'
+import Fruit from './src/components/Fruit'
+import Rock from './src/components/Rock'
+import Tree from './src/components/Tree'
+import Flower from './src/components/Flower'
+import Mushroom from './src/components/Mushroom'
+import Fence from './src/components/Fence'
+import Grass from './src/components/Grass'
+import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight, applyThemeLights, areAllLightsOff, setLightChangeCallback } from './src/utils/Lights'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
-import Entity from './src/Entity'
-import Bomb from './src/Bomb'
+import Entity from './src/components/Entity'
+import Bomb from './src/components/Bomb'
 import { MOVEMENT_SPEED, NUM_ENTITIES, DEFAULT_SETTINGS } from './config/Config.js'
+import { AudioController } from './managers/AudioManager.js'
+import { CameraController } from './managers/CameraManager.js'
+import { initializeSettings, UIController } from './managers/SettingsManager'
+import Minimap from './src/components/Minimap.js';
+import Island from './src/components/Island.js';
 import {
   GRID_WIDTH,
   GRID_HEIGHT,
   COLOR_PALETTES,
   TREE_DATA,
   ROCK_DATA,
+  FLOWER_DATA,
+  MUSHROOM_DATA,
   CAMERA_FOV,
   CAMERA_NEAR,
   CAMERA_FAR
 } from './config/StaticData.js'
-import { animateButtonIn, animateButtonOut, animateCameraButtonIn, animateSettingsTab } from './src/Animations.js';
-import { initCameras, updateCamerasOnResize } from './managers/CameraManager'
-import { muteVolume, unmuteVolume } from './managers/AudioManager'
-import { initializeSettings } from './managers/SettingsManager'
-import Minimap from './src/Minimap.js';
-import { animateCameraRotation } from './src/CameraRotation.js';
+import { 
+  animateButtonIn, 
+  animateButtonOut, 
+  animateSettingsTab,
+  animateEntitiesIn,
+  animateMinimapIn,
+  animateCameraPosition,
+  animateButtonClick,
+  animatePaletteSelectors,
+  animateSettingsGear 
+} from './src/utils/Animations.js';
 
 // --------- Font Loader & Score Initialization ---------
 // Carrega a fonte para o texto da pontuação
@@ -45,7 +58,30 @@ loader.load(fontSrc, (loadedFont) => {
 // --- Paletas de cores e seleção ---
 const resolution = new THREE.Vector2(GRID_WIDTH, GRID_HEIGHT)
 const palettes = COLOR_PALETTES
-let paletteName = 'green' // Default palette, not loaded from localStorage
+
+// Function to load theme from localStorage
+function loadThemeFromStorage() {
+  try {
+    const savedTheme = localStorage.getItem('snakeGameTheme')
+    if (savedTheme && palettes[savedTheme]) {
+      return savedTheme
+    }
+  } catch (error) {
+    console.warn('Could not load theme from localStorage:', error)
+  }
+  return 'day' // Default fallback
+}
+
+// Function to save theme to localStorage
+function saveThemeToStorage(themeName) {
+  try {
+    localStorage.setItem('snakeGameTheme', themeName)
+  } catch (error) {
+    console.warn('Could not save theme to localStorage:', error)
+  }
+}
+
+let paletteName = loadThemeFromStorage() // Load theme from localStorage
 let selectedPalette = palettes[paletteName]
 const params = { ...selectedPalette }
 
@@ -59,23 +95,32 @@ function applyPalette(name) {
   paletteName = name
   const palette = palettes[name]
   if (!palette) return
-  
-  // Don't save to localStorage
-  selectedPalette = palette
-
-  const {
+    // Save theme to localStorage for persistence
+  saveThemeToStorage(name);
+  selectedPalette = palette;
+    const {
     groundColor,
-    fogColor,
+    grassColor,
+    dirtColor,
     rockColor,
     treeColor,
     fruitColor,
     snakeColor,
-    mouthColor
+    mouthColor,
+    flowerPetalColor,
+    flowerCenterColor,
+    mushroomCapColor,
+    mushroomSpotColor
   } = palette
+    // Update island materials if the island is loaded
+  if (island) {
+    island.updateColors(groundColor, dirtColor);
+  }
+  // Update skybox based on theme
+  updateSkybox(name)
 
-  planeMaterial.color.set(groundColor)
-  scene.fog.color.set(fogColor)
-  scene.background.set(fogColor)
+  // Apply theme lighting
+  applyThemeLights(name)
 
   // Atualiza cor de rochas
   entities.filter((e) => e instanceof Rock).forEach((rock) => {
@@ -85,33 +130,74 @@ function applyPalette(name) {
   entities.filter((e) => e instanceof Tree).forEach((tree) => {
     tree.foliage.material.color.set(treeColor)
   })
+  // Update flower colors to match palette - maintaining green stems and leaves
+  entities.filter((e) => e instanceof Flower).forEach((flower) => {
+    // Find center (sphere) - it's typically the second child after the stem
+    const center = flower.mesh.children.find(child => 
+      child.geometry instanceof THREE.SphereGeometry
+    );
+    
+    if (center) {
+      // Update the center color
+      center.material.color.set(flowerCenterColor);
+    }
+      // Update all petals (avoiding stems and leaves which are green)
+    flower.mesh.children.forEach(child => {
+      // Skip stem and leaves which have these green color hex values
+      const childColor = child.material?.color?.getHex();
+      const isGreenPart = childColor === 0x2d5016 || childColor === 0x228B22;
+      
+      // If it's not stem or leaves and not the center, it's a petal
+      if (child.material && !isGreenPart && child !== center) {
+        // Use flowerPetalColor or fall back to fruitColor for backward compatibility
+        child.material.color.set(flowerPetalColor || fruitColor);
+      }
+    });
+  })
+  
+  // Update mushroom colors - maintaining natural stem color
+  entities.filter((e) => e instanceof Mushroom).forEach((mushroom) => {
+    // Find the cap (sphere) and update its color
+    const cap = mushroom.mesh.children.find(child => 
+      child.geometry instanceof THREE.SphereGeometry
+    );
+    
+    if (cap) {
+      cap.material.color.set(mushroomCapColor || 0x8B4513);
+    }
+    
+    // Update all spot colors but keep the stem untouched
+    mushroom.mesh.children.forEach(child => {
+      // Skip the stem which is a cylinder but taller than spots (spots are very thin cylinders)
+      if (child.geometry instanceof THREE.CylinderGeometry && 
+          child !== cap && 
+          child.geometry.parameters.height <= 0.01) { // Only thin cylinders (spots)
+        child.material.color.set(mushroomSpotColor || 0xFFFFFF);
+      }
+    });
+  })
+  
+  // Update grass colors to match ground color
+  if (typeof grassInstances !== 'undefined') {
+    grassInstances.forEach((grassInstance) => {
+      grassInstance.updateColor(grassColor);
+    });
+  }
+  
   candies[0].mesh.material.color.set(fruitColor)
   snake.body.head.data.mesh.material.color.set(snakeColor)
   snake.mouth.material.color.set(mouthColor)
-
   updateSnakeSegmentsUI()
 
-  btnPlayImg.src = `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Play.svg`
-  document.getElementById('btn-toggle-camera-img').src =
-    `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Camera.svg`
-  document.getElementById('btn-volume-img').src =
-    `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Audio.svg`
-  const vol = localStorage.getItem('volume')
-  if (vol === 'off' || audio.volume === 0) {
-    document.getElementById('btn-volume-img').src =
-      `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}NoAudio.svg`
-  }
-  
-  // Update minimap theme and colors
-  const minimapContainer = document.getElementById('minimap-container')
+  btnPlayImg.src = `/assets/images/themes/${name.toLowerCase()}/${capitalize(name)}Play.svg`;    // Update minimap theme and colors
+  const minimapContainer = document.getElementById('minimap-container');
   if (minimapContainer) {
-    minimapContainer.classList.remove('theme-green', 'theme-orange', 'theme-lilac')
-    minimapContainer.classList.add(`theme-${name.toLowerCase()}`)
+    minimapContainer.classList.remove('theme-day', 'theme-sunset', 'theme-night');
+    minimapContainer.classList.add(`theme-${name.toLowerCase()}`);
   }
-  
-  // Update minimap with new palette colors if it exists
+    // Update minimap with new palette colors if it exists
   if (minimap && gameStarted) {
-    minimap.update(snake, candies, bombs, selectedPalette)
+    minimap.update(snake, candies, bombs, selectedPalette);
   }
 }
 
@@ -128,8 +214,153 @@ gridHelper.material.transparent = true
 gridHelper.material.opacity = 0.3
 
 const scene = new THREE.Scene()
-scene.background = new THREE.Color(params.fogColor)
-scene.fog = new THREE.Fog(params.fogColor, 5, 40)
+
+// --------- Enhanced Skybox Setup with Horizon Alignment ---------
+// Create a dedicated loading manager for skybox textures
+const skyboxLoadingManager = new THREE.LoadingManager()
+const skyTextureLoader = new THREE.TextureLoader(skyboxLoadingManager)
+
+// Skybox image mapping for different themes - using centralized paths from StaticData.js
+const skyboxImages = {
+  day: COLOR_PALETTES.day.skyboxPath,
+  sunset: COLOR_PALETTES.sunset.skyboxPath,
+  night: COLOR_PALETTES.night.skyboxPath
+}
+
+// Cache for preloaded skybox textures
+const skyboxTextureCache = {}
+let skyboxLoadingPromise = null
+let skyBox // Global reference to the skybox for updates
+let skyboxOverlay // Global reference to the dark overlay
+
+// Set up loading manager callbacks
+skyboxLoadingManager.onLoad = () => {
+  console.log('All skybox textures loaded successfully')
+}
+
+skyboxLoadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+  console.log(`Loading skybox textures: ${itemsLoaded}/${itemsTotal} - ${url}`)
+}
+
+skyboxLoadingManager.onError = (url) => {
+  console.error(`Failed to load skybox texture: ${url}`)
+}
+
+// Function to preload all skybox textures
+function preloadSkyboxTextures() {
+  if (skyboxLoadingPromise) return skyboxLoadingPromise
+
+  const loadPromises = Object.entries(skyboxImages).map(([theme, imagePath]) => {
+    return new Promise((resolve, reject) => {
+      const texture = skyTextureLoader.load(
+        imagePath,
+        () => {
+          // Configure texture settings
+          texture.mapping = THREE.EquirectangularReflectionMapping
+          texture.wrapS = THREE.RepeatWrapping
+          texture.wrapT = THREE.ClampToEdgeWrapping
+          
+          // Cache the texture
+          skyboxTextureCache[theme] = texture
+          console.log(`Skybox texture cached: ${theme}`)
+          resolve(texture)
+        },
+        undefined, // onProgress
+        (error) => {
+          console.error(`Failed to load skybox texture: ${theme}`, error)
+          reject(error)
+        }
+      )
+    })
+  })
+
+  skyboxLoadingPromise = Promise.all(loadPromises)
+  return skyboxLoadingPromise
+}
+
+// Function to create or update skybox (now instant with preloaded textures)
+function updateSkybox(themeName) {
+  const texture = skyboxTextureCache[themeName] || skyboxTextureCache.day
+  
+  if (!texture) {
+    console.warn(`Skybox texture not loaded for theme: ${themeName}, falling back to loading on demand`)
+    // Fallback: load on demand if not preloaded
+    const imagePath = skyboxImages[themeName] || skyboxImages.day
+    const fallbackTexture = skyTextureLoader.load(imagePath, () => {
+      if (skyBox) {
+        skyBox.material.map = fallbackTexture
+        skyBox.material.needsUpdate = true
+      }
+    })
+    fallbackTexture.mapping = THREE.EquirectangularReflectionMapping
+    fallbackTexture.wrapS = THREE.RepeatWrapping
+    fallbackTexture.wrapT = THREE.ClampToEdgeWrapping
+    return
+  }
+
+  // Create skybox if it doesn't exist
+  if (!skyBox) {
+    const skyGeometry = new THREE.SphereGeometry(500, 60, 40)
+    const skyMaterial = new THREE.MeshBasicMaterial({
+      map: texture,
+      side: THREE.BackSide,
+      fog: false
+    })
+
+    skyBox = new THREE.Mesh(skyGeometry, skyMaterial)
+
+    // Position the skybox to align horizon with your ground plane
+    skyBox.position.set(resolution.x / 2 - 0.5, -50, resolution.y / 2 - 0.5)
+    skyBox.rotation.y = Math.PI
+
+    scene.add(skyBox)  } else {
+    // Instantly update existing skybox material
+    skyBox.material.map = texture
+    skyBox.material.needsUpdate = true
+  }
+}
+
+// Function to create or update skybox dark overlay
+function updateSkyboxOverlay(darken = false) {
+  if (!skyboxOverlay && darken) {
+    // Create the overlay if it doesn't exist and we need to darken
+    const overlayGeometry = new THREE.SphereGeometry(499, 60, 40) // Slightly smaller than skybox
+    const overlayMaterial = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.7, // Adjust this value to control darkness (0.0 = no effect, 1.0 = completely black)
+      side: THREE.BackSide,
+      fog: false
+    })
+
+    skyboxOverlay = new THREE.Mesh(overlayGeometry, overlayMaterial)
+    
+    // Position the overlay same as skybox
+    skyboxOverlay.position.set(resolution.x / 2 - 0.5, -50, resolution.y / 2 - 0.5)
+    skyboxOverlay.rotation.y = Math.PI
+
+    scene.add(skyboxOverlay)  } else if (skyboxOverlay) {
+    // Update existing overlay visibility
+    skyboxOverlay.visible = darken
+  }
+}
+
+// Function to check lighting state and update skybox overlay
+function updateSkyboxLighting() {
+  const allLightsOff = areAllLightsOff()
+  updateSkyboxOverlay(allLightsOff)
+}
+
+// Start preloading skybox textures immediately
+preloadSkyboxTextures().then(() => {
+  console.log('All skybox textures preloaded and ready for instant switching')
+  // Initialize skybox with default theme once textures are loaded
+  updateSkybox(paletteName)
+}).catch((error) => {
+  console.error('Failed to preload some skybox textures:', error)
+  // Fallback: try to initialize with default theme anyway
+  updateSkybox(paletteName)
+})
 scene.add(gridHelper)
 
 const sizes = {
@@ -137,24 +368,19 @@ const sizes = {
   height: window.innerHeight,
 }
 
-const initialPosition = new THREE.Vector3(
-  resolution.x / 2 + 5,
-  4,
-  resolution.y / 2 + 4
-)
-const finalPosition = new THREE.Vector3(
-  (resolution.x / 2) - 8, // ajustar à direita
-  (resolution.x / 2) + 4, // altura da câmara
-  resolution.y + 9 // ajustar para a esquerda
-)
-
-const { camera, topCamera } = initCameras(resolution, sizes, initialPosition, finalPosition)
-let activeCamera = camera
+// --------- Camera Positioning Adjustments ---------
+const initialPosition = new THREE.Vector3(resolution.x / 2 + 5, 3, resolution.y / 2 + 4)
+const finalPosition = new THREE.Vector3((resolution.x / 2) - 8, (resolution.x / 2) + 3, resolution.y + 9)
 
 const renderer = new THREE.WebGLRenderer({
   antialias: window.devicePixelRatio < 2,
   logarithmicDepthBuffer: true,
 })
+
+// Initialize camera controller
+const cameraController = new CameraController(resolution, sizes, renderer, initialPosition, finalPosition)
+let activeCamera = cameraController.activeCamera
+
 document.body.appendChild(renderer.domElement)
 handleResize()
 
@@ -163,35 +389,12 @@ renderer.toneMappingExposure = 1.2
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.VSMShadowMap
 
-const controls = new OrbitControls(camera, renderer.domElement)
-controls.enableDamping = true
-controls.enableZoom = false
-controls.enablePan = false
-controls.enableRotate = false
-controls.target.set(
-  resolution.x / 2 - 2,
-  0,
-  resolution.y / 2 + 2
-)
-
 // --------- Plane and Minimap Initialization ---------
 // Initialize the minimap
 let minimap = null;
 
-const planeGeometry = new THREE.PlaneGeometry(
-  resolution.x * 50,
-  resolution.y * 50
-)
-planeGeometry.rotateX(-Math.PI * 0.5)
-const planeMaterial = new THREE.MeshStandardMaterial({
-  color: params.groundColor,
-})
-const plane = new THREE.Mesh(planeGeometry, planeMaterial)
-plane.position.x = resolution.x / 2 - 0.5
-plane.position.z = resolution.y / 2 - 0.5
-plane.position.y = -0.5
-scene.add(plane)
-plane.receiveShadow = true
+// Initialize the island
+let island = new Island(scene, resolution, params.groundColor, params.dirtColor);
 
 // --------- Snake Initialization and Game Logic ---------
 const snake = new Snake({
@@ -365,14 +568,7 @@ function registerEventListener() {
 
 // Helper function to close settings and blur all inputs
 function closeSettings() {
-  const settingsSidebar = document.getElementById('settings-sidebar');
-  if (settingsSidebar) {
-    settingsSidebar.classList.remove('open');
-    
-    // Blur all input elements to prevent them from receiving keyboard events
-    const inputs = settingsSidebar.querySelectorAll('input');
-    inputs.forEach(input => input.blur());
-  }
+  uiController.closeSettings()
 }
 
 let isRunning
@@ -380,13 +576,14 @@ let isRunning
 function startGame() {
   if (!snake.isMoving) {
     // Ensure camera rotation is disabled when snake starts moving
-    cameraRotationActive = false;
+    cameraController.stopRotation()
     
     // Hide settings tab when snake starts moving
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab && settingsTab.style.display !== 'none') {
       animateSettingsTab(settingsTab, false);
-    }    // Use the current slider value to determine moveInterval for snake speed
+    }    
+    // Use the current slider value to determine moveInterval for snake speed
     const sliderVal = parseInt(document.getElementById('speed-range').value);
     const moveInterval = 300 - (sliderVal * 16);
     isRunning = setInterval(() => {
@@ -422,7 +619,7 @@ function resetGame() {
   
   // Enable camera rotation again if the player goes back to the main menu
   if (!gameStarted) {
-    cameraRotationActive = true;
+    cameraController.cameraRotationActive = true
   }
 
   // Wait for the player to press a movement key before starting again
@@ -461,13 +658,22 @@ function resetGame() {
   for (let i = 0; i < numObjects; i++) {
     addEntity();
   }
-  
-  // Show settings tab after reset
+    // Show settings tab after reset
   const settingsTab = document.getElementById('settings-tab');
   if (settingsTab) {
     settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
     settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
     animateSettingsTab(settingsTab, true);
+  }
+    // Update minimap visibility based on settings
+  const showMinimap = document.getElementById('show-minimap').checked;
+  const minimapContainer = document.getElementById('minimap-container');
+  if (minimapContainer) {
+    if (showMinimap) {
+      minimapContainer.style.display = 'block';
+    } else {
+      minimapContainer.style.display = 'none';
+    }
   }
 }
 
@@ -519,10 +725,23 @@ function getFreeIndex() {
 }
 
 function addEntity() {
-  const entity =
-    Math.random() > 0.5
-      ? new Rock(resolution, selectedPalette.rockColor)
-      : new Tree(resolution, selectedPalette.treeColor)
+  const entityType = Math.random()
+  let entity
+  
+  if (entityType < 0.4) {
+    entity = new Rock(resolution, selectedPalette.rockColor)
+  } else if (entityType < 0.7) {
+    entity = new Tree(resolution, selectedPalette.treeColor)
+  } else if (entityType < 0.85) {
+    entity = new Flower(resolution, selectedPalette.flowerPetalColor, selectedPalette.flowerCenterColor)
+  } else {
+    entity = new Mushroom(
+      resolution, 
+      selectedPalette.mushroomCapColor, 
+      0xF5DEB3, // Stem color stays constant
+      selectedPalette.mushroomSpotColor
+    )
+  }
 
   let index = getFreeIndex()
 
@@ -550,27 +769,20 @@ function generateEntities() {
 
     return distanceA - distanceB
   })
-
-  gsap.from(
-    entities.map((entity) => entity.mesh.scale),
-    {
-      x: 0,
-      y: 0,
-      z: 0,
-      duration: 1,
-      ease: 'elastic.out(1.5, 0.5)',
-      stagger: {
-        grid: [20, 20],
-        amount: 0.7,
-      },
-    }
-  )
+  animateEntitiesIn(entities)
 }
 
 generateEntities()
 
 scene.add(...lights)
 
+// Set up the callback for light changes to update skybox overlay
+setLightChangeCallback(updateSkyboxLighting)
+
+// Initialize skybox lighting state
+updateSkyboxLighting()
+
+// Add static trees
 const tree = new Tree(resolution)
 TREE_DATA.forEach(([x, y, z, w]) => {
   let clone = tree.mesh.clone()
@@ -579,6 +791,7 @@ TREE_DATA.forEach(([x, y, z, w]) => {
   scene.add(clone)
 })
 
+// Add static rocks
 const rock = new Rock(resolution)
 ROCK_DATA.forEach(([posArr, scaleArr]) => {
   let clone = new Rock(resolution).mesh
@@ -588,10 +801,117 @@ ROCK_DATA.forEach(([posArr, scaleArr]) => {
   scene.add(clone)
 })
 
+// Add static flowers
+FLOWER_DATA.forEach(([x, y, z, scale, color]) => {
+  // Use specified petal color or theme's petal color, and use the theme's center color
+  const flower = new Flower(
+    resolution, 
+    color || selectedPalette.flowerPetalColor,
+    selectedPalette.flowerCenterColor
+  )
+  flower.mesh.position.set(x, y, z)
+  flower.mesh.scale.setScalar(scale)
+  scene.add(flower.mesh)
+})
+
+// Add static mushrooms
+MUSHROOM_DATA.forEach(([x, y, z, scale, capColor, stemColor]) => {
+  // Use specified cap color or theme's cap color, and specified stem color or default
+  // Also add the theme's spot color
+  const mushroom = new Mushroom(
+    resolution,
+    capColor || selectedPalette.mushroomCapColor,
+    stemColor || 0xF5DEB3, // Stem color stays natural regardless of theme
+    selectedPalette.mushroomSpotColor
+  )
+  mushroom.mesh.position.set(x, y, z)
+  mushroom.mesh.scale.setScalar(scale)
+  scene.add(mushroom.mesh)
+})
+
+// Add static grass instances
+const grassInstances = []
+
+function generateGrass() {
+  // Generate dense grass coverage to completely hide the ground
+  const totalCells = resolution.x * resolution.y
+  
+  // Get all occupied positions to avoid conflicts with game objects
+  let occupiedIndexes = new Set([
+    ...snake.indexes,
+    ...candies.map(fruit => fruit.getIndexByCoord()),
+    ...entities.map(entity => entity.getIndexByCoord()),
+    ...bombs.map(bomb => bomb.getIndexByCoord())
+  ])
+  
+  // First pass: Fill every available cell with grass
+  for (let index = 0; index < totalCells; index++) {
+    // Skip if position is occupied by game objects
+    if (occupiedIndexes.has(index)) {
+      continue
+    }
+    
+    const x = index % resolution.x
+    const z = Math.floor(index / resolution.x)
+    const y = 0
+    
+    // Random scale for variety
+    const scale = 0.6 + Math.random() * 0.4
+    
+    const grassPosition = new THREE.Vector3(x, y, z)
+    const grassInstance = new Grass(
+      scene,
+      grassPosition,
+      scale,
+      selectedPalette.groundColor
+    )
+    grassInstances.push(grassInstance)
+  }
+  
+  // Second pass: Add overlapping grass instances for complete coverage
+  const overlapCount = Math.floor(totalCells * 0.4) // 40% additional coverage
+  for (let i = 0; i < overlapCount; i++) {
+    const index = Math.floor(Math.random() * totalCells)
+    
+    // Skip if position has game objects
+    if (occupiedIndexes.has(index)) {
+      continue
+    }
+    
+    const x = index % resolution.x
+    const z = Math.floor(index / resolution.x)
+    const y = 0
+    
+    // Smaller grass instances for filling gaps
+    const scale = 0.4 + Math.random() * 0.3
+    
+    const grassPosition = new THREE.Vector3(x, y, z)
+    const grassInstance = new Grass(
+      scene,
+      grassPosition,
+      scale,
+      selectedPalette.groundColor
+    )
+    grassInstances.push(grassInstance)
+  }
+  
+  console.log(`Generated ${grassInstances.length} grass instances for complete ground coverage`)
+}
+
+generateGrass()
+
+// Add fence around the perimeter - always light brown regardless of theme
+const fence = new Fence(resolution) // Use default light brown colors defined in the Fence class
+fence.addToScene(scene)
+
 // --------- Audio and Control Buttons Setup ---------
-// --- Áudio e controlos de volume ---
-const audio = document.getElementById('audio')
-const btnVolume = document.getElementById('btn-volume')
+// Initialize audio and UI controllers
+const audioController = new AudioController(paletteName, capitalize)
+const uiController = new UIController(paletteName, capitalize)
+
+// Audio and button references for backwards compatibility
+const audio = audioController.audio
+const btnVolume = audioController.btnVolume
 const btnPlay = document.getElementById('btn-play')
 const btnPlayImg = document.getElementById('btn-play-img')
 const btnSettings = document.getElementById('btn-settings')
@@ -605,70 +925,38 @@ if (btnSettings) {
 }
 
 let gameStarted = false
+// Make gameStarted globally accessible
+window.gameStarted = false
 
 btnPlay.addEventListener('click', function () {
   if (!gameStarted) {
     gameStarted = true
+    window.gameStarted = true // Update global reference
     
     // Stop camera rotation when game starts
-    cameraRotationActive = false;
+    cameraController.stopRotation()
     
     // Handle audio initialization and play
-    const playAudio = async () => {
-      try {
-        // Check if user muted audio
-        if (audio.volume !== 0) {
-          await audio.play()
-          // Update the icon just to be safe
-          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}Audio.svg`
-        } else {
-          document.getElementById('btn-volume-img').src = `/ThemeBtn/${paletteName.toLowerCase()}/${capitalize(paletteName)}NoAudio.svg`
-        }
-      } catch (err) {
-        console.log('Audio could not play automatically:', err)
-        // In case of autoplay failure, we keep the mute icon
-        muteVolume()
-      }
-    }
+    audioController.playAudio()
+    
     // Enhanced minimap animation with smoother timing
     const minimapContainer = document.getElementById('minimap-container');
-    minimapContainer.style.display = 'block';
-    minimapContainer.style.opacity = '0';
-    minimapContainer.style.transform = 'scale(0.7) translateY(30px)';
-    
-    gsap.to(minimapContainer, {
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      duration: 1.2,
-      delay: 1.0, // Slightly earlier to feel more responsive
-      ease: "back.out(1.7)", // More natural elastic feel
-      onComplete: () => {
-        // Add a subtle pulse effect after appearing
-        gsap.to(minimapContainer, {
-          scale: 1.05,
-          duration: 0.3,
-          repeat: 1,
-          yoyo: true,
-          ease: "sine.inOut"
-        });
-      }
-    });
-    
-    playAudio()
-    
-    gsap.to(camera.position, { ...finalPosition, duration: 2 })
-    gsap.to(scene.fog, { duration: 2, near: 20, far: 55 })
+    const showMinimap = document.getElementById('show-minimap').checked;
+    if (showMinimap) {
+      animateMinimapIn(minimapContainer);
+    } else {
+      minimapContainer.style.display = 'none';
+    }
+      animateCameraPosition(cameraController.camera, finalPosition)
     animateButtonOut(this)
     if (btnSettings) {
       animateButtonOut(btnSettings)
       // Close settings sidebar if it's open
-      const settingsSidebar = document.getElementById('settings-sidebar');
-      if (settingsSidebar && settingsSidebar.classList.contains('open')) {
-        settingsSidebar.classList.remove('open');
-      }
-    }    btnToggleCamera.style.display = 'block'
-    animateCameraButtonIn(btnToggleCamera)
+      uiController.closeSettings()
+    }
+    
+    // Show camera button using camera controller
+    cameraController.showCameraButton()
     
     // Register event listener but don't start the snake movement yet
     // The snake will start moving when the player presses a movement key
@@ -677,10 +965,7 @@ btnPlay.addEventListener('click', function () {
     // Show settings tab after game starts with a slight delay
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab) {
-      settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
-      settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
-      // Add slight delay to show after camera movement starts
-      setTimeout(() => animateSettingsTab(settingsTab, true), 1000);
+      setTimeout(() => animateSettingsTab(settingsTab, true), 1500);
     }
     
     // Initialize minimap
@@ -706,76 +991,23 @@ btnSettings.addEventListener('mouseleave', function () {
   this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
 });
 
-// Set up audio with proper initial values
-audio.volume = 0.7 // A reasonable default volume
-const initialVolume = audio.volume
-audio.pause() // Ensure it's paused initially
+// Set up audio with proper initial values - handled by AudioController
+// btnVolume event listeners - handled by AudioController
 
-const userVolume = 'on' // Default value, not loaded from localStorage
-if (userVolume === 'off') {
-  muteVolume()
-}
-
-btnVolume.addEventListener('click', function () {
-  // Add a small scale animation for feedback
-  gsap.to(this, {
-    scale: 0.9,
-    duration: 0.1,
-    onComplete: () => {
-      gsap.to(this, {
-        scale: 1,
-        duration: 0.3,
-        ease: "elastic.out(1.2, 0.7)"
-      })
-    }
-  })
+// Event listener for palette changes
+window.addEventListener('paletteChange', (event) => {
+  const paletteName = event.detail.paletteName
+  applyPalette(paletteName)
   
-  // Check if audio is muted
-  if (audio.volume === 0) {
-    unmuteVolume(audio, document.getElementById('btn-volume-img'), paletteName, initialVolume, capitalize, gsap)
-  } else {
-    muteVolume(audio, document.getElementById('btn-volume-img'), paletteName, capitalize, gsap)
-  }
+  // Update controllers with new palette
+  audioController.updatePalette(paletteName)
+  uiController.updatePaletteTheme(paletteName)
 })
-
-btnVolume.addEventListener('mouseenter', function () {
-  this.style.transform = 'scale(1.15)';
-  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
-});
-btnVolume.addEventListener('mouseleave', function () {
-  this.style.transform = 'scale(1)';
-  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)';
-});
-
-const sideBar = document.querySelector('.top-bar')
-const paletteSelectors = document.querySelectorAll('[data-color]')
-gsap.to(sideBar, {
-  opacity: 1,
-  delay: 0.5,
-  onComplete: () => {
-    gsap.to(paletteSelectors, {
-      duration: 1,
-      x: 0,
-      autoAlpha: 1,
-      ease: `elastic.out(1.2, 0.9)`,
-      stagger: {
-        amount: 0.2,
-      },
-    })
-  },
-})
-
-paletteSelectors.forEach((selector) =>
-  selector.addEventListener('click', function () {
-    const paletteName = this.dataset.color
-    applyPalette(paletteName)
-  })
-)
 
 const manager = new THREE.LoadingManager()
 const textureLoader = new THREE.TextureLoader(manager)
-const wasd = textureLoader.load('/wasd.png')
-const arrows = textureLoader.load('/arrows.png')
+const wasd = textureLoader.load('/assets/images/wasd.png')
+const arrows = textureLoader.load('/assets/images/arrows.png')
 const wasdGeometry = new THREE.PlaneGeometry(3.5, 2)
 wasdGeometry.rotateX(-Math.PI * 0.5)
 const planeWasd = new THREE.Mesh(
@@ -800,58 +1032,28 @@ scene.add(planeArrows, planeWasd)
 manager.onLoad = () => {}
 
 // --------- Settings and Palette Update Functions ---------
-// Palette-aware settings icon
-function updateSettingsIcon(name) {
-  if (!btnSettingsImg) return;
-  btnSettingsImg.src = `/ThemeBtn/${name.toLowerCase()}/${capitalize(name)}Settings.svg`;
-}
-
-// Update settings icon when palette changes
+// Enhanced palette application function
 const originalApplyPalette = applyPalette;
 applyPalette = function(name) {
   originalApplyPalette(name);
-  updateSettingsIcon(name);
   
-  // Update settings tab theme
-  const settingsTab = document.getElementById('settings-tab');
-  if (settingsTab) {
-    // Remove all theme classes
-    settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
-    // Add the current theme class
-    settingsTab.classList.add(`theme-${name.toLowerCase()}`);
+  // Update UI controllers with new palette
+  if (typeof uiController !== 'undefined') {
+    uiController.updatePaletteTheme(name);
+    uiController.updateCameraIcon(name);
+    uiController.updatePlayIcon(name);
   }
   
-  // Update settings sidebar theme
-  const settingsSidebar = document.getElementById('settings-sidebar');
-  if (settingsSidebar) {
-    // Remove all theme classes
-    settingsSidebar.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
-    // Add the current theme class
-    settingsSidebar.classList.add(`theme-${name.toLowerCase()}`);
+  // Update audio controller with new palette
+  if (typeof audioController !== 'undefined') {
+    audioController.updatePalette(name);
   }
 };
 
-updateSettingsIcon(paletteName);
-
-// Placeholder click event for settings
-btnSettings.addEventListener('click', function () {
-  const gear = btnSettings.querySelector('img[alt="Settings Gear"]');
-  if (gear) {
-    gsap.to(gear, {
-      rotation: "+=360",
-      duration: 1,
-      ease: "power2.inOut"
-    });
-  }
-  
-  // Toggle settings sidebar
-  const settingsSidebar = document.getElementById('settings-sidebar');
-  if (settingsSidebar.classList.contains('open')) {
-    closeSettings();
-  } else {
-    settingsSidebar.classList.add('open');
-  }
-});
+// Initialize with current palette
+if (typeof uiController !== 'undefined') {
+  uiController.updatePaletteTheme(paletteName);
+}
 
 initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, addEntity, candies, bombs, entities, animateSettingsTab, paletteName)
 
@@ -914,53 +1116,19 @@ snake.update = function() {
 
 applyPalette(paletteName)
 
-// --------- Camera Toggle Button and Its Handlers ---------
-// --- Botão para alternar entre câmaras ---
-const btnToggleCamera = document.getElementById('btn-toggle-camera')
-
-// Modified hover effect: remove any color or shadow changes, but keep the scale animation
-btnToggleCamera.addEventListener('mouseenter', function () {
-  this.style.transform = 'scale(1.15)'
-  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)'
-})
-btnToggleCamera.addEventListener('mouseleave', function () {
-  this.style.transform = 'scale(1)'
-  this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)'
-})
-
-btnToggleCamera.addEventListener('click', () => {
-  if (!gameStarted) return
-  activeCamera = activeCamera === camera ? topCamera : camera
-})
-
-// Center point for camera rotation
-const centerPoint = new THREE.Vector3(resolution.x / 2, 0, resolution.y / 2);
-
-// Flag to track if the camera rotation should be active
-let cameraRotationActive = true;
-
 // --------- Main Render Loop ---------
 // --- Ciclo principal de renderização ---
-function tic() {  // If game hasn't started yet, animate camera rotation
-  if (!gameStarted && cameraRotationActive) {
-    // Set initial camera position when we start rotating, if needed
-    if (camera.position.equals(initialPosition)) {
-      // Set a closer starting position for the rotation
-      camera.position.set(
-        resolution.x / 2 + 10, // X position
-        3,                    // Y position (height - lowered)
-        resolution.y / 2      // Z position
-      );
-    }
-    animateCameraRotation(camera, controls, centerPoint, true);
-  } else {
-    controls.update();
-  }
+function tic() {
+  // Update camera controller
+  cameraController.update(gameStarted)
+  
+  // Update active camera reference
+  activeCamera = cameraController.activeCamera
   
   renderer.render(scene, activeCamera)
   
-  // Update minimap if the game has started and minimap is initialized
-  if (gameStarted && minimap) {
+  // Update minimap if the game has started, minimap is initialized, and it should be shown
+  if (gameStarted && minimap && document.getElementById('show-minimap').checked) {
     minimap.update(snake, candies, bombs, selectedPalette)
   }
   
@@ -975,7 +1143,36 @@ window.addEventListener('resize', handleResize)
 function handleResize() {
   sizes.width = window.innerWidth
   sizes.height = window.innerHeight
-  updateCamerasOnResize({ camera, topCamera }, sizes, resolution)
+  
+  // Use camera controller for resize handling
+  cameraController.handleResize(sizes)
+  
   renderer.setSize(sizes.width, sizes.height)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 }
+
+// --------- Prevent Dragging on UI Elements ---------
+// This ensures UI elements can't be dragged by the user
+function preventDragging() {
+  // Get all UI elements that should not be draggable
+  const uiElements = document.querySelectorAll('button, img, .theme-selector, #settings-tab, .settings-sidebar, #minimap-container, canvas');
+  
+  // Add dragstart event listener to prevent dragging
+  uiElements.forEach(element => {
+    element.addEventListener('dragstart', (e) => {
+      e.preventDefault();
+      return false;
+    });
+    
+    // Prevent text selection when double-clicking
+    element.addEventListener('mousedown', (e) => {
+      if (e.detail > 1) { // Check for double click
+        e.preventDefault();
+        return false;
+      }
+    });
+  });
+}
+
+// Call the function after the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', preventDragging);
