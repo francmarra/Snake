@@ -2,13 +2,16 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 
 export default class Grass {
+  // Static loader and model cache
+  static loader = new GLTFLoader();
+  static modelPromise = null;
+  
   constructor(scene, position, scale = 1, color = 0x184e77) {
     this.scene = scene
     this.position = position
     this.scale = scale
     this.color = color
     this.grass = null
-    this.gltfLoader = new GLTFLoader()
     
     // Interactive properties
     this.originalRotation = { x: 0, y: Math.random() * Math.PI * 2, z: 0 }
@@ -24,13 +27,25 @@ export default class Grass {
     this.raycaster = new THREE.Raycaster()
     this.mouse = new THREE.Vector2()
     
+    // Initialize model load promise once
+    if (!Grass.modelPromise) {
+      Grass.modelPromise = new Promise((resolve, reject) => {
+        Grass.loader.load(
+          './assets/models/Grass.gltf',
+          (gltf) => resolve(gltf.scene),
+          null,
+          (err) => reject(err)
+        );
+      });
+    }
     this.loadGrass()
   }
 
   loadGrass() {
-    this.gltfLoader.load('./assets/models/Grass.gltf', 
-      (gltf) => {
-        this.grass = gltf.scene.clone();
+    // Use shared modelPromise
+    Grass.modelPromise
+      .then((baseModel) => {
+        this.grass = baseModel.clone(true);
         
         // Scale the grass - make it shorter but wider to cover more ground
         const heightScale = this.scale * 0.65; // Make grass 50% shorter
@@ -88,12 +103,10 @@ export default class Grass {
         
         // Start interactive animations
         this.startSwaying()
-      },
-      undefined, // onProgress
-      (error) => {
+      })
+      .catch((error) => {
         console.error('Failed to load grass model:', error);
-      }
-    );
+      });
   }
 
   // Start natural swaying animation
