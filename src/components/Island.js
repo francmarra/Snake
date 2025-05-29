@@ -24,7 +24,7 @@ export default class Island {  constructor(scene, resolution, groundColor, dirtC
         // Position the island at the center of the game area
         this.island.position.x = this.resolution.x / 2 - 0.5;
         this.island.position.z = this.resolution.y / 2 - 0.5;
-        this.island.position.y = -60.2; // Lower the island to be below snake and objects (which are at y=0)
+        this.island.position.y = -60; // Lower the island to be below snake and objects (which are at y=0)
 
         // Enable shadow receiving for all meshes in the island
         this.island.traverse((child) => {
