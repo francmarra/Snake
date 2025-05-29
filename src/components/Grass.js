@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 
 export default class Grass {
-  constructor(scene, position, scale = 1, color = 0xd9ed92) {
+  constructor(scene, position, scale = 1, color = 0x184e77) {
     this.scene = scene
     this.position = position
     this.scale = scale
