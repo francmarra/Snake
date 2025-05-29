@@ -523,10 +523,22 @@ function printScore() {
 
 // --------- Event Listeners ---------
 function registerEventListener() {
+  // Mouse movement tracking for grass interaction
+  window.addEventListener('mousemove', function(e) {
+    mousePosition.x = e.clientX
+    mousePosition.y = e.clientY
+  })
+  
   window.addEventListener('keydown', function (e) {
     const keyCode = e.code;
     const isMovementKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD'].includes(keyCode);
     const settingsSidebar = document.getElementById('settings-sidebar');
+      // Manual wind gust trigger (G key)
+    if (keyCode === 'KeyG' && gameStarted) {
+      triggerWindGust()
+      console.log('🌬️ Manual wind gust triggered! Watch the grass sway.')
+      return
+    }
     
     // If settings are open, ignore key input for settings changes
     if (settingsSidebar && settingsSidebar.classList.contains('open')) {
@@ -654,10 +666,13 @@ function resetGame() {
   for (let i = 0; i < numBombs; i++) {
     addBomb();
   }
-  
-  for (let i = 0; i < numObjects; i++) {
+    for (let i = 0; i < numObjects; i++) {
     addEntity();
   }
+  
+  // Reset all grass instances to their original state
+  resetGrassStates();
+  
     // Show settings tab after reset
   const settingsTab = document.getElementById('settings-tab');
   if (settingsTab) {
@@ -928,8 +943,82 @@ function generateGrass() {
     )
     grassInstances.push(grassInstance)
   }
+    console.log(`Generated ${grassInstances.length} grass instances for complete ground coverage`)
+}
+
+// --------- Grass Management Functions ---------
+// Function to trigger wind gust across all grass instances
+function triggerWindGust() {
+  if (!grassInstances || grassInstances.length === 0) return
   
-  console.log(`Generated ${grassInstances.length} grass instances for complete ground coverage`)
+  const windDirection = {
+    x: (Math.random() - 0.5) * 2,
+    z: (Math.random() - 0.5) * 2
+  }
+  const windStrength = 0.8 + Math.random() * 0.4
+  
+  grassInstances.forEach(grassInstance => {
+    grassInstance.windGust(windDirection, windStrength)
+  })
+  
+  console.log(`Wind gust triggered: direction(${windDirection.x.toFixed(2)}, ${windDirection.z.toFixed(2)}), strength: ${windStrength.toFixed(2)}`)
+}
+
+// Function to update all grass hover interactions
+function updateGrassHoverInteractions() {
+  if (!grassInstances || grassInstances.length === 0 || !gameStarted) return
+  
+  // Performance optimization: only update if mouse has moved significantly
+  const mouseMoveThreshold = 5 // pixels
+  if (mousePosition.lastX !== undefined && mousePosition.lastY !== undefined) {
+    const deltaX = Math.abs(mousePosition.x - mousePosition.lastX)
+    const deltaY = Math.abs(mousePosition.y - mousePosition.lastY)
+    if (deltaX < mouseMoveThreshold && deltaY < mouseMoveThreshold) {
+      return // Skip update if mouse hasn't moved enough
+    }
+  }
+  
+  grassInstances.forEach(grassInstance => {
+    grassInstance.onMouseHover(activeCamera, mousePosition)
+  })
+  
+  // Store last mouse position for next frame
+  mousePosition.lastX = mousePosition.x
+  mousePosition.lastY = mousePosition.y
+}
+
+// Function to reset all grass instances to their original state
+function resetGrassStates() {
+  if (!grassInstances || grassInstances.length === 0) return
+  
+  grassInstances.forEach(grassInstance => {
+    if (grassInstance.isTrampled) {
+      // Force immediate recovery for reset
+      grassInstance.isTrampled = false
+      grassInstance.isHovered = false
+      
+      if (grassInstance.grass) {
+        // Reset scale
+        grassInstance.grass.scale.set(
+          grassInstance.baseScale.x,
+          grassInstance.baseScale.y,
+          grassInstance.baseScale.z
+        )
+        
+        // Reset rotation
+        grassInstance.grass.rotation.set(
+          grassInstance.originalRotation.x,
+          grassInstance.originalRotation.y,
+          grassInstance.originalRotation.z
+        )
+        
+        // Reset brightness
+        grassInstance.brightensGrass(1.0)
+      }
+    }
+  })
+  
+  console.log(`Reset ${grassInstances.length} grass instances to original state`)
 }
 
 generateGrass()
@@ -950,6 +1039,7 @@ const btnPlay = document.getElementById('btn-play')
 const btnPlayImg = document.getElementById('btn-play-img')
 const btnSettings = document.getElementById('btn-settings')
 const btnSettingsImg = document.getElementById('btn-settings-img')
+
 
 // Play button animation
 animateButtonIn(btnPlay);
@@ -1138,7 +1228,34 @@ snake.update = function() {
       headPos.x = this.resolution.x - 1;
     } else if (headPos.x > this.resolution.x - 1) {
       headPos.x = 0;
-    }
+    }  }
+  
+  // --------- Grass Trampling Detection ---------
+  // Check if snake segments are trampling grass
+  if (typeof grassInstances !== 'undefined' && grassInstances.length > 0) {
+    // Get all current snake positions
+    const snakePositions = this.indexes.map(index => {
+      const x = index % this.resolution.x
+      const z = Math.floor(index / this.resolution.x)
+      return { x, z }
+    })
+    
+    // Check each grass instance for trampling
+    grassInstances.forEach(grassInstance => {
+      if (!grassInstance.grass) return
+      
+      const grassX = Math.round(grassInstance.position.x)
+      const grassZ = Math.round(grassInstance.position.z)
+      
+      // Check if any snake segment is on this grass position
+      const isTrampled = snakePositions.some(pos => 
+        Math.abs(pos.x - grassX) < 0.5 && Math.abs(pos.z - grassZ) < 0.5
+      )
+      
+      if (isTrampled && !grassInstance.isTrampled) {
+        grassInstance.trample()
+      }
+    })
   }
   
   this.updateIndexes();
@@ -1148,6 +1265,11 @@ snake.update = function() {
 
 applyPalette(paletteName)
 
+// --------- Grass Interaction Variables ---------
+let mousePosition = { x: 0, y: 0 }
+let lastWindGustTime = 0
+const WIND_GUST_INTERVAL = 8000 // Wind gusts every 8 seconds
+
 // --------- Main Render Loop ---------
 // --- Ciclo principal de renderização ---
 function tic() {
@@ -1156,6 +1278,19 @@ function tic() {
   
   // Update active camera reference
   activeCamera = cameraController.activeCamera
+  
+  // Update grass interactions if game has started
+  if (gameStarted && grassInstances.length > 0) {
+    // Handle mouse hover interactions
+    updateGrassHoverInteractions()
+    
+    // Handle periodic wind gusts
+    const currentTime = Date.now()
+    if (currentTime - lastWindGustTime > WIND_GUST_INTERVAL) {
+      triggerWindGust()
+      lastWindGustTime = currentTime
+    }
+  }
   
   renderer.render(scene, activeCamera)
   
@@ -1208,3 +1343,24 @@ function preventDragging() {
 
 // Call the function after the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', preventDragging);
+
+// Test function to verify grass system integration (for debugging)
+function testGrassSystem() {
+  console.log('🌱 Grass System Integration Test')
+  console.log(`- Grass instances created: ${grassInstances.length}`)
+  console.log(`- Mouse position tracking: ${mousePosition.x}, ${mousePosition.y}`)
+  console.log(`- Game started: ${gameStarted}`)
+  console.log(`- Wind gust interval: ${WIND_GUST_INTERVAL}ms`)
+  
+  if (grassInstances.length > 0) {
+    const sampleGrass = grassInstances[0]
+    console.log(`- Sample grass loaded: ${sampleGrass.grass !== null}`)
+    console.log(`- Sample grass trampled: ${sampleGrass.isTrampled}`)
+    console.log(`- Sample grass hovered: ${sampleGrass.isHovered}`)
+  }
+  
+  console.log('✅ Grass system integration test complete')
+}
+
+// Make test function available globally for console testing
+window.testGrassSystem = testGrassSystem

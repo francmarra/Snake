@@ -10,6 +10,20 @@ export default class Grass {
     this.grass = null
     this.gltfLoader = new GLTFLoader()
     
+    // Interactive properties
+    this.originalRotation = { x: 0, y: Math.random() * Math.PI * 2, z: 0 }
+    this.originalPosition = position.clone()
+    this.isHovered = false
+    this.isTrampled = false
+    this.trampleTime = 0
+    this.swayOffset = Math.random() * Math.PI * 2 // Random phase for swaying
+    this.windStrength = 0.5 + Math.random() * 0.5 // Random wind sensitivity
+    this.baseScale = { x: scale * 1.3, y: scale * 0.65, z: scale * 1.3 }
+    
+    // Mouse interaction setup
+    this.raycaster = new THREE.Raycaster()
+    this.mouse = new THREE.Vector2()
+    
     this.loadGrass()
   }
 
@@ -23,6 +37,9 @@ export default class Grass {
         const widthScale = this.scale * 1.3; // Make grass 30% wider for better coverage
         this.grass.scale.set(widthScale, heightScale, widthScale);
         
+        // Store original scale for animations
+        this.baseScale = { x: widthScale, y: heightScale, z: widthScale }
+        
         // Position the grass with slight offset and lower Y to ensure ground coverage
         const offsetX = (Math.random() - 0.5) * 0.4; // Random offset for natural variation
         const offsetZ = (Math.random() - 0.5) * 0.4;
@@ -32,8 +49,14 @@ export default class Grass {
           this.position.z + offsetZ
         );
         
+        // Store original position for animations
+        this.originalPosition = this.grass.position.clone()
+        
         // Add slight random rotation for natural variation
-        this.grass.rotation.y = Math.random() * Math.PI * 2;// Enable shadows for all meshes in the grass
+        this.originalRotation.y = Math.random() * Math.PI * 2
+        this.grass.rotation.y = this.originalRotation.y
+
+        // Enable shadows for all meshes in the grass
         this.grass.traverse((child) => {
           if (child.isMesh) {
             child.receiveShadow = true;
@@ -62,6 +85,9 @@ export default class Grass {
         });
         
         this.scene.add(this.grass);
+        
+        // Start interactive animations
+        this.startSwaying()
       },
       undefined, // onProgress
       (error) => {
@@ -69,6 +95,198 @@ export default class Grass {
       }
     );
   }
+
+  // Start natural swaying animation
+  startSwaying() {
+    const swayGrass = () => {
+      if (!this.grass || this.isTrampled) return
+      
+      const time = Date.now() * 0.001 // Convert to seconds
+      
+      // Natural wind swaying
+      const swayAmountX = Math.sin(time * 2 + this.swayOffset) * 0.08 * this.windStrength
+      const swayAmountZ = Math.cos(time * 1.5 + this.swayOffset) * 0.05 * this.windStrength
+      
+      // Apply swaying rotation (subtle movement at the base)
+      this.grass.rotation.x = this.originalRotation.x + swayAmountX
+      this.grass.rotation.z = this.originalRotation.z + swayAmountZ
+      
+      // Add slight height variation for wind effect
+      const heightVariation = Math.sin(time * 3 + this.swayOffset) * 0.02
+      this.grass.position.y = this.originalPosition.y + heightVariation
+      
+      requestAnimationFrame(swayGrass)
+    }
+    
+    swayGrass()
+  }
+
+  // Handle mouse hover interaction
+  onMouseHover(camera, mousePosition) {
+    if (!this.grass) return
+    
+    this.mouse.x = (mousePosition.x / window.innerWidth) * 2 - 1
+    this.mouse.y = -(mousePosition.y / window.innerHeight) * 2 + 1
+    
+    this.raycaster.setFromCamera(this.mouse, camera)
+    const intersects = this.raycaster.intersectObject(this.grass, true)
+    
+    if (intersects.length > 0 && !this.isHovered) {
+      this.isHovered = true
+      this.startHoverEffect()
+    } else if (intersects.length === 0 && this.isHovered) {
+      this.isHovered = false
+      this.endHoverEffect()
+    }
+  }
+
+  // Hover effect animation
+  startHoverEffect() {
+    if (!this.grass) return
+    
+    // Scale up slightly and brighten
+    const targetScale = {
+      x: this.baseScale.x * 1.1,
+      y: this.baseScale.y * 1.1,
+      z: this.baseScale.z * 1.1
+    }
+    
+    this.animateScale(targetScale, 200)
+    this.brightensGrass(1.3)
+  }
+
+  // End hover effect
+  endHoverEffect() {
+    if (!this.grass) return
+    
+    this.animateScale(this.baseScale, 300)
+    this.brightensGrass(1.0)
+  }
+
+  // Trampling effect when snake moves over grass
+  trample() {
+    if (!this.grass || this.isTrampled) return
+    
+    this.isTrampled = true
+    this.trampleTime = Date.now()
+    
+    // Flatten the grass
+    const trampledScale = {
+      x: this.baseScale.x * 1.2,
+      y: this.baseScale.y * 0.3,
+      z: this.baseScale.z * 1.2
+    }
+    
+    this.animateScale(trampledScale, 100)
+    
+    // Slightly tilt the grass
+    this.grass.rotation.x = this.originalRotation.x + (Math.random() - 0.5) * 0.4
+    this.grass.rotation.z = this.originalRotation.z + (Math.random() - 0.5) * 0.4
+    
+    // Darken the grass slightly
+    this.brightensGrass(0.7)
+    
+    // Recover after 2 seconds
+    setTimeout(() => {
+      this.recover()
+    }, 2000)
+  }
+
+  // Recover from trampling
+  recover() {
+    if (!this.grass) return
+    
+    this.isTrampled = false
+    
+    // Gradually return to normal
+    this.animateScale(this.baseScale, 1000)
+    this.brightensGrass(1.0)
+    
+    // Reset rotation gradually
+    const returnToOriginal = () => {
+      if (!this.grass) return
+      
+      this.grass.rotation.x += (this.originalRotation.x - this.grass.rotation.x) * 0.02
+      this.grass.rotation.z += (this.originalRotation.z - this.grass.rotation.z) * 0.02
+      
+      if (Math.abs(this.grass.rotation.x - this.originalRotation.x) > 0.01 ||
+          Math.abs(this.grass.rotation.z - this.originalRotation.z) > 0.01) {
+        requestAnimationFrame(returnToOriginal)
+      }
+    }
+    
+    returnToOriginal()
+  }
+
+  // Wind gust effect
+  windGust(direction, strength = 1.0) {
+    if (!this.grass || this.isTrampled) return
+    
+    const gustRotationX = direction.x * strength * 0.3
+    const gustRotationZ = direction.z * strength * 0.3
+    
+    // Apply wind rotation
+    this.grass.rotation.x = this.originalRotation.x + gustRotationX
+    this.grass.rotation.z = this.originalRotation.z + gustRotationZ
+    
+    // Return to normal position gradually
+    const returnToNormal = () => {
+      if (!this.grass) return
+      
+      this.grass.rotation.x += (this.originalRotation.x - this.grass.rotation.x) * 0.05
+      this.grass.rotation.z += (this.originalRotation.z - this.grass.rotation.z) * 0.05
+      
+      if (Math.abs(this.grass.rotation.x - this.originalRotation.x) > 0.01 ||
+          Math.abs(this.grass.rotation.z - this.originalRotation.z) > 0.01) {
+        requestAnimationFrame(returnToNormal)
+      }
+    }
+    
+    returnToNormal()
+  }
+
+  // Utility function to animate scale
+  animateScale(targetScale, duration) {
+    if (!this.grass) return
+    
+    const startScale = {
+      x: this.grass.scale.x,
+      y: this.grass.scale.y,
+      z: this.grass.scale.z
+    }
+    const startTime = Date.now()
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const easeProgress = 1 - Math.pow(1 - progress, 3) // Ease out cubic
+      
+      this.grass.scale.x = startScale.x + (targetScale.x - startScale.x) * easeProgress
+      this.grass.scale.y = startScale.y + (targetScale.y - startScale.y) * easeProgress
+      this.grass.scale.z = startScale.z + (targetScale.z - startScale.z) * easeProgress
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      }
+    }
+    
+    animate()
+  }
+
+  // Utility function to brighten/darken grass
+  brightensGrass(factor) {
+    if (!this.grass) return
+    
+    this.grass.traverse((child) => {
+      if (child.isMesh && child.material) {
+        const baseColor = new THREE.Color(this.color)
+        baseColor.multiplyScalar(factor)
+        child.material.color.copy(baseColor)
+        child.material.needsUpdate = true
+      }
+    })
+  }
+
   updateColor(color) {
     this.color = color;
     if (this.grass) {
