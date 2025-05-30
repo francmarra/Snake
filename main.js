@@ -493,7 +493,7 @@ function applyPalette(name) {
     // Save theme to localStorage for persistence
   saveThemeToStorage(name);
   selectedPalette = palette;
-    const {
+  const {
     groundColor,
     grassColor,
     dirtColor,
