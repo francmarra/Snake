@@ -25,12 +25,17 @@ export class AudioController {
     this.btnVolume = document.getElementById('btn-volume')
     this.paletteName = paletteName
     this.capitalize = capitalize
-    
-    // Set up audio with proper initial values
-    this.audio.volume = 0.7 // A reasonable default volume
+
+    // Load audio state from browser's cache (localStorage)
+    const storedAudioState = localStorage.getItem('snakeGameAudio') // "on" or "off"
+    if (storedAudioState === 'off') {
+      this.audio.volume = 0
+    } else {
+      this.audio.volume = 0.7
+    }
     this.initialVolume = this.audio.volume
     this.audio.pause() // Ensure it's paused initially
-    
+
     // Initialize volume state
     const userVolume = 'on' // Default value, not loaded from localStorage
     if (userVolume === 'off') {
@@ -82,10 +87,12 @@ export class AudioController {
   
   muteVolume() {
     muteVolume(this.audio, document.getElementById('btn-volume-img'), this.paletteName, this.capitalize)
+    localStorage.setItem('snakeGameAudio', 'off')
   }
   
   unmuteVolume() {
     unmuteVolume(this.audio, document.getElementById('btn-volume-img'), this.paletteName, this.initialVolume, this.capitalize)
+    localStorage.setItem('snakeGameAudio', 'on')
   }
   
   updateVolumeIcon(isMuted) {

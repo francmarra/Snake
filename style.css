@@ -10,6 +10,19 @@ html, body {
   overflow: hidden;
 }
 
+
+/* Apply scaling to UI elements (designed at 67% zoom), adjust container dimensions for correct positions */
+#ui {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: calc(100% / 0.67);
+  height: calc(100% / 0.67);
+  transform: scale(0.67);
+  transform-origin: top left;
+  pointer-events: none;
+}
+
 /*-----------------------------------------------------------
   Button Styles
 ------------------------------------------------------------*/
@@ -374,16 +387,4 @@ select {
   -moz-user-select: auto;
   -ms-user-select: auto;
   pointer-events: auto;
-}
-
-/* Apply scaling to UI elements (designed at 67% zoom), adjust container dimensions for correct positions */
-#ui {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: calc(100% / 0.67);
-  height: calc(100% / 0.67);
-  transform: scale(0.67);
-  transform-origin: top left;
-  pointer-events: none;
 }
