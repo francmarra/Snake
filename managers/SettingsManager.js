@@ -240,7 +240,8 @@ export class UIController {
   updatePaletteTheme(paletteName) {
     this.paletteName = paletteName
     this.updateSettingsIcon(paletteName)
-      // Update settings tab theme
+    this.updateCameraIcon(paletteName) // Added to update the camera button theme
+    // Update settings tab theme
     const settingsTab = document.getElementById('settings-tab')
     if (settingsTab) {
       // Remove all theme classes

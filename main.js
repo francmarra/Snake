@@ -1,6 +1,7 @@
 // --------- Imports ---------
 import './style.css'
 import * as THREE from 'three'
+import gsap from 'gsap'
 import Snake from './src/components/Snake'
 import Fruit from './src/components/Fruit'
 import Rock from './src/components/Rock'
@@ -9,7 +10,7 @@ import Flower from './src/components/Flower'
 import Mushroom from './src/components/Mushroom'
 import Fence from './src/components/Fence'
 import Grass from './src/components/Grass'
-import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight, applyThemeLights, areAllLightsOff, setLightChangeCallback } from './src/utils/Lights'
+import lights, { toggleAmbientLight, toggleDirectionalLight, togglePointLight, applyThemeLights, areAllLightsOff, setLightChangeCallback, ambLight, dirLight, pointLight } from './src/utils/Lights'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
@@ -53,6 +54,399 @@ loader.load(fontSrc, (loadedFont) => {
   font = loadedFont
   printScore()
 })
+
+// --------- Theme Transition System ---------
+// Global variables for transition management
+let isTransitioning = false;
+const transitionDuration = 0.5; // Duration in seconds
+
+// Function to create smooth transitions between themes
+function transitionToTheme(newThemeName) {
+  if (isTransitioning || paletteName === newThemeName) return;
+  
+  console.log(`Starting theme transition from ${paletteName} to ${newThemeName}`);
+  isTransitioning = true;
+  const oldPalette = palettes[paletteName];
+  const newPalette = palettes[newThemeName];
+  
+  if (!newPalette) {
+    console.error(`Theme ${newThemeName} not found!`);
+    isTransitioning = false;
+    return;
+  }
+
+  // Create transition overlay for smooth skybox transition
+  const transitionOverlay = document.createElement('div');
+  transitionOverlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, 
+      rgba(${hexToRgb(oldPalette.fogColor).join(',')}, 0.3),
+      rgba(${hexToRgb(newPalette.fogColor).join(',')}, 0.3)
+    );
+    backdrop-filter: blur(2px);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+  `;
+  document.body.appendChild(transitionOverlay);
+
+  // Animate transition overlay
+  gsap.to(transitionOverlay, {
+    opacity: 1,
+    duration: transitionDuration * 0.3,
+    ease: "power2.in",
+    onComplete: () => {
+      // Apply the new theme
+      paletteName = newThemeName;
+      saveThemeToStorage(newThemeName);
+      selectedPalette = newPalette;
+      
+      // Instantly update skybox during peak transition
+      updateSkybox(newThemeName);
+      
+      // Transition out the overlay
+      gsap.to(transitionOverlay, {
+        opacity: 0,
+        duration: transitionDuration * 0.7,
+        ease: "power2.out",        onComplete: () => {
+          document.body.removeChild(transitionOverlay);
+          isTransitioning = false;
+          console.log(`Theme transition to ${newThemeName} completed`);
+        }
+      });
+    }
+  });
+
+  // Animate color transitions for all elements
+  animateColorTransitions(oldPalette, newPalette);
+  
+  // Update lighting with smooth transitions
+  transitionLighting(newThemeName);
+  
+  // Update UI elements with transitions
+  transitionUIElements(newThemeName);
+}
+
+// Helper function to convert hex to RGB
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.toString(16).padStart(6, '0'));
+  return result ? [
+    parseInt(result[1], 16),
+    parseInt(result[2], 16),
+    parseInt(result[3], 16)
+  ] : [255, 255, 255];
+}
+
+// Function to animate color transitions for all scene elements
+function animateColorTransitions(oldPalette, newPalette) {
+  console.log(`Animating color transitions for ${entities.length} entities`);
+    // Animate rock colors
+  entities.filter((e) => e instanceof Rock).forEach((rock) => {
+    try {
+      const currentColor = rock.mesh.material.color;
+      const targetColor = new THREE.Color(newPalette.rockColor);
+      
+      gsap.to(currentColor, {
+        r: targetColor.r,
+        g: targetColor.g,
+        b: targetColor.b,
+        duration: transitionDuration,
+        ease: "power2.inOut"
+      });
+    } catch (error) {
+      console.warn('Error animating rock color:', error);
+    }
+  });
+
+  // Animate tree foliage colors
+  entities.filter((e) => e instanceof Tree).forEach((tree) => {
+    try {
+      const currentColor = tree.foliage.material.color;
+      const targetColor = new THREE.Color(newPalette.treeColor);
+      
+      gsap.to(currentColor, {
+        r: targetColor.r,
+        g: targetColor.g,
+        b: targetColor.b,
+        duration: transitionDuration,
+        ease: "power2.inOut"
+      });
+    } catch (error) {
+      console.warn('Error animating tree color:', error);
+    }
+  });
+
+  // Animate flower colors
+  entities.filter((e) => e instanceof Flower).forEach((flower) => {
+    const center = flower.mesh.children.find(child => 
+      child.geometry instanceof THREE.SphereGeometry
+    );
+    if (center && center.material && center.material.color) {
+      const currentColor = center.material.color;
+      const targetColor = new THREE.Color(newPalette.flowerCenterColor);
+      
+      gsap.to(currentColor, {
+        r: targetColor.r,
+        g: targetColor.g,
+        b: targetColor.b,
+        duration: transitionDuration,
+        ease: "power2.inOut"
+      });
+    }
+    flower.mesh.children.forEach(child => {
+      const childColor = child.material && child.material.color ? child.material.color.getHex() : null;
+      const isGreenPart = childColor === 0x2d5016 || childColor === 0x228B22;
+      
+      if (child.material && child.material.color && !isGreenPart && child !== center) {
+        const currentColor = child.material.color;
+        const targetColor = new THREE.Color(newPalette.flowerPetalColor || newPalette.fruitColor);
+        
+        gsap.to(currentColor, {
+          r: targetColor.r,
+          g: targetColor.g,
+          b: targetColor.b,
+          duration: transitionDuration,
+          ease: "power2.inOut"
+        });
+      }
+    });
+  });
+
+  // Animate mushroom colors
+  entities.filter((e) => e instanceof Mushroom).forEach((mushroom) => {
+    const cap = mushroom.mesh.children.find(child => 
+      child.geometry instanceof THREE.SphereGeometry
+    );
+      if (cap && cap.material && cap.material.color) {
+      const currentColor = cap.material.color;
+      const targetColor = new THREE.Color(newPalette.mushroomCapColor || 0x8B4513);
+      
+      gsap.to(currentColor, {
+        r: targetColor.r,
+        g: targetColor.g,
+        b: targetColor.b,
+        duration: transitionDuration,
+        ease: "power2.inOut"
+      });
+    }    mushroom.mesh.children.forEach(child => {
+      if (child.geometry instanceof THREE.CylinderGeometry && 
+          child !== cap && 
+          child.geometry.parameters.height <= 0.01 &&
+          child.material && child.material.color) {
+        const currentColor = child.material.color;
+        const targetColor = new THREE.Color(newPalette.mushroomSpotColor || 0xFFFFFF);
+        
+        gsap.to(currentColor, {
+          r: targetColor.r,
+          g: targetColor.g,
+          b: targetColor.b,
+          duration: transitionDuration,
+          ease: "power2.inOut"
+        });
+      }
+    });
+  });
+  // Animate grass colors
+  if (typeof grassInstances !== 'undefined') {
+    grassInstances.forEach((grassInstance) => {
+      if (grassInstance.grass) {
+        grassInstance.grass.traverse((child) => {
+          if (child.isMesh && child.material && child.material.color) {
+            const currentColor = child.material.color;
+            const targetColor = new THREE.Color(newPalette.grassColor);
+            
+            gsap.to(currentColor, {
+              r: targetColor.r,
+              g: targetColor.g,
+              b: targetColor.b,
+              duration: transitionDuration,
+              ease: "power2.inOut"
+            });
+          }
+        });
+      }
+    });
+  }
+  // Animate island colors
+  if (island && island.island) {
+    island.island.traverse((child) => {
+      if (child.isMesh && child.material && child.material.color) {
+        const materialName = child.material.name?.toLowerCase() || '';
+        
+        if (materialName.includes('grass') || materialName.includes('top') || child.name?.toLowerCase().includes('grass')) {
+          const currentColor = child.material.color;
+          const targetColor = new THREE.Color(newPalette.groundColor);
+          
+          gsap.to(currentColor, {
+            r: targetColor.r,
+            g: targetColor.g,
+            b: targetColor.b,
+            duration: transitionDuration,
+            ease: "power2.inOut"
+          });
+        } else if (materialName.includes('dirt') || materialName.includes('base') || materialName.includes('soil')) {
+          const currentColor = child.material.color;
+          const dirtColorObj = new THREE.Color(newPalette.dirtColor);
+          dirtColorObj.multiplyScalar(0.7);
+          
+          gsap.to(currentColor, {
+            r: dirtColorObj.r,
+            g: dirtColorObj.g,
+            b: dirtColorObj.b,
+            duration: transitionDuration,
+            ease: "power2.inOut"
+          });
+        }
+      }
+    });
+  }
+  // Animate fruit color
+  if (candies && candies[0] && candies[0].mesh && candies[0].mesh.material && candies[0].mesh.material.color) {
+    const currentColor = candies[0].mesh.material.color;
+    const targetColor = new THREE.Color(newPalette.fruitColor);
+    
+    gsap.to(currentColor, {
+      r: targetColor.r,
+      g: targetColor.g,
+      b: targetColor.b,
+      duration: transitionDuration,
+      ease: "power2.inOut"
+    });
+  }  // Animate snake colors
+  if (snake && snake.body && snake.body.head && snake.body.head.data && snake.body.head.data.mesh && snake.body.head.data.mesh.material && snake.body.head.data.mesh.material.color) {
+    const currentSnakeColor = snake.body.head.data.mesh.material.color;
+    const targetSnakeColor = new THREE.Color(newPalette.snakeColor);
+    
+    gsap.to(currentSnakeColor, {
+      r: targetSnakeColor.r,
+      g: targetSnakeColor.g,
+      b: targetSnakeColor.b,
+      duration: transitionDuration,
+      ease: "power2.inOut",
+      onUpdate: updateSnakeSegmentsUI
+    });
+
+    if (snake.mouth && snake.mouth.material && snake.mouth.material.color) {
+      const currentMouthColor = snake.mouth.material.color;
+      const targetMouthColor = new THREE.Color(newPalette.mouthColor);
+      
+      gsap.to(currentMouthColor, {
+        r: targetMouthColor.r,
+        g: targetMouthColor.g,
+        b: targetMouthColor.b,
+        duration: transitionDuration,
+        ease: "power2.inOut"
+      });
+    }
+  }
+
+  // Animate fog color transition
+  if (scene.fog && scene.fog.color) {
+    gsap.to(scene.fog.color, {
+      r: new THREE.Color(newPalette.fogColor).r,
+      g: new THREE.Color(newPalette.fogColor).g,
+      b: new THREE.Color(newPalette.fogColor).b,
+      duration: transitionDuration,
+      ease: "power2.inOut"
+    });
+  }
+}
+
+// Function to transition lighting smoothly
+function transitionLighting(themeName) {
+  const palette = palettes[themeName];
+  if (!palette) {
+    console.warn(`No palette found for theme: ${themeName}`);
+    return;
+  }
+
+  console.log(`Transitioning lighting to ${themeName} theme`);
+
+  // Animate ambient light
+  if (ambLight) {
+    const targetAmbientColor = new THREE.Color(palette.ambientLightColor);
+    gsap.to(ambLight.color, {
+      r: targetAmbientColor.r,
+      g: targetAmbientColor.g,
+      b: targetAmbientColor.b,
+      duration: transitionDuration,
+      ease: "power2.inOut"
+    });
+  }
+
+  // Animate directional light
+  if (dirLight) {
+    const targetDirectionalColor = new THREE.Color(palette.directionalLightColor);
+    gsap.to(dirLight.color, {
+      r: targetDirectionalColor.r,
+      g: targetDirectionalColor.g,
+      b: targetDirectionalColor.b,
+      duration: transitionDuration,
+      ease: "power2.inOut"
+    });
+  }
+
+  // Animate point light
+  if (pointLight) {
+    const targetPointColor = new THREE.Color(palette.pointLightColor);
+    gsap.to(pointLight.color, {
+      r: targetPointColor.r,
+      g: targetPointColor.g,
+      b: targetPointColor.b,
+      duration: transitionDuration,
+      ease: "power2.inOut"
+    });
+  }
+}
+
+// Function to transition UI elements
+function transitionUIElements(themeName) {
+  // Update controllers with smooth timing
+  setTimeout(() => {
+    if (typeof audioController !== 'undefined') {
+      audioController.updatePalette(themeName);
+    }
+    if (typeof uiController !== 'undefined') {
+      uiController.updatePaletteTheme(themeName);
+    }
+  }, transitionDuration * 500); // Halfway through transition
+
+  // Update button icons with fade effect
+  const btnPlayImg = document.getElementById('btn-play-img');
+  if (btnPlayImg) {
+    gsap.to(btnPlayImg, {
+      opacity: 0,
+      duration: transitionDuration * 0.3,
+      ease: "power2.inOut",
+      onComplete: () => {
+        btnPlayImg.src = `/assets/images/themes/${themeName.toLowerCase()}/${capitalize(themeName)}Play.svg`;
+        gsap.to(btnPlayImg, {
+          opacity: 1,
+          duration: transitionDuration * 0.3,
+          ease: "power2.inOut"
+        });
+      }
+    });
+  }
+
+  // Update minimap theme
+  const minimapContainer = document.getElementById('minimap-container');
+  if (minimapContainer) {
+    minimapContainer.classList.remove('theme-day', 'theme-sunset', 'theme-night');
+    minimapContainer.classList.add(`theme-${themeName.toLowerCase()}`);
+  }
+
+  // Update minimap with new palette colors if it exists
+  if (minimap && gameStarted) {
+    setTimeout(() => {
+      minimap.update(snake, candies, bombs, selectedPalette);
+    }, transitionDuration * 1000);
+  }
+}
 
 // --------- Color Palette and Helper Functions ---------
 // --- Paletas de cores e seleção ---
@@ -99,7 +493,7 @@ function applyPalette(name) {
     // Save theme to localStorage for persistence
   saveThemeToStorage(name);
   selectedPalette = palette;
-    const {
+  const {
     groundColor,
     grassColor,
     dirtColor,
@@ -233,6 +627,7 @@ const skyboxTextureCache = {}
 let skyboxLoadingPromise = null
 let skyBox // Global reference to the skybox for updates
 let skyboxOverlay // Global reference to the dark overlay
+let firstSkyboxUpdate = true; // <-- New flag to track initial skybox update
 
 // Set up loading manager callbacks
 skyboxLoadingManager.onLoad = () => {
@@ -284,7 +679,9 @@ function updateSkybox(themeName) {
   const texture = skyboxTextureCache[themeName] || skyboxTextureCache.day
   
   if (!texture) {
-    console.warn(`Skybox texture not loaded for theme: ${themeName}, falling back to loading on demand`)
+    if (!firstSkyboxUpdate) {
+      console.warn(`Skybox texture not loaded for theme: ${themeName}, falling back to loading on demand`)
+    }
     // Fallback: load on demand if not preloaded
     const imagePath = skyboxImages[themeName] || skyboxImages.day
     const fallbackTexture = skyTextureLoader.load(imagePath, () => {
@@ -296,6 +693,7 @@ function updateSkybox(themeName) {
     fallbackTexture.mapping = THREE.EquirectangularReflectionMapping
     fallbackTexture.wrapS = THREE.RepeatWrapping
     fallbackTexture.wrapT = THREE.ClampToEdgeWrapping
+    firstSkyboxUpdate = false;  // Mark first update as done.
     return
   }
 
@@ -319,6 +717,7 @@ function updateSkybox(themeName) {
     skyBox.material.map = texture
     skyBox.material.needsUpdate = true
   }
+  firstSkyboxUpdate = false;  // Mark first update as done.
 }
 
 // Function to create or update skybox dark overlay
@@ -1057,6 +1456,9 @@ const uiController = new UIController(paletteName, capitalize)
 // Audio and button references for backwards compatibility
 const audio = audioController.audio
 const btnVolume = audioController.btnVolume
+// Set initial transform to slide in from the left and animate with palette-style animation
+btnVolume.style.transform = 'translateX(-200px)';
+animatePaletteSelectors([btnVolume], null);
 const btnPlay = document.getElementById('btn-play')
 const btnPlayImg = document.getElementById('btn-play-img')
 const btnSettings = document.getElementById('btn-settings')
@@ -1141,11 +1543,8 @@ btnSettings.addEventListener('mouseleave', function () {
 // Event listener for palette changes
 window.addEventListener('paletteChange', (event) => {
   const paletteName = event.detail.paletteName
-  applyPalette(paletteName)
-  
-  // Update controllers with new palette
-  audioController.updatePalette(paletteName)
-  uiController.updatePaletteTheme(paletteName)
+  // Use transition function for smooth theme changes
+  transitionToTheme(paletteName)
 })
 
 const manager = new THREE.LoadingManager()
@@ -1402,3 +1801,17 @@ function testGrassSystem() {
 
 // Make test function available globally for console testing
 window.testGrassSystem = testGrassSystem
+
+// Test function for manual theme transitions (accessible from browser console)
+window.testThemeTransition = function(themeName) {
+  console.log(`Testing transition to: ${themeName}`);
+  if (['day', 'sunset', 'night'].includes(themeName)) {
+    transitionToTheme(themeName);
+  } else {
+    console.error('Invalid theme name. Use: day, sunset, or night');
+  }
+};
+
+// Log available themes for easy testing
+console.log('Available themes for testing:', Object.keys(palettes));
+console.log('Use window.testThemeTransition("themeName") to test transitions');
