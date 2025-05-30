@@ -125,10 +125,10 @@ export class CameraController {
   showCameraButton() {
     const btnToggleCamera = document.getElementById('btn-toggle-camera')
     if (btnToggleCamera) {
-      btnToggleCamera.style.display = 'block'
-      // Import and use the animation function
-      import('../src/utils/Animations.js').then(({ animateCameraButtonIn }) => {
-        animateCameraButtonIn(btnToggleCamera)
+      btnToggleCamera.style.display = 'block';
+      btnToggleCamera.style.transform = 'translateX(-200px)';
+      import('../src/utils/Animations.js').then(({ animatePaletteSelectors }) => {
+        animatePaletteSelectors([btnToggleCamera], null);
       })
     }
   }

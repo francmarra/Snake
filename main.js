@@ -1451,6 +1451,9 @@ const uiController = new UIController(paletteName, capitalize)
 // Audio and button references for backwards compatibility
 const audio = audioController.audio
 const btnVolume = audioController.btnVolume
+// Set initial transform to slide in from the left and animate with palette-style animation
+btnVolume.style.transform = 'translateX(-200px)';
+animatePaletteSelectors([btnVolume], null);
 const btnPlay = document.getElementById('btn-play')
 const btnPlayImg = document.getElementById('btn-play-img')
 const btnSettings = document.getElementById('btn-settings')

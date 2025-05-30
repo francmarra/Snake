@@ -76,7 +76,7 @@ html, body {
 /* --- Settings Sidebar & Tab --- */
 .settings-sidebar {
   position: fixed;
-  right: -16rem; /* Start offscreen */
+  right: -16.5rem; /* Start offscreen */
   left: auto;
   top: 45%; /* Moved up for less overlap */
   transform: translateY(-50%);  width: 16rem;
