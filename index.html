@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8"/>
     <link rel="icon" type="image/svg+xml" href="/assets/images/Favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta property="og:title" content="Snake 3D" />
@@ -9,32 +9,32 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- Snake‐segments HUD -->
-    <div
-      id="snake-segments-ui"
-      class="fixed top-4 left-4 flex items-center z-50 space-x-3"
-    >
-      <div id="segments-container" class="flex space-x-2"></div>
-      <span
-        id="segments-counter"
-        class="text-white font-bold text-2xl lg:text-3xl"
-      ></span>
-    </div>
-    <script type="module" src="/main.js"></script>
-    <audio
-      id="audio"
-      class="fixed top-0 left-0 z-50"
-      controls
-      loop="true"
-      src="/assets/audio/short-audio.mp3"
-    ></audio>
-    <button
-      id="btn-settings"
-      type="button"
-      class="fixed w-max drop-shadow-xl top-[80%] lg:top-[65%] z-50 flex items-center justify-center"
-      draggable="false"
-    >
-      <!-- Gear icon overlay -->
+    <div id="ui">
+      <!-- Snake‐segments HUD -->
+      <div
+        id="snake-segments-ui"
+        class="fixed top-4 left-4 flex items-center z-50 space-x-3"
+      >
+        <div id="segments-container" class="flex space-x-2"></div>
+        <span
+          id="segments-counter"
+          class="text-white font-bold text-2xl lg:text-3xl"
+        ></span>
+      </div>
+      <audio
+        id="audio"
+        class="fixed top-0 left-0 z-50"
+        controls
+        loop="true"
+        src="/assets/audio/short-audio.mp3"
+      ></audio>
+      <button
+        id="btn-settings"
+        type="button"
+        class="fixed w-max drop-shadow-xl top-[80%] lg:top-[65%] z-50 flex items-center justify-center"
+        draggable="false"
+      >
+        <!-- Gear icon overlay -->
        <img
         src="/assets/images/Gear.svg"
         class="absolute w-10 h-10 lg:w-16 lg:h-16 pointer-events-none z-10"
@@ -195,9 +195,15 @@
         </p>
       </div> -->
     </div>
-    <div id="minimap-container" style="display: none; transform-origin: bottom right;" class="fixed bottom-4 right-4 z-50 bg-black/50 rounded-md p-2 theme-green" draggable="false">
-      <div class="text-white text-xs mb-1 font-bold text-center" draggable="false">Minimap</div>
-      <canvas id="minimap" width="200" height="200" draggable="false"></canvas>
+    <div id="minimap-container" style="display: none; transform-origin: bottom right;" class="fixed bottom-4 right-4 z-50 theme-green" draggable="false">
+      <div class="minimap-title text-white text-center py-2 px-3" draggable="false">
+        <span class="block">Minimap</span>
+      </div>
+      <div class="p-2">
+        <canvas id="minimap" width="240" height="240" draggable="false"></canvas>
+      </div>
     </div>
+    </div>
+    <script type="module" src="/main.js"></script>
   </body>
 </html>

@@ -493,7 +493,7 @@ function applyPalette(name) {
     // Save theme to localStorage for persistence
   saveThemeToStorage(name);
   selectedPalette = palette;
-    const {
+  const {
     groundColor,
     grassColor,
     dirtColor,
@@ -627,6 +627,7 @@ const skyboxTextureCache = {}
 let skyboxLoadingPromise = null
 let skyBox // Global reference to the skybox for updates
 let skyboxOverlay // Global reference to the dark overlay
+let firstSkyboxUpdate = true; // <-- New flag to track initial skybox update
 
 // Set up loading manager callbacks
 skyboxLoadingManager.onLoad = () => {
@@ -678,7 +679,9 @@ function updateSkybox(themeName) {
   const texture = skyboxTextureCache[themeName] || skyboxTextureCache.day
   
   if (!texture) {
-    console.warn(`Skybox texture not loaded for theme: ${themeName}, falling back to loading on demand`)
+    if (!firstSkyboxUpdate) {
+      console.warn(`Skybox texture not loaded for theme: ${themeName}, falling back to loading on demand`)
+    }
     // Fallback: load on demand if not preloaded
     const imagePath = skyboxImages[themeName] || skyboxImages.day
     const fallbackTexture = skyTextureLoader.load(imagePath, () => {
@@ -690,6 +693,7 @@ function updateSkybox(themeName) {
     fallbackTexture.mapping = THREE.EquirectangularReflectionMapping
     fallbackTexture.wrapS = THREE.RepeatWrapping
     fallbackTexture.wrapT = THREE.ClampToEdgeWrapping
+    firstSkyboxUpdate = false;  // Mark first update as done.
     return
   }
 
@@ -713,6 +717,7 @@ function updateSkybox(themeName) {
     skyBox.material.map = texture
     skyBox.material.needsUpdate = true
   }
+  firstSkyboxUpdate = false;  // Mark first update as done.
 }
 
 // Function to create or update skybox dark overlay
@@ -1451,6 +1456,9 @@ const uiController = new UIController(paletteName, capitalize)
 // Audio and button references for backwards compatibility
 const audio = audioController.audio
 const btnVolume = audioController.btnVolume
+// Set initial transform to slide in from the left and animate with palette-style animation
+btnVolume.style.transform = 'translateX(-200px)';
+animatePaletteSelectors([btnVolume], null);
 const btnPlay = document.getElementById('btn-play')
 const btnPlayImg = document.getElementById('btn-play-img')
 const btnSettings = document.getElementById('btn-settings')
