@@ -385,4 +385,5 @@ select {
   height: calc(100% / 0.67);
   transform: scale(0.67);
   transform-origin: top left;
+  pointer-events: none;
 }
