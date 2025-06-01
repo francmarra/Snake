@@ -1,4 +1,4 @@
-import { toggleAmbientLight, toggleDirectionalLight, togglePointLight } from '../src/utils/Lights'
+import { toggleAmbientLight, toggleDirectionalLight, togglePointLight, toggleFireflies, areFirefliesEnabled } from '../src/utils/Lights'
 import { animateSettingsGear, animatePaletteSelectors } from '../src/utils/Animations.js'
 import gsap from 'gsap'
 
@@ -135,6 +135,36 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
     pointLightCheckbox.checked = DEFAULT_SETTINGS.pointLightEnabled
     pointLightCheckbox.addEventListener('change', () => {
       togglePointLight(pointLightCheckbox.checked)
+      
+      // Handle fireflies dependency
+      const firefliesContainer = document.querySelector('.fireflies-container')
+      const firefliesCheckbox = document.getElementById('fireflies')
+      
+      if (pointLightCheckbox.checked) {
+        firefliesContainer.style.display = 'block'
+      } else {
+        firefliesContainer.style.display = 'none'
+        if (firefliesCheckbox && firefliesCheckbox.checked) {
+          firefliesCheckbox.checked = false
+          toggleFireflies(false, scene)
+        }
+      }
+    })
+  }
+
+  // Checkbox for fireflies (depends on point light)
+  const firefliesCheckbox = document.getElementById('fireflies')
+  const firefliesContainer = document.querySelector('.fireflies-container')
+  if (firefliesCheckbox && firefliesContainer) {
+    firefliesCheckbox.checked = false // Start disabled
+    firefliesContainer.style.display = pointLightCheckbox.checked ? 'block' : 'none'
+    
+    firefliesCheckbox.addEventListener('change', () => {
+      const success = toggleFireflies(firefliesCheckbox.checked, scene)
+      if (!success) {
+        // Reset checkbox if fireflies couldn't be enabled
+        firefliesCheckbox.checked = false
+      }
     })
   }
 

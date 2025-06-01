@@ -319,6 +319,18 @@ input[type="checkbox"]:checked:after {
   left: 5px;
 }
 
+/* Fireflies container styling */
+.fireflies-container {
+  transition: all 0.3s ease;
+  border-left: 2px solid rgba(255, 255, 255, 0.2);
+  padding-left: 0.75rem;
+}
+
+.fireflies-container label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 /*-----------------------------------------------------------
   UI Non-Draggable & Non-Selectable Elements
 ------------------------------------------------------------*/
