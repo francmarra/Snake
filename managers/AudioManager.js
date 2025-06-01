@@ -41,17 +41,17 @@ export class AudioController {
     if (userVolume === 'off') {
       this.muteVolume()
     }
-    
+
     this.setupVolumeButton()
   }
   
   setupVolumeButton() {
     if (!this.btnVolume) return
-    
+
     this.btnVolume.addEventListener('click', () => {
       // Add a small scale animation for feedback
       animateButtonClick(this.btnVolume)
-      
+  
       // Check if audio is muted
       if (this.audio.volume === 0) {
         this.unmuteVolume()
@@ -59,7 +59,7 @@ export class AudioController {
         this.muteVolume()
       }
     })
-    
+
     this.btnVolume.addEventListener('mouseenter', function () {
       this.style.transform = 'scale(1.15)'
       this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)'

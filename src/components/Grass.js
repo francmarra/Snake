@@ -51,10 +51,10 @@ export default class Grass {
         const heightScale = this.scale * 0.55; // Make grass 50% shorter
         const widthScale = this.scale * 1.3; // Make grass 30% wider for better coverage
         this.grass.scale.set(widthScale, heightScale, widthScale);
-        
+
         // Store original scale for animations
         this.baseScale = { x: widthScale, y: heightScale, z: widthScale }
-        
+
         // Position the grass with slight offset and lower Y to ensure ground coverage
         const offsetX = (Math.random() - 0.5) * 0.4; // Random offset for natural variation
         const offsetZ = (Math.random() - 0.5) * 0.4;
@@ -66,7 +66,7 @@ export default class Grass {
 
         // Store original position for animations
         this.originalPosition = this.grass.position.clone()
-        
+
         // Add slight random rotation for natural variation
         this.originalRotation.y = Math.random() * Math.PI * 2
         this.grass.rotation.y = this.originalRotation.y
@@ -81,7 +81,7 @@ export default class Grass {
             if (child.material) {
               // Clone material to avoid affecting other instances
               child.material = child.material.clone();
-              
+  
               // Remove texture to allow pure color application
               // The grass model comes with a texture that prevents color changes
               if (child.material.map) {
@@ -191,86 +191,86 @@ export default class Grass {
     if (!this.grass) return
 
     this.isTrampled = false
-    
+
     // Gradually return to normal
     this.animateScale(this.baseScale, 1000)
     this.brightensGrass(1.0)
-    
+
     // Reset rotation gradually
     const returnToOriginal = () => {
       if (!this.grass) return
-      
+  
       this.grass.rotation.x += (this.originalRotation.x - this.grass.rotation.x) * 0.02
       this.grass.rotation.z += (this.originalRotation.z - this.grass.rotation.z) * 0.02
-      
+  
       if (Math.abs(this.grass.rotation.x - this.originalRotation.x) > 0.01 ||
           Math.abs(this.grass.rotation.z - this.originalRotation.z) > 0.01) {
         requestAnimationFrame(returnToOriginal)
       }
     }
-    
+
     returnToOriginal()
   }
 
   // Wind gust effect
   windGust(direction, strength = 1.0) {
     if (!this.grass || this.isTrampled) return
-    
+
     const gustRotationX = direction.x * strength * 0.3
     const gustRotationZ = direction.z * strength * 0.3
-    
+
     // Apply wind rotation
     this.grass.rotation.x = this.originalRotation.x + gustRotationX
     this.grass.rotation.z = this.originalRotation.z + gustRotationZ
-    
+
     // Return to normal position gradually
     const returnToNormal = () => {
       if (!this.grass) return
-      
+  
       this.grass.rotation.x += (this.originalRotation.x - this.grass.rotation.x) * 0.05
       this.grass.rotation.z += (this.originalRotation.z - this.grass.rotation.z) * 0.05
-      
+  
       if (Math.abs(this.grass.rotation.x - this.originalRotation.x) > 0.01 ||
           Math.abs(this.grass.rotation.z - this.originalRotation.z) > 0.01) {
         requestAnimationFrame(returnToNormal)
       }
     }
-    
+
     returnToNormal()
   }
 
   // Utility function to animate scale
   animateScale(targetScale, duration) {
     if (!this.grass) return
-    
+
     const startScale = {
       x: this.grass.scale.x,
       y: this.grass.scale.y,
       z: this.grass.scale.z
     }
     const startTime = Date.now()
-    
+
     const animate = () => {
       const elapsed = Date.now() - startTime
       const progress = Math.min(elapsed / duration, 1)
       const easeProgress = 1 - Math.pow(1 - progress, 3) // Ease out cubic
-      
+  
       this.grass.scale.x = startScale.x + (targetScale.x - startScale.x) * easeProgress
       this.grass.scale.y = startScale.y + (targetScale.y - startScale.y) * easeProgress
       this.grass.scale.z = startScale.z + (targetScale.z - startScale.z) * easeProgress
-      
+  
       if (progress < 1) {
         requestAnimationFrame(animate)
       }
     }
-    
+
     animate()
   }
 
   // Utility function to brighten/darken grass
   brightensGrass(factor) {
     if (!this.grass) return
-    
+
     this.grass.traverse((child) => {
       if (child.isMesh && child.material) {
         const baseColor = new THREE.Color(this.color)
@@ -290,7 +290,7 @@ export default class Grass {
           if (child.material.map) {
             child.material.map = null;
           }
-          
+  
           child.material.color.setHex(color);
           child.material.transparent = false;
           child.material.opacity = 1.0;

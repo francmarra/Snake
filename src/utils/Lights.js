@@ -88,12 +88,12 @@ function createFireflies(scene) {
   
   FIREFLY_DATA.forEach((data, index) => {
     const [startX, startY, startZ] = data
-    
+
     // Create firefly light
     const fireflyLight = new PointLight(0xffffaa, 0.5, 8, 2)
     fireflyLight.position.set(startX, startY, startZ)
     fireflyLight.castShadow = false // Fireflies don't cast shadows for performance
-    
+
     // Create firefly visual mesh
     const fireflyGeometry = new THREE.SphereGeometry(0.05, 8, 6)
     const fireflyMaterial = new THREE.MeshBasicMaterial({
@@ -103,13 +103,13 @@ function createFireflies(scene) {
     })
     const fireflyMesh = new THREE.Mesh(fireflyGeometry, fireflyMaterial)
     fireflyMesh.position.copy(fireflyLight.position)
-    
+
     fireflies.push({
       light: fireflyLight,
       mesh: fireflyMesh,
       index: index
     })
-    
+
     if (scene) {
       scene.add(fireflyLight)
       scene.add(fireflyMesh)
@@ -134,13 +134,13 @@ export function toggleFireflies(enabled, scene = null) {
     if (fireflies.length === 0 && scene) {
       createFireflies(scene)
     }
-    
+
     // Show fireflies
     fireflies.forEach(firefly => {
       firefly.light.visible = true
       firefly.mesh.visible = true
     })
-    
+
     // Start animation
     startFirefliesAnimation(fireflies, FIREFLY_DATA)
     console.log('Fireflies enabled and animated')
@@ -150,7 +150,7 @@ export function toggleFireflies(enabled, scene = null) {
       firefly.light.visible = false
       firefly.mesh.visible = false
     })
-    
+
     // Stop animation
     stopFirefliesAnimation()
     console.log('Fireflies disabled')

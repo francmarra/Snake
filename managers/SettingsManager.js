@@ -11,7 +11,7 @@ export function toggleMinimap(visible) {
       minimapContainer.style.display = 'block'
       minimapContainer.style.opacity = '0'
       minimapContainer.style.transform = 'scale(0.7) translateY(30px)'
-      
+  
       gsap.to(minimapContainer, {
         opacity: 1,
         scale: 1,
@@ -135,11 +135,11 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
     pointLightCheckbox.checked = DEFAULT_SETTINGS.pointLightEnabled
     pointLightCheckbox.addEventListener('change', () => {
       togglePointLight(pointLightCheckbox.checked)
-      
+  
       // Handle fireflies dependency
       const firefliesContainer = document.querySelector('.fireflies-container')
       const firefliesCheckbox = document.getElementById('fireflies')
-      
+  
       if (pointLightCheckbox.checked) {
         firefliesContainer.style.display = 'block'
       } else {
@@ -158,7 +158,7 @@ export function initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, a
   if (firefliesCheckbox && firefliesContainer) {
     firefliesCheckbox.checked = false // Start disabled
     firefliesContainer.style.display = pointLightCheckbox.checked ? 'block' : 'none'
-    
+
     firefliesCheckbox.addEventListener('change', () => {
       const success = toggleFireflies(firefliesCheckbox.checked, scene)
       if (!success) {
@@ -198,7 +198,7 @@ export class UIController {
   constructor(paletteName, capitalize) {
     this.paletteName = paletteName
     this.capitalize = capitalize
-    
+
     this.setupSettingsButton()
     this.setupPaletteSelectors()
   }
@@ -206,9 +206,9 @@ export class UIController {
   setupSettingsButton() {
     const btnSettings = document.getElementById('btn-settings')
     const btnSettingsImg = document.getElementById('btn-settings-img')
-    
+
     if (!btnSettings) return
-    
+
     btnSettings.addEventListener('mouseenter', function () {
       this.style.transform = 'translate(-50%, -50%) scale(1.15)'
       this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)'
@@ -217,13 +217,13 @@ export class UIController {
       this.style.transform = 'translate(-50%, -50%) scale(1)'
       this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)'
     })
-    
+
     btnSettings.addEventListener('click', () => {
       const gear = btnSettings.querySelector('img[alt="Settings Gear"]')
       if (gear) {
         animateSettingsGear(gear)
       }
-      
+  
       // Toggle settings sidebar
       const settingsSidebar = document.getElementById('settings-sidebar')
       if (settingsSidebar.classList.contains('open')) {
@@ -237,10 +237,10 @@ export class UIController {
   setupPaletteSelectors() {
     const sideBar = document.querySelector('.top-bar')
     const paletteSelectors = document.querySelectorAll('[data-color]')
-    
+
     // Animate palette selectors with or without sidebar
     animatePaletteSelectors(paletteSelectors, sideBar)
-    
+
     paletteSelectors.forEach((selector) =>
       selector.addEventListener('click', (event) => {
         const paletteName = event.target.closest('[data-color]').dataset.color
@@ -254,7 +254,7 @@ export class UIController {
     const settingsSidebar = document.getElementById('settings-sidebar')
     if (settingsSidebar) {
       settingsSidebar.classList.remove('open')
-      
+  
       // Blur all input elements to remove focus
       const inputs = settingsSidebar.querySelectorAll('input, button, select, textarea')
       inputs.forEach(input => input.blur())
@@ -279,7 +279,7 @@ export class UIController {
       // Add the current theme class
       settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`)
     }
-    
+
     // Update settings sidebar theme
     const settingsSidebar = document.getElementById('settings-sidebar')
     if (settingsSidebar) {

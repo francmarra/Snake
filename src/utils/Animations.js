@@ -205,15 +205,15 @@ export function startFirefliesAnimation(fireflies, fireflyData) {
   fireflies.forEach((firefly, index) => {
     const data = fireflyData[index];
     if (!data) return;
-    
+
     const [startX, startY, startZ, patternType, speed, radius] = data;
     const light = firefly.light;
     const mesh = firefly.mesh;
-    
+
     // Set initial position
     light.position.set(startX, startY, startZ);
     mesh.position.copy(light.position);
-    
+
     // Create animation based on pattern type
     switch (patternType) {
       case 'circular':
@@ -230,7 +230,7 @@ export function startFirefliesAnimation(fireflies, fireflyData) {
         animateRandomPattern(light, mesh, startX, startY, startZ, radius, speed, index);
         break;
     }
-    
+
     // Add subtle intensity pulsing
     gsap.to(light, {
       intensity: 0.3,
@@ -311,7 +311,7 @@ function animateRandomPattern(light, mesh, centerX, centerY, centerZ, radius, sp
     const randomX = centerX + (Math.random() - 0.5) * radius * 2;
     const randomY = centerY + (Math.random() - 0.5) * radius * 0.5;
     const randomZ = centerZ + (Math.random() - 0.5) * radius * 2;
-    
+
     gsap.to(light.position, {
       x: randomX,
       y: randomY,
