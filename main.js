@@ -1217,6 +1217,10 @@ function addEntity() {
   if (entityPools[key] && entityPools[key].length > 0) {
     entity = entityPools[key].pop()
     entity.mesh.visible = true
+    
+    // Ensure shadows are properly configured when reusing from pool
+    entity.configureShadows(entity.mesh)
+    
     // Update color if needed
     if (entity.updateFoliageColor && key === 'Tree') entity.updateFoliageColor(selectedPalette.treeColor)
   } else {
@@ -1265,6 +1269,15 @@ TREE_DATA.forEach(([x, y, z, w]) => {
   let clone = tree.mesh.clone()
   clone.position.set(x, y, z)
   clone.scale.setScalar(w)
+  
+  // Ensure cloned trees have proper shadows
+  clone.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true
+      child.receiveShadow = true
+    }
+  })
+  
   scene.add(clone)
 })
 
@@ -1274,6 +1287,11 @@ TREE_DATA.forEach(([x, y, z, w]) => {
   const rockGeometry = rockProto.mesh.geometry
   const rockMaterial = rockProto.mesh.material
   const rockInstances = new THREE.InstancedMesh(rockGeometry, rockMaterial, ROCK_DATA.length)
+  
+  // Enable shadows for instanced rocks
+  rockInstances.castShadow = true
+  rockInstances.receiveShadow = true
+  
   const matrix = new THREE.Matrix4()
   ROCK_DATA.forEach(([posArr, scaleArr], i) => {
     const position = new THREE.Vector3(...posArr)
@@ -1296,6 +1314,15 @@ FLOWER_DATA.forEach(([x, y, z, scale, color]) => {
   )
   flower.mesh.position.set(x, y, z)
   flower.mesh.scale.setScalar(scale)
+  
+  // Ensure flower shadows are properly configured
+  flower.mesh.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true
+      child.receiveShadow = true
+    }
+  })
+  
   scene.add(flower.mesh)
 })
 
@@ -1311,6 +1338,15 @@ MUSHROOM_DATA.forEach(([x, y, z, scale, capColor, stemColor]) => {
   )
   mushroom.mesh.position.set(x, y, z)
   mushroom.mesh.scale.setScalar(scale)
+  
+  // Ensure mushroom shadows are properly configured
+  mushroom.mesh.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true
+      child.receiveShadow = true
+    }
+  })
+  
   scene.add(mushroom.mesh)
 })
 

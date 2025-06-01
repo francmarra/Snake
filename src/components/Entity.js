@@ -6,8 +6,10 @@ import gsap from 'gsap'
 export default class Entity {
 	constructor(mesh, resolution, option = { size: 1.5, number: 0.5 }) {
 		this.mesh = mesh
-		mesh.castShadow = true
-		mesh.receiveShadow = true
+		
+		// Ensure shadows are properly set for all mesh types
+		this.configureShadows(mesh)
+		
 		this.resolution = resolution
 		this.option = option
 		
@@ -101,6 +103,23 @@ export default class Entity {
 					ease: 'power2.out'
 				});
 			}
+		}
+	}
+	
+	// Configure shadows for mesh or group
+	configureShadows(object) {
+		if (object.isGroup) {
+			// For groups, configure shadows for all children
+			object.traverse((child) => {
+				if (child.isMesh) {
+					child.castShadow = true
+					child.receiveShadow = true
+				}
+			})
+		} else if (object.isMesh) {
+			// For single meshes
+			object.castShadow = true
+			object.receiveShadow = true
 		}
 	}
 }

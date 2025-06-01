@@ -28,6 +28,12 @@ export default class Bomb extends Entity {
         bomb.add(bombBody, fuse)
         super(bomb, resolution)
 
+        // Ensure all parts cast and receive shadows
+        bombBody.castShadow = true
+        bombBody.receiveShadow = true
+        fuse.castShadow = true
+        fuse.receiveShadow = true
+
         // Expõe o material do corpo no grupo
         this.mesh.material = bodyMat
 

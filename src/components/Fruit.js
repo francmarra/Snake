@@ -28,6 +28,12 @@ export default class Fruit extends Entity {
         fruit.add(appleBody, appleStem)
         super(fruit, resolution)
 
+        // Ensure all parts cast and receive shadows
+        appleBody.castShadow = true
+        appleBody.receiveShadow = true
+        appleStem.castShadow = true
+        appleStem.receiveShadow = true
+
         // Expõe o material do corpo no grupo
         this.mesh.material = bodyMat
 

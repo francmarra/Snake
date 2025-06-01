@@ -385,6 +385,8 @@ canvas {
   -khtml-user-drag: none;
   -moz-user-drag: none;
   -o-user-drag: none;
+  /* Ensure canvas doesn't interfere with shadow rendering */
+  image-rendering: auto;
 }
 
 /* Make sure input elements are still selectable/interactive */
