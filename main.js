@@ -104,10 +104,10 @@ function transitionToTheme(newThemeName) {
       paletteName = newThemeName;
       saveThemeToStorage(newThemeName);
       selectedPalette = newPalette;
-      
+  
       // Instantly update skybox during peak transition
       updateSkybox(newThemeName);
-      
+  
       // Transition out the overlay
       gsap.to(transitionOverlay, {
         opacity: 0,
@@ -149,7 +149,7 @@ function animateColorTransitions(oldPalette, newPalette) {
     try {
       const currentColor = rock.mesh.material.color;
       const targetColor = new THREE.Color(newPalette.rockColor);
-      
+  
       gsap.to(currentColor, {
         r: targetColor.r,
         g: targetColor.g,
@@ -167,7 +167,7 @@ function animateColorTransitions(oldPalette, newPalette) {
     try {
       const currentColor = tree.foliage.material.color;
       const targetColor = new THREE.Color(newPalette.treeColor);
-      
+  
       gsap.to(currentColor, {
         r: targetColor.r,
         g: targetColor.g,
@@ -188,7 +188,7 @@ function animateColorTransitions(oldPalette, newPalette) {
     if (center && center.material && center.material.color) {
       const currentColor = center.material.color;
       const targetColor = new THREE.Color(newPalette.flowerCenterColor);
-      
+  
       gsap.to(currentColor, {
         r: targetColor.r,
         g: targetColor.g,
@@ -200,11 +200,11 @@ function animateColorTransitions(oldPalette, newPalette) {
     flower.mesh.children.forEach(child => {
       const childColor = child.material && child.material.color ? child.material.color.getHex() : null;
       const isGreenPart = childColor === 0x2d5016 || childColor === 0x228B22;
-      
+  
       if (child.material && child.material.color && !isGreenPart && child !== center) {
         const currentColor = child.material.color;
         const targetColor = new THREE.Color(newPalette.flowerPetalColor || newPalette.fruitColor);
-        
+
         gsap.to(currentColor, {
           r: targetColor.r,
           g: targetColor.g,
@@ -224,7 +224,7 @@ function animateColorTransitions(oldPalette, newPalette) {
       if (cap && cap.material && cap.material.color) {
       const currentColor = cap.material.color;
       const targetColor = new THREE.Color(newPalette.mushroomCapColor || 0x8B4513);
-      
+  
       gsap.to(currentColor, {
         r: targetColor.r,
         g: targetColor.g,
@@ -239,7 +239,7 @@ function animateColorTransitions(oldPalette, newPalette) {
           child.material && child.material.color) {
         const currentColor = child.material.color;
         const targetColor = new THREE.Color(newPalette.mushroomSpotColor || 0xFFFFFF);
-        
+
         gsap.to(currentColor, {
           r: targetColor.r,
           g: targetColor.g,
@@ -250,15 +250,26 @@ function animateColorTransitions(oldPalette, newPalette) {
       }
     });
   });
-  // Animate grass colors
+  // Animate grass colors - with special handling for trampled grass
   if (typeof grassInstances !== 'undefined') {
     grassInstances.forEach((grassInstance) => {
+      // Update the stored color reference first
+      grassInstance.color = newPalette.grassColor;
+      
       if (grassInstance.grass) {
         grassInstance.grass.traverse((child) => {
           if (child.isMesh && child.material && child.material.color) {
             const currentColor = child.material.color;
-            const targetColor = new THREE.Color(newPalette.grassColor);
+            let targetColor;
             
+            // If this grass is trampled, apply the darkening factor to the new theme color
+            if (grassInstance.isTrampled) {
+              targetColor = new THREE.Color(newPalette.grassColor);
+              targetColor.multiplyScalar(0.7); // Same darkening factor as in trample()
+            } else {
+              targetColor = new THREE.Color(newPalette.grassColor);
+            }
+
             gsap.to(currentColor, {
               r: targetColor.r,
               g: targetColor.g,
@@ -276,11 +287,11 @@ function animateColorTransitions(oldPalette, newPalette) {
     island.island.traverse((child) => {
       if (child.isMesh && child.material && child.material.color) {
         const materialName = child.material.name?.toLowerCase() || '';
-        
+
         if (materialName.includes('grass') || materialName.includes('top') || child.name?.toLowerCase().includes('grass')) {
           const currentColor = child.material.color;
           const targetColor = new THREE.Color(newPalette.groundColor);
-          
+  
           gsap.to(currentColor, {
             r: targetColor.r,
             g: targetColor.g,
@@ -292,7 +303,7 @@ function animateColorTransitions(oldPalette, newPalette) {
           const currentColor = child.material.color;
           const dirtColorObj = new THREE.Color(newPalette.dirtColor);
           dirtColorObj.multiplyScalar(0.7);
-          
+  
           gsap.to(currentColor, {
             r: dirtColorObj.r,
             g: dirtColorObj.g,
@@ -308,7 +319,7 @@ function animateColorTransitions(oldPalette, newPalette) {
   if (candies && candies[0] && candies[0].mesh && candies[0].mesh.material && candies[0].mesh.material.color) {
     const currentColor = candies[0].mesh.material.color;
     const targetColor = new THREE.Color(newPalette.fruitColor);
-    
+
     gsap.to(currentColor, {
       r: targetColor.r,
       g: targetColor.g,
@@ -320,7 +331,7 @@ function animateColorTransitions(oldPalette, newPalette) {
   if (snake && snake.body && snake.body.head && snake.body.head.data && snake.body.head.data.mesh && snake.body.head.data.mesh.material && snake.body.head.data.mesh.material.color) {
     const currentSnakeColor = snake.body.head.data.mesh.material.color;
     const targetSnakeColor = new THREE.Color(newPalette.snakeColor);
-    
+
     gsap.to(currentSnakeColor, {
       r: targetSnakeColor.r,
       g: targetSnakeColor.g,
@@ -333,7 +344,7 @@ function animateColorTransitions(oldPalette, newPalette) {
     if (snake.mouth && snake.mouth.material && snake.mouth.material.color) {
       const currentMouthColor = snake.mouth.material.color;
       const targetMouthColor = new THREE.Color(newPalette.mouthColor);
-      
+  
       gsap.to(currentMouthColor, {
         r: targetMouthColor.r,
         g: targetMouthColor.g,
@@ -531,7 +542,7 @@ function applyPalette(name) {
     const center = flower.mesh.children.find(child => 
       child.geometry instanceof THREE.SphereGeometry
     );
-    
+
     if (center) {
       // Update the center color
       center.material.color.set(flowerCenterColor);
@@ -541,7 +552,7 @@ function applyPalette(name) {
       // Skip stem and leaves which have these green color hex values
       const childColor = child.material?.color?.getHex();
       const isGreenPart = childColor === 0x2d5016 || childColor === 0x228B22;
-      
+  
       // If it's not stem or leaves and not the center, it's a petal
       if (child.material && !isGreenPart && child !== center) {
         // Use flowerPetalColor or fall back to fruitColor for backward compatibility
@@ -556,11 +567,11 @@ function applyPalette(name) {
     const cap = mushroom.mesh.children.find(child => 
       child.geometry instanceof THREE.SphereGeometry
     );
-    
+
     if (cap) {
       cap.material.color.set(mushroomCapColor || 0x8B4513);
     }
-    
+
     // Update all spot colors but keep the stem untouched
     mushroom.mesh.children.forEach(child => {
       // Skip the stem which is a cylinder but taller than spots (spots are very thin cylinders)
@@ -655,7 +666,7 @@ function preloadSkyboxTextures() {
           texture.mapping = THREE.EquirectangularReflectionMapping
           texture.wrapS = THREE.RepeatWrapping
           texture.wrapT = THREE.ClampToEdgeWrapping
-          
+  
           // Cache the texture
           skyboxTextureCache[theme] = texture
           console.log(`Skybox texture cached: ${theme}`)
@@ -734,7 +745,7 @@ function updateSkyboxOverlay(darken = false) {
     })
 
     skyboxOverlay = new THREE.Mesh(overlayGeometry, overlayMaterial)
-    
+
     // Position the overlay same as skybox
     skyboxOverlay.position.set(resolution.x / 2 - 0.5, -50, resolution.y / 2 - 0.5)
     skyboxOverlay.rotation.y = Math.PI
@@ -857,7 +868,7 @@ snake.addEventListener('updated', function () {
      if (bombs.length < bombsSetting) {
        addBomb();
      }
-     
+ 
      printScore()
    }
 })
@@ -946,7 +957,7 @@ function registerEventListener() {
       console.log('🌬️ Manual wind gust triggered! Watch the grass sway.')
       return
     }
-    
+
     // If settings are open, ignore key input for settings changes
     if (settingsSidebar && settingsSidebar.classList.contains('open')) {
       // If the key is meant to start the game, close settings and start game without updating direction
@@ -960,16 +971,16 @@ function registerEventListener() {
       }
       return; // Do not update the snake or settings values
     }
-    
+
     // Update snake direction if settings are not being shown
     snake.setDirection(keyCode);
-    
+
     if (keyCode === 'Space') {
       !isRunning ? startGame() : stopGame();
     } else if (!isRunning && isMovementKey && gameStarted) {
       startGame();
     }
-    
+
     // Hide settings tab and sidebar when snake moves
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab) {
@@ -992,12 +1003,12 @@ function startGame() {
   if (!snake.isMoving) {
     // Ensure camera rotation is disabled when snake starts moving
     cameraController.stopRotation()
-    
+
     // Hide settings tab when snake starts moving
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab && settingsTab.style.display !== 'none') {
       animateSettingsTab(settingsTab, false);
-    }    
+    }
     // Use the current slider value to determine moveInterval for snake speed
     const sliderVal = parseInt(document.getElementById('speed-range').value);
     const moveInterval = 300 - (sliderVal * 16);
@@ -1129,7 +1140,7 @@ function addFruit() {
     fruit.mesh.scale.setScalar(0.5 + (fruit.points * 0.5) / 3)
     fruit.mesh.material.color.set(selectedPalette.fruitColor)
     fruit.mesh.visible = true
-    
+
     // Store original scale for pulsating effect
     fruit.originalScale = {
       x: fruit.mesh.scale.x,
@@ -1155,7 +1166,7 @@ function addBomb() {
     bomb.points = Math.floor(Math.random() * 3) + 1
     bomb.mesh.scale.setScalar(0.5 + (bomb.points * 0.5) / 3)
     bomb.mesh.visible = true
-    
+
     // Store original scale for pulsating effect
     bomb.originalScale = {
       x: bomb.mesh.scale.x,
@@ -1206,6 +1217,10 @@ function addEntity() {
   if (entityPools[key] && entityPools[key].length > 0) {
     entity = entityPools[key].pop()
     entity.mesh.visible = true
+    
+    // Ensure shadows are properly configured when reusing from pool
+    entity.configureShadows(entity.mesh)
+    
     // Update color if needed
     if (entity.updateFoliageColor && key === 'Tree') entity.updateFoliageColor(selectedPalette.treeColor)
   } else {
@@ -1254,6 +1269,15 @@ TREE_DATA.forEach(([x, y, z, w]) => {
   let clone = tree.mesh.clone()
   clone.position.set(x, y, z)
   clone.scale.setScalar(w)
+  
+  // Ensure cloned trees have proper shadows
+  clone.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true
+      child.receiveShadow = true
+    }
+  })
+  
   scene.add(clone)
 })
 
@@ -1263,6 +1287,11 @@ TREE_DATA.forEach(([x, y, z, w]) => {
   const rockGeometry = rockProto.mesh.geometry
   const rockMaterial = rockProto.mesh.material
   const rockInstances = new THREE.InstancedMesh(rockGeometry, rockMaterial, ROCK_DATA.length)
+  
+  // Enable shadows for instanced rocks
+  rockInstances.castShadow = true
+  rockInstances.receiveShadow = true
+  
   const matrix = new THREE.Matrix4()
   ROCK_DATA.forEach(([posArr, scaleArr], i) => {
     const position = new THREE.Vector3(...posArr)
@@ -1285,6 +1314,15 @@ FLOWER_DATA.forEach(([x, y, z, scale, color]) => {
   )
   flower.mesh.position.set(x, y, z)
   flower.mesh.scale.setScalar(scale)
+  
+  // Ensure flower shadows are properly configured
+  flower.mesh.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true
+      child.receiveShadow = true
+    }
+  })
+  
   scene.add(flower.mesh)
 })
 
@@ -1300,6 +1338,15 @@ MUSHROOM_DATA.forEach(([x, y, z, scale, capColor, stemColor]) => {
   )
   mushroom.mesh.position.set(x, y, z)
   mushroom.mesh.scale.setScalar(scale)
+  
+  // Ensure mushroom shadows are properly configured
+  mushroom.mesh.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true
+      child.receiveShadow = true
+    }
+  })
+  
   scene.add(mushroom.mesh)
 })
 
@@ -1324,14 +1371,14 @@ function generateGrass() {
     if (occupiedIndexes.has(index)) {
       continue
     }
-    
+
     const x = index % resolution.x
     const z = Math.floor(index / resolution.x)
     const y = 0
-    
+
     // Random scale for variety
     const scale = 0.6 + Math.random() * 0.4
-    
+
     const grassPosition = new THREE.Vector3(x, y, z)
     const grassInstance = new Grass(
       scene,
@@ -1346,19 +1393,19 @@ function generateGrass() {
   const overlapCount = Math.floor(totalCells * 0.4) // 40% additional coverage
   for (let i = 0; i < overlapCount; i++) {
     const index = Math.floor(Math.random() * totalCells)
-    
+
     // Skip if position has game objects
     if (occupiedIndexes.has(index)) {
       continue
     }
-    
+
     const x = index % resolution.x
     const z = Math.floor(index / resolution.x)
     const y = 0
-    
+
     // Smaller grass instances for filling gaps
     const scale = 0.4 + Math.random() * 0.3
-    
+
     const grassPosition = new THREE.Vector3(x, y, z)
     const grassInstance = new Grass(
       scene,
@@ -1417,7 +1464,7 @@ function resetGrassStates() {
       // Force immediate recovery for reset
       grassInstance.isTrampled = false
       grassInstance.isHovered = false
-      
+  
       if (grassInstance.grass) {
         // Reset scale
         grassInstance.grass.scale.set(
@@ -1425,14 +1472,14 @@ function resetGrassStates() {
           grassInstance.baseScale.y,
           grassInstance.baseScale.z
         )
-        
+
         // Reset rotation
         grassInstance.grass.rotation.set(
           grassInstance.originalRotation.x,
           grassInstance.originalRotation.y,
           grassInstance.originalRotation.z
         )
-        
+
         // Reset brightness
         grassInstance.brightensGrass(1.0)
       }
@@ -1480,13 +1527,13 @@ btnPlay.addEventListener('click', function () {
   if (!gameStarted) {
     gameStarted = true
     window.gameStarted = true // Update global reference
-    
+
     // Stop camera rotation when game starts
     cameraController.stopRotation()
-    
+
     // Handle audio initialization and play
     audioController.playAudio()
-    
+
     // Enhanced minimap animation with smoother timing
     const minimapContainer = document.getElementById('minimap-container');
     const showMinimap = document.getElementById('show-minimap').checked;
@@ -1502,19 +1549,19 @@ btnPlay.addEventListener('click', function () {
       // Close settings sidebar if it's open
       uiController.closeSettings()
     }
-    
+
     // Show camera button using camera controller
     cameraController.showCameraButton()
-    
+
     // Register event listener but don't start the snake movement yet
     // The snake will start moving when the player presses a movement key
     registerEventListener()
-    
+
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab) {
       setTimeout(() => animateSettingsTab(settingsTab, true), 1500);
     }
-    
+
     minimap = new Minimap(GRID_WIDTH, GRID_HEIGHT);
   }
 });
@@ -1660,19 +1707,19 @@ snake.update = function() {
       const z = Math.floor(index / this.resolution.x)
       return { x, z }
     })
-    
+
     // Check each grass instance for trampling
     grassInstances.forEach(grassInstance => {
       if (!grassInstance.grass) return
-      
+  
       const grassX = Math.round(grassInstance.position.x)
       const grassZ = Math.round(grassInstance.position.z)
-      
+  
       // Check if any snake segment is on this grass position
       const isTrampled = snakePositions.some(pos => 
         Math.abs(pos.x - grassX) < 0.5 && Math.abs(pos.z - grassZ) < 0.5
       )
-      
+  
       if (isTrampled && !grassInstance.isTrampled) {
         grassInstance.trample()
       }
@@ -1704,7 +1751,7 @@ function tic() {
   if (gameStarted && grassInstances.length > 0) {
     // Handle mouse hover interactions
     updateGrassHoverInteractions()
-    
+
     // Handle periodic wind gusts
     const currentTime = Date.now()
     if (currentTime - lastWindGustTime > WIND_GUST_INTERVAL) {
@@ -1767,7 +1814,7 @@ function preventDragging() {
       e.preventDefault();
       return false;
     });
-    
+
     // Prevent text selection when double-clicking
     element.addEventListener('mousedown', (e) => {
       if (e.detail > 1) { // Check for double click

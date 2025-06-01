@@ -46,16 +46,16 @@ export class CameraController {
     this.resolution = resolution
     this.sizes = sizes
     this.renderer = renderer
-    
+
     // Camera mode tracking: 0 = perspective, 1 = orthographic, 2 = free orbit
     this.cameraMode = 0
-    
+
     // Initialize cameras
     const { camera, topCamera } = initCameras(resolution, sizes, initialPosition, finalPosition)
     this.camera = camera
     this.topCamera = topCamera
     this.activeCamera = camera
-    
+
     // Create a third camera for free orbit mode
     this.orbitCamera = new THREE.PerspectiveCamera(CAMERA_FOV, sizes.width / sizes.height, CAMERA_NEAR, CAMERA_FAR)
     this.orbitCamera.position.set(
@@ -63,14 +63,14 @@ export class CameraController {
       6,
       resolution.y / 2 + 8
     )
-    
+
     // Setup controls
     this.setupControls()
-    
+
     // Camera rotation state
     this.cameraRotationActive = true
     this.centerPoint = new THREE.Vector3(resolution.x / 2, 0, resolution.y / 2)
-    
+
     // Setup button event listeners
     this.setupCameraButton()
   }
@@ -86,7 +86,7 @@ export class CameraController {
       0,
       this.resolution.y / 2 + 2
     )
-    
+
     // Create a separate OrbitControls instance for the free orbit camera
     this.orbitControls = new OrbitControls(this.orbitCamera, this.renderer.domElement)
     this.orbitControls.enableDamping = true
@@ -106,7 +106,7 @@ export class CameraController {
   setupCameraButton() {
     const btnToggleCamera = document.getElementById('btn-toggle-camera')
     if (!btnToggleCamera) return
-    
+
     // Modified hover effect: remove any color or shadow changes, but keep the scale animation
     btnToggleCamera.addEventListener('mouseenter', function () {
       this.style.transform = 'scale(1.15)'
@@ -116,7 +116,7 @@ export class CameraController {
       this.style.transform = 'scale(1)'
       this.style.transition = 'all 0.2s cubic-bezier(0.42,0,0.58,1)'
     })
-    
+
     btnToggleCamera.addEventListener('click', () => {
       this.toggleCameraMode()
     })
@@ -136,10 +136,10 @@ export class CameraController {
   toggleCameraMode() {
     // Only allow camera switching when game has started
     if (!window.gameStarted) return
-    
+
     // Cycle through camera modes: perspective -> orthographic -> free orbit -> repeat
     this.cameraMode = (this.cameraMode + 1) % 3
-    
+
     switch (this.cameraMode) {
       case 0: // Perspective mode
         this.activeCamera = this.camera
@@ -198,7 +198,7 @@ export class CameraController {
   handleResize(sizes) {
     this.sizes = sizes
     updateCamerasOnResize({ camera: this.camera, topCamera: this.topCamera }, sizes, this.resolution)
-    
+
     // Update orbit camera aspect ratio as well
     this.orbitCamera.aspect = sizes.width / sizes.height
     this.orbitCamera.updateProjectionMatrix()

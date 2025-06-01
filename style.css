@@ -10,6 +10,19 @@ html, body {
   overflow: hidden;
 }
 
+
+/* Apply scaling to UI elements (designed at 67% zoom), adjust container dimensions for correct positions */
+#ui {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: calc(100% / 0.67);
+  height: calc(100% / 0.67);
+  transform: scale(0.67);
+  transform-origin: top left;
+  pointer-events: none;
+}
+
 /*-----------------------------------------------------------
   Button Styles
 ------------------------------------------------------------*/
@@ -306,6 +319,18 @@ input[type="checkbox"]:checked:after {
   left: 5px;
 }
 
+/* Fireflies container styling */
+.fireflies-container {
+  transition: all 0.3s ease;
+  border-left: 2px solid rgba(255, 255, 255, 0.2);
+  padding-left: 0.75rem;
+}
+
+.fireflies-container label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 /*-----------------------------------------------------------
   UI Non-Draggable & Non-Selectable Elements
 ------------------------------------------------------------*/
@@ -360,6 +385,8 @@ canvas {
   -khtml-user-drag: none;
   -moz-user-drag: none;
   -o-user-drag: none;
+  /* Ensure canvas doesn't interfere with shadow rendering */
+  image-rendering: auto;
 }
 
 /* Make sure input elements are still selectable/interactive */
@@ -374,16 +401,4 @@ select {
   -moz-user-select: auto;
   -ms-user-select: auto;
   pointer-events: auto;
-}
-
-/* Apply scaling to UI elements (designed at 67% zoom), adjust container dimensions for correct positions */
-#ui {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: calc(100% / 0.67);
-  height: calc(100% / 0.67);
-  transform: scale(0.67);
-  transform-origin: top left;
-  pointer-events: none;
 }
