@@ -250,14 +250,25 @@ function animateColorTransitions(oldPalette, newPalette) {
       }
     });
   });
-  // Animate grass colors
+  // Animate grass colors - with special handling for trampled grass
   if (typeof grassInstances !== 'undefined') {
     grassInstances.forEach((grassInstance) => {
+      // Update the stored color reference first
+      grassInstance.color = newPalette.grassColor;
+      
       if (grassInstance.grass) {
         grassInstance.grass.traverse((child) => {
           if (child.isMesh && child.material && child.material.color) {
             const currentColor = child.material.color;
-            const targetColor = new THREE.Color(newPalette.grassColor);
+            let targetColor;
+            
+            // If this grass is trampled, apply the darkening factor to the new theme color
+            if (grassInstance.isTrampled) {
+              targetColor = new THREE.Color(newPalette.grassColor);
+              targetColor.multiplyScalar(0.7); // Same darkening factor as in trample()
+            } else {
+              targetColor = new THREE.Color(newPalette.grassColor);
+            }
 
             gsap.to(currentColor, {
               r: targetColor.r,

@@ -177,7 +177,7 @@ export default class Grass {
     this.grass.rotation.x = this.originalRotation.x + (Math.random() - 0.5) * 0.4
     this.grass.rotation.z = this.originalRotation.z + (Math.random() - 0.5) * 0.4
 
-    // Darken the grass slightly
+    // Darken the grass slightly using current theme color
     this.brightensGrass(0.7)
 
     // Recover after 2 seconds
@@ -273,6 +273,7 @@ export default class Grass {
 
     this.grass.traverse((child) => {
       if (child.isMesh && child.material) {
+        // Always use the current theme color as base, not a cached color
         const baseColor = new THREE.Color(this.color)
         baseColor.multiplyScalar(factor)
         child.material.color.copy(baseColor)
@@ -291,7 +292,13 @@ export default class Grass {
             child.material.map = null;
           }
   
-          child.material.color.setHex(color);
+          // If trampled, apply darkening to the new color
+          const finalColor = new THREE.Color(color);
+          if (this.isTrampled) {
+            finalColor.multiplyScalar(0.7);
+          }
+          
+          child.material.color.copy(finalColor);
           child.material.transparent = false;
           child.material.opacity = 1.0;
           child.material.needsUpdate = true;
