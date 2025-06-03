@@ -45,6 +45,7 @@ import {
   animatePaletteSelectors,
   animateSettingsGear 
 } from './src/utils/Animations.js';
+import Stats from 'three/examples/jsm/libs/stats.module.js'
 
 // --------- Font Loader & Score Initialization ---------
 // Carrega a fonte para o texto da pontuação
@@ -1083,21 +1084,29 @@ function resetGame() {
       entityPools[type].push(entity)
     }
   }
-  // Add entities based on default settings
+  // Add entities based on default settings with staggered timing to prevent frame drops
   const numFruits = DEFAULT_SETTINGS.numFruits;
   const numBombs = DEFAULT_SETTINGS.numBombs;
   const numObjects = DEFAULT_SETTINGS.numObjects;
 
+  // Add fruits immediately
   for (let i = 0; i < numFruits; i++) {
     addFruit();
   }
   
+  // Stagger bomb creation to prevent frame rate drops
   for (let i = 0; i < numBombs; i++) {
-    addBomb();
+    setTimeout(() => {
+      addBomb();
+    }, i * 150); // 150ms delay between each bomb
   }
+  
+  // Add objects with slight delay after bombs
+  setTimeout(() => {
     for (let i = 0; i < numObjects; i++) {
-    addEntity();
-  }
+      addEntity();
+    }
+  }, numBombs * 150 + 100);
   
   // Reset all grass instances to their original state
   resetGrassStates();
@@ -1166,6 +1175,7 @@ function addBomb() {
     bomb.points = Math.floor(Math.random() * 3) + 1
     bomb.mesh.scale.setScalar(0.5 + (bomb.points * 0.5) / 3)
     bomb.mesh.visible = true
+    bomb.animationsStarted = false // Reset animation flag for reused bombs
 
     // Store original scale for pulsating effect
     bomb.originalScale = {
@@ -1693,9 +1703,14 @@ let mousePosition = { x: 0, y: 0 }
 let lastWindGustTime = 0
 const WIND_GUST_INTERVAL = 8000 // Wind gusts every 8 seconds
 
+const stats = new Stats()
+document.body.appendChild(stats.dom)
+
 // --------- Main Render Loop ---------
 // --- Ciclo principal de renderização ---
 function tic() {
+  stats.begin()                                              // 3a) start measurement
+
   // Update camera controller
   cameraController.update(gameStarted)
   
@@ -1716,16 +1731,12 @@ function tic() {
   }
   
   renderer.render(scene, activeCamera)
-  
-  // Update minimap if the game has started, minimap is initialized, and it should be shown
-  if (gameStarted && minimap && document.getElementById('show-minimap').checked) {
-    minimap.update(snake, candies, bombs, selectedPalette)
-  }
-  
+
+  stats.end()                                                // 3b) end measurement
   requestAnimationFrame(tic)
 }
 
-requestAnimationFrame(tic)
+requestAnimationFrame(tic)                                   // 4) kick it off
 
 // --------- Window Resize Handler ---------
 window.addEventListener('resize', handleResize)
