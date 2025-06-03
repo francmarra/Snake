@@ -3,6 +3,7 @@ import { AmbientLight, DirectionalLight, PointLight } from 'three'
 import { GRID_WIDTH, GRID_HEIGHT, COLOR_PALETTES, FIREFLY_DATA } from '../../config/StaticData.js'
 import { DEFAULT_SETTINGS } from '../../config/Config.js'
 import { startFirefliesAnimation, stopFirefliesAnimation } from './Animations.js'
+import { gsap } from 'gsap'
 
 const ambLight = new AmbientLight(0xffffff, 0.6) // luz branca suave
 const dirLight = new DirectionalLight(0xffffff, 0.7) // luz direcional
@@ -121,43 +122,57 @@ function createFireflies(scene) {
 
 // Function to toggle fireflies
 export function toggleFireflies(enabled, scene = null) {
-  firefliesEnabled = enabled
+  firefliesEnabled = enabled;
   
   if (enabled && !pointLight.visible) {
     // Don't enable fireflies if point light is disabled
-    firefliesEnabled = false
-    return false
+    firefliesEnabled = false;
+    return false;
   }
   
   if (enabled) {
     // Create fireflies if they don't exist
     if (fireflies.length === 0 && scene) {
-      createFireflies(scene)
+      createFireflies(scene);
     }
-
-    // Show fireflies
+    
+    // Gradually show fireflies instead of appearing instantly
     fireflies.forEach(firefly => {
-      firefly.light.visible = true
-      firefly.mesh.visible = true
-    })
+      // Start from 0 intensity and opacity
+      firefly.light.intensity = 0;
+      firefly.mesh.material.opacity = 0;
+      firefly.light.visible = true;
+      firefly.mesh.visible = true;
+      
+      // Animate to target values over 1 second
+      gsap.to(firefly.light, {
+        intensity: 0.5,
+        duration: 1,
+        ease: "power2.out"
+      });
+      gsap.to(firefly.mesh.material, {
+        opacity: 0.8,
+        duration: 1,
+        ease: "power2.out"
+      });
+    });
 
-    // Start animation
-    startFirefliesAnimation(fireflies, FIREFLY_DATA)
-    console.log('Fireflies enabled and animated')
+    // Start fireflies animation as before
+    startFirefliesAnimation(fireflies, FIREFLY_DATA);
+    console.log('Fireflies enabled and animated');
   } else {
-    // Hide fireflies
+    // Hide fireflies instantly (or add fade-out if desired)
     fireflies.forEach(firefly => {
-      firefly.light.visible = false
-      firefly.mesh.visible = false
-    })
-
-    // Stop animation
-    stopFirefliesAnimation()
-    console.log('Fireflies disabled')
+      firefly.light.visible = false;
+      firefly.mesh.visible = false;
+    });
+    
+    stopFirefliesAnimation();
+    console.log('Fireflies disabled');
   }
   
-  notifyLightChange()
-  return true
+  notifyLightChange();
+  return true;
 }
 
 // Function to check if fireflies are enabled
