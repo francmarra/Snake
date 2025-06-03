@@ -1352,10 +1352,12 @@ MUSHROOM_DATA.forEach(([x, y, z, scale, capColor, stemColor]) => {
 
 // Add static grass instances
 const grassInstances = []
+const grassMap = new Map()
 
 function generateGrass() {
   // Generate dense grass coverage to completely hide the ground
   const totalCells = resolution.x * resolution.y
+  const halfCell = 0.5
   
   // Get all occupied positions to avoid conflicts with game objects
   let occupiedIndexes = new Set([
@@ -1367,26 +1369,12 @@ function generateGrass() {
   
   // First pass: Fill every available cell with grass
   for (let index = 0; index < totalCells; index++) {
-    // Skip if position is occupied by game objects
-    if (occupiedIndexes.has(index)) {
-      continue
-    }
+    if (occupiedIndexes.has(index)) continue
 
-    const x = index % resolution.x
-    const z = Math.floor(index / resolution.x)
-    const y = 0
-
-    // Random scale for variety
-    const scale = 0.6 + Math.random() * 0.4
-
-    const grassPosition = new THREE.Vector3(x, y, z)
-    const grassInstance = new Grass(
-      scene,
-      grassPosition,
-      scale,
-      selectedPalette.groundColor
-    )
+    const grassPosition = new THREE.Vector3(index % resolution.x, 0, Math.floor(index / resolution.x))
+    const grassInstance = new Grass(scene, grassPosition, 0.6 + Math.random() * 0.4, selectedPalette.groundColor)
     grassInstances.push(grassInstance)
+    grassMap.set(index, grassInstance)
   }
   
   // Second pass: Add overlapping grass instances for complete coverage
@@ -1399,21 +1387,16 @@ function generateGrass() {
       continue
     }
 
-    const x = index % resolution.x
-    const z = Math.floor(index / resolution.x)
-    const y = 0
-
     // Smaller grass instances for filling gaps
     const scale = 0.4 + Math.random() * 0.3
 
-    const grassPosition = new THREE.Vector3(x, y, z)
-    const grassInstance = new Grass(
-      scene,
-      grassPosition,
-      scale,
-      selectedPalette.groundColor
-    )
-    grassInstances.push(grassInstance)
+    // Check if this index is not already occupied
+    if (!grassMap.has(index)) {
+      const grassPosition = new THREE.Vector3(index % resolution.x, 0, Math.floor(index / resolution.x))
+      const grassInstance = new Grass(scene, grassPosition, scale, selectedPalette.groundColor)
+      grassInstances.push(grassInstance)
+      grassMap.set(index, grassInstance)
+    }
   }
     console.log(`Generated ${grassInstances.length} grass instances for complete ground coverage`)
 }
@@ -1459,30 +1442,11 @@ function updateGrassHoverInteractions() {
 function resetGrassStates() {
   if (!grassInstances || grassInstances.length === 0) return
   
-  grassInstances.forEach(grassInstance => {
+  grassMap.forEach(grassInstance => {
     if (grassInstance.isTrampled) {
       // Force immediate recovery for reset
       grassInstance.isTrampled = false
       grassInstance.isHovered = false
-  
-      if (grassInstance.grass) {
-        // Reset scale
-        grassInstance.grass.scale.set(
-          grassInstance.baseScale.x,
-          grassInstance.baseScale.y,
-          grassInstance.baseScale.z
-        )
-
-        // Reset rotation
-        grassInstance.grass.rotation.set(
-          grassInstance.originalRotation.x,
-          grassInstance.originalRotation.y,
-          grassInstance.originalRotation.z
-        )
-
-        // Reset brightness
-        grassInstance.brightensGrass(1.0)
-      }
     }
   })
   
@@ -1708,19 +1672,10 @@ snake.update = function() {
       return { x, z }
     })
 
-    // Check each grass instance for trampling
-    grassInstances.forEach(grassInstance => {
-      if (!grassInstance.grass) return
-  
-      const grassX = Math.round(grassInstance.position.x)
-      const grassZ = Math.round(grassInstance.position.z)
-  
-      // Check if any snake segment is on this grass position
-      const isTrampled = snakePositions.some(pos => 
-        Math.abs(pos.x - grassX) < 0.5 && Math.abs(pos.z - grassZ) < 0.5
-      )
-  
-      if (isTrampled && !grassInstance.isTrampled) {
+    // Optimized trampling detection using grassMap for O(1) lookups
+    this.indexes.forEach(idx => {
+      const grassInstance = grassMap.get(idx)
+      if (grassInstance && grassInstance.grass && !grassInstance.isTrampled) {
         grassInstance.trample()
       }
     })
@@ -1858,7 +1813,3 @@ window.testThemeTransition = function(themeName) {
     console.error('Invalid theme name. Use: day, sunset, or night');
   }
 };
-
-// Log available themes for easy testing
-console.log('Available themes for testing:', Object.keys(palettes));
-console.log('Use window.testThemeTransition("themeName") to test transitions');
