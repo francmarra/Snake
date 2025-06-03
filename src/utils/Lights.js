@@ -1,6 +1,8 @@
+import * as THREE from 'three'
 import { AmbientLight, DirectionalLight, PointLight } from 'three'
-import { GRID_WIDTH, GRID_HEIGHT, COLOR_PALETTES } from '../../config/StaticData.js'
+import { GRID_WIDTH, GRID_HEIGHT, COLOR_PALETTES, FIREFLY_DATA } from '../../config/StaticData.js'
 import { DEFAULT_SETTINGS } from '../../config/Config.js'
+import { startFirefliesAnimation, stopFirefliesAnimation } from './Animations.js'
 
 const ambLight = new AmbientLight(0xffffff, 0.6) // luz branca suave
 const dirLight = new DirectionalLight(0xffffff, 0.7) // luz direcional
@@ -62,7 +64,110 @@ export function toggleDirectionalLight(enabled) {
 // Função para alternar luz pontual
 export function togglePointLight(enabled) {
   pointLight.visible = enabled;
+  
+  // If point light is disabled, also disable fireflies
+  if (!enabled && firefliesEnabled) {
+    toggleFireflies(false)
+    // Update the checkbox to reflect the change
+    const firefliesCheckbox = document.getElementById('fireflies')
+    if (firefliesCheckbox) {
+      firefliesCheckbox.checked = false
+    }
+  }
+  
   notifyLightChange()
+}
+
+// Firefly system
+const fireflies = []
+let firefliesEnabled = false
+
+// Function to create fireflies
+function createFireflies(scene) {
+  if (fireflies.length > 0) return // Already created
+  
+  FIREFLY_DATA.forEach((data, index) => {
+    const [startX, startY, startZ] = data
+
+    // Create firefly light
+    const fireflyLight = new PointLight(0xffffaa, 0.5, 8, 2)
+    fireflyLight.position.set(startX, startY, startZ)
+    fireflyLight.castShadow = false // Fireflies don't cast shadows for performance
+
+    // Create firefly visual mesh
+    const fireflyGeometry = new THREE.SphereGeometry(0.05, 8, 6)
+    const fireflyMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffaa,
+      transparent: true,
+      opacity: 0.8
+    })
+    const fireflyMesh = new THREE.Mesh(fireflyGeometry, fireflyMaterial)
+    fireflyMesh.position.copy(fireflyLight.position)
+
+    fireflies.push({
+      light: fireflyLight,
+      mesh: fireflyMesh,
+      index: index
+    })
+
+    if (scene) {
+      scene.add(fireflyLight)
+      scene.add(fireflyMesh)
+    }
+  })
+  
+  console.log(`Created ${fireflies.length} fireflies`)
+}
+
+// Function to toggle fireflies
+export function toggleFireflies(enabled, scene = null) {
+  firefliesEnabled = enabled
+  
+  if (enabled && !pointLight.visible) {
+    // Don't enable fireflies if point light is disabled
+    firefliesEnabled = false
+    return false
+  }
+  
+  if (enabled) {
+    // Create fireflies if they don't exist
+    if (fireflies.length === 0 && scene) {
+      createFireflies(scene)
+    }
+
+    // Show fireflies
+    fireflies.forEach(firefly => {
+      firefly.light.visible = true
+      firefly.mesh.visible = true
+    })
+
+    // Start animation
+    startFirefliesAnimation(fireflies, FIREFLY_DATA)
+    console.log('Fireflies enabled and animated')
+  } else {
+    // Hide fireflies
+    fireflies.forEach(firefly => {
+      firefly.light.visible = false
+      firefly.mesh.visible = false
+    })
+
+    // Stop animation
+    stopFirefliesAnimation()
+    console.log('Fireflies disabled')
+  }
+  
+  notifyLightChange()
+  return true
+}
+
+// Function to check if fireflies are enabled
+export function areFirefliesEnabled() {
+  return firefliesEnabled
+}
+
+// Function to get fireflies (for scene management)
+export function getFireflies() {
+  return fireflies
 }
 
 // Função para aplicar as cores do tema às luzes

@@ -6,10 +6,16 @@ import gsap from 'gsap'
 export default class Entity {
 	constructor(mesh, resolution, option = { size: 1.5, number: 0.5 }) {
 		this.mesh = mesh
-		mesh.castShadow = true
-		mesh.receiveShadow = true
+		
+		// Ensure shadows are properly set for all mesh types
+		this.configureShadows(mesh)
+		
 		this.resolution = resolution
 		this.option = option
+		
+		// Properties for pulsating animation
+		this.originalScale = null
+		this.isPulsating = false
 	}
 
 	// Devolve a posição da entidade
@@ -36,4 +42,84 @@ export default class Entity {
 
 	// Placeholder para animação de saída
 	out() {}
+	
+	// Start pulsating animation
+	startPulsating(minScale = 0.9, maxScale = 1.3, duration = 1.2) {
+		// Store original scale if not already stored
+		if (!this.originalScale) {
+			this.originalScale = {
+				x: this.mesh.scale.x,
+				y: this.mesh.scale.y,
+				z: this.mesh.scale.z
+			}
+		}
+		
+		// If already pulsating, don't start again
+		if (this.isPulsating) return;
+		
+		this.isPulsating = true;
+		
+		// Create the pulsating animation
+		const timeline = gsap.timeline({
+			repeat: -1, // Infinitely repeat
+			yoyo: true, // Go back and forth
+			onComplete: () => {
+				this.isPulsating = false;
+			}
+		});
+		
+		// Scale up and down smoothly
+		timeline.to(this.mesh.scale, {
+			x: this.originalScale.x * maxScale,
+			y: this.originalScale.y * maxScale,
+			z: this.originalScale.z * maxScale,
+			duration: duration / 2,
+			ease: 'sine.inOut'
+		}).to(this.mesh.scale, {
+			x: this.originalScale.x * minScale,
+			y: this.originalScale.y * minScale,
+			z: this.originalScale.z * minScale,
+			duration: duration / 2,
+			ease: 'sine.inOut'
+		});
+		
+		// Store the timeline for potential future reference
+		this.pulseTween = timeline;
+	}
+	
+	// Stop pulsating animation
+	stopPulsating() {
+		if (this.pulseTween) {
+			this.pulseTween.kill();
+			this.isPulsating = false;
+			
+			// Reset to original scale if available
+			if (this.originalScale) {
+				gsap.to(this.mesh.scale, {
+					x: this.originalScale.x,
+					y: this.originalScale.y,
+					z: this.originalScale.z,
+					duration: 0.3,
+					ease: 'power2.out'
+				});
+			}
+		}
+	}
+	
+	// Configure shadows for mesh or group
+	configureShadows(object) {
+		if (object.isGroup) {
+			// For groups, configure shadows for all children
+			object.traverse((child) => {
+				if (child.isMesh) {
+					child.castShadow = true
+					child.receiveShadow = true
+				}
+			})
+		} else if (object.isMesh) {
+			// For single meshes
+			object.castShadow = true
+			object.receiveShadow = true
+		}
+	}
 }
