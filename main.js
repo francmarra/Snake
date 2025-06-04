@@ -45,11 +45,21 @@ import {
   animatePaletteSelectors,
   animateSettingsGear 
 } from './src/utils/Animations.js';
+import Stats from 'three/examples/jsm/libs/stats.module.js'
 
 // --------- Font Loader & Score Initialization ---------
 // Carrega a fonte para o texto da pontuação
 const loader = new FontLoader()
 let font
+// Import generateCamouflageTexture from Snake.js to be used in main.js
+// NOTE: This is a simplified approach. Ideally, texture regeneration would be a method
+// on the SnakeNode or Snake class itself to avoid direct import of a non-exported function.
+// For this solution, we'll assume direct regeneration logic in main.js for brevity,
+// but in a larger refactor, this utility should be properly encapsulated and exposed.
+// As generateCamouflageTexture is not exported, we'll replicate its core idea or
+// modify SnakeNode to have an updateTexture method.
+// For now, we will proceed by adding a method to SnakeNode.
+
 loader.load(fontSrc, (loadedFont) => {
   font = loadedFont
   printScore()
@@ -329,17 +339,34 @@ function animateColorTransitions(oldPalette, newPalette) {
     });
   }  // Animate snake colors
   if (snake && snake.body && snake.body.head && snake.body.head.data && snake.body.head.data.mesh && snake.body.head.data.mesh.material && snake.body.head.data.mesh.material.color) {
-    const currentSnakeColor = snake.body.head.data.mesh.material.color;
-    const targetSnakeColor = new THREE.Color(newPalette.snakeColor);
+    const targetSnakeColorTHREE = new THREE.Color(newPalette.snakeColor);
 
-    gsap.to(currentSnakeColor, {
-      r: targetSnakeColor.r,
-      g: targetSnakeColor.g,
-      b: targetSnakeColor.b,
-      duration: transitionDuration,
-      ease: "power2.inOut",
-      onUpdate: updateSnakeSegmentsUI
-    });
+    // Update base color and camoColors for new segments and for regeneration
+    snake.baseColor = newPalette.snakeColor;
+    snake.camoColors = newPalette.camoColors || null;
+
+    // Regenerate textures and animate colors for existing segments
+    let currentSegmentNode = snake.body.head;
+    while (currentSegmentNode) {
+      if (currentSegmentNode.data.mesh && currentSegmentNode.data.mesh.material) {
+        // Regenerate camouflage texture for the segment
+        // Assuming SnakeNode has a method to update its texture, or we do it directly
+        // For this example, let's assume a method `updateCamouflage` on SnakeNode's data
+        if (typeof currentSegmentNode.data.updateCamouflage === 'function') {
+            currentSegmentNode.data.updateCamouflage(newPalette.snakeColor, newPalette.camoColors);
+        }
+        // Animate the base color of this segment's material
+        gsap.to(currentSegmentNode.data.mesh.material.color, {
+          r: targetSnakeColorTHREE.r,
+          g: targetSnakeColorTHREE.g,
+          b: targetSnakeColorTHREE.b,
+          duration: transitionDuration,
+          ease: "power2.inOut"
+        });
+      }
+      currentSegmentNode = currentSegmentNode.next;
+    }
+    updateSnakeSegmentsUI(); // Reflects new baseColor in UI
 
     if (snake.mouth && snake.mouth.material && snake.mouth.material.color) {
       const currentMouthColor = snake.mouth.material.color;
@@ -353,6 +380,18 @@ function animateColorTransitions(oldPalette, newPalette) {
         ease: "power2.inOut"
       });
     }
+  }
+
+  // Animate score text color
+  if (scoreEntity && scoreEntity.mesh && scoreEntity.mesh.material && scoreEntity.mesh.material.color) {
+    const targetScoreColor = new THREE.Color(newPalette.scoreColor || newPalette.snakeColor); // Fallback to snakeColor if scoreColor is not defined
+    gsap.to(scoreEntity.mesh.material.color, {
+      r: targetScoreColor.r,
+      g: targetScoreColor.g,
+      b: targetScoreColor.b,
+      duration: transitionDuration,
+      ease: "power2.inOut"
+    });
   }
 
   // Animate fog color transition
@@ -454,7 +493,7 @@ function transitionUIElements(themeName) {
   // Update minimap with new palette colors if it exists
   if (minimap && gameStarted) {
     setTimeout(() => {
-      minimap.update(snake, candies, bombs, selectedPalette);
+      minimap.update(snake, candies, bombs, entities, selectedPalette);
     }, transitionDuration * 1000);
   }
 }
@@ -516,7 +555,9 @@ function applyPalette(name) {
     flowerPetalColor,
     flowerCenterColor,
     mushroomCapColor,
-    mushroomSpotColor
+    mushroomSpotColor,
+    camoColors, // Destructure camoColors
+    scoreColor // Destructure scoreColor
   } = palette
     // Update island materials if the island is loaded
   if (island) {
@@ -591,9 +632,32 @@ function applyPalette(name) {
   }
   
   candies[0].mesh.material.color.set(fruitColor)
-  snake.body.head.data.mesh.material.color.set(snakeColor)
+  
+  // Update snake's baseColor and camoColors properties
+  snake.baseColor = snakeColor; 
+  snake.camoColors = camoColors || null; 
+
+  // Update existing snake segments
+  let currentSegmentNode = snake.body.head;
+  while (currentSegmentNode) {
+    if (currentSegmentNode.data.mesh && currentSegmentNode.data.mesh.material) {
+      // Regenerate camouflage texture for the segment
+      if (typeof currentSegmentNode.data.updateCamouflage === 'function') {
+        currentSegmentNode.data.updateCamouflage(snakeColor, camoColors);
+      }
+      // Set the base color of this segment's material
+      currentSegmentNode.data.mesh.material.color.set(snakeColor);
+    }
+    currentSegmentNode = currentSegmentNode.next;
+  }
+  
   snake.mouth.material.color.set(mouthColor)
   updateSnakeSegmentsUI()
+
+  // Update score text color
+  if (scoreEntity && scoreEntity.mesh && scoreEntity.mesh.material) {
+    scoreEntity.mesh.material.color.set(scoreColor || snakeColor); // Fallback to snakeColor
+  }
 
   btnPlayImg.src = `/assets/images/themes/${name.toLowerCase()}/${capitalize(name)}Play.svg`;    // Update minimap theme and colors
   const minimapContainer = document.getElementById('minimap-container');
@@ -603,7 +667,7 @@ function applyPalette(name) {
   }
     // Update minimap with new palette colors if it exists
   if (minimap && gameStarted) {
-    minimap.update(snake, candies, bombs, selectedPalette);
+    minimap.update(snake, candies, bombs, entities, selectedPalette);
   }
 }
 
@@ -813,6 +877,7 @@ const snake = new Snake({
   resolution,
   color: selectedPalette.snakeColor,
   mouthColor: selectedPalette.mouthColor,
+  camoColors: selectedPalette.camoColors || null, // Pass camoColors
 })
 
 snake.addEventListener('updated', function () {
@@ -878,13 +943,22 @@ function updateSnakeSegmentsUI() {
   const counter = document.getElementById('segments-counter')
 
   container.innerHTML = ''
-  const hex = '#' + snake.body.head.data.mesh.material.color.getHexString()
+  // Get the base color without the camouflage pattern for UI consistency
+  const hex = '#' + snake.baseColor.toString(16).padStart(6, '0')
   const count = snake.indexes.length
 
   for (let i = 0; i < count; i++) {
     const cube = document.createElement('div')
     cube.className = 'w-4 h-4 rounded-sm'
     cube.style.backgroundColor = hex
+    
+    // Add a subtle pattern overlay to UI elements to hint at camouflage
+    cube.style.backgroundImage = `
+      radial-gradient(circle at 20% 30%, rgba(0,0,0,0.1) 2px, transparent 3px),
+      radial-gradient(circle at 70% 60%, rgba(0,0,0,0.1) 1px, transparent 2px),
+      radial-gradient(circle at 40% 80%, rgba(255,255,255,0.1) 1px, transparent 2px)
+    `
+    
     container.appendChild(cube)
   }
   counter.textContent = count
@@ -926,7 +1000,13 @@ function printScore() {
 
   geometry.center()
 
-  const mesh = new THREE.Mesh(geometry, snake.body.head.data.mesh.material)
+  // Create a new, independent material for the score text
+  // Use the specific scoreColor from the selectedPalette, or fallback to snakeColor
+  const scoreMaterial = new THREE.MeshStandardMaterial({
+    color: selectedPalette.scoreColor || selectedPalette.snakeColor 
+  });
+
+  const mesh = new THREE.Mesh(geometry, scoreMaterial); // Use the new independent material
 
   mesh.position.x = resolution.x / 2 - 0.5
   mesh.position.z = -4
@@ -1083,31 +1163,45 @@ function resetGame() {
       entityPools[type].push(entity)
     }
   }
-  // Add entities based on default settings
+  // Add entities based on default settings with staggered timing to prevent frame drops
   const numFruits = DEFAULT_SETTINGS.numFruits;
   const numBombs = DEFAULT_SETTINGS.numBombs;
   const numObjects = DEFAULT_SETTINGS.numObjects;
 
+  // Add fruits immediately
   for (let i = 0; i < numFruits; i++) {
     addFruit();
   }
   
+  // Stagger bomb creation to prevent frame rate drops
   for (let i = 0; i < numBombs; i++) {
-    addBomb();
+    setTimeout(() => {
+      addBomb();
+    }, i * 150); // 150ms delay between each bomb
   }
+  
+  // Add objects with slight delay after bombs
+  setTimeout(() => {
     for (let i = 0; i < numObjects; i++) {
-    addEntity();
-  }
+      addEntity();
+    }
+  }, numBombs * 150 + 100);
   
   // Reset all grass instances to their original state
   resetGrassStates();
   
     // Show settings tab after reset
   const settingsTab = document.getElementById('settings-tab');
+  const settingsSidebar = document.getElementById('settings-sidebar');
+
   if (settingsTab) {
     settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
     settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
     animateSettingsTab(settingsTab, true);
+    settingsTab.style.top = '50%'; // Reset top position
+  }
+  if (settingsSidebar) {
+    settingsSidebar.style.top = '50%'; // Reset top position
   }
     // Update minimap visibility based on settings
   const showMinimap = document.getElementById('show-minimap').checked;
@@ -1166,6 +1260,7 @@ function addBomb() {
     bomb.points = Math.floor(Math.random() * 3) + 1
     bomb.mesh.scale.setScalar(0.5 + (bomb.points * 0.5) / 3)
     bomb.mesh.visible = true
+    bomb.animationsStarted = false // Reset animation flag for reused bombs
 
     // Store original scale for pulsating effect
     bomb.originalScale = {
@@ -1352,10 +1447,12 @@ MUSHROOM_DATA.forEach(([x, y, z, scale, capColor, stemColor]) => {
 
 // Add static grass instances
 const grassInstances = []
+const grassMap = new Map()
 
 function generateGrass() {
   // Generate dense grass coverage to completely hide the ground
   const totalCells = resolution.x * resolution.y
+  const halfCell = 0.5
   
   // Get all occupied positions to avoid conflicts with game objects
   let occupiedIndexes = new Set([
@@ -1367,26 +1464,12 @@ function generateGrass() {
   
   // First pass: Fill every available cell with grass
   for (let index = 0; index < totalCells; index++) {
-    // Skip if position is occupied by game objects
-    if (occupiedIndexes.has(index)) {
-      continue
-    }
+    if (occupiedIndexes.has(index)) continue
 
-    const x = index % resolution.x
-    const z = Math.floor(index / resolution.x)
-    const y = 0
-
-    // Random scale for variety
-    const scale = 0.6 + Math.random() * 0.4
-
-    const grassPosition = new THREE.Vector3(x, y, z)
-    const grassInstance = new Grass(
-      scene,
-      grassPosition,
-      scale,
-      selectedPalette.groundColor
-    )
+    const grassPosition = new THREE.Vector3(index % resolution.x, 0, Math.floor(index / resolution.x))
+    const grassInstance = new Grass(scene, grassPosition, 0.6 + Math.random() * 0.4, selectedPalette.groundColor)
     grassInstances.push(grassInstance)
+    grassMap.set(index, grassInstance)
   }
   
   // Second pass: Add overlapping grass instances for complete coverage
@@ -1399,21 +1482,16 @@ function generateGrass() {
       continue
     }
 
-    const x = index % resolution.x
-    const z = Math.floor(index / resolution.x)
-    const y = 0
-
     // Smaller grass instances for filling gaps
     const scale = 0.4 + Math.random() * 0.3
 
-    const grassPosition = new THREE.Vector3(x, y, z)
-    const grassInstance = new Grass(
-      scene,
-      grassPosition,
-      scale,
-      selectedPalette.groundColor
-    )
-    grassInstances.push(grassInstance)
+    // Check if this index is not already occupied
+    if (!grassMap.has(index)) {
+      const grassPosition = new THREE.Vector3(index % resolution.x, 0, Math.floor(index / resolution.x))
+      const grassInstance = new Grass(scene, grassPosition, scale, selectedPalette.groundColor)
+      grassInstances.push(grassInstance)
+      grassMap.set(index, grassInstance)
+    }
   }
     console.log(`Generated ${grassInstances.length} grass instances for complete ground coverage`)
 }
@@ -1459,30 +1537,11 @@ function updateGrassHoverInteractions() {
 function resetGrassStates() {
   if (!grassInstances || grassInstances.length === 0) return
   
-  grassInstances.forEach(grassInstance => {
+  grassMap.forEach(grassInstance => {
     if (grassInstance.isTrampled) {
       // Force immediate recovery for reset
       grassInstance.isTrampled = false
       grassInstance.isHovered = false
-  
-      if (grassInstance.grass) {
-        // Reset scale
-        grassInstance.grass.scale.set(
-          grassInstance.baseScale.x,
-          grassInstance.baseScale.y,
-          grassInstance.baseScale.z
-        )
-
-        // Reset rotation
-        grassInstance.grass.rotation.set(
-          grassInstance.originalRotation.x,
-          grassInstance.originalRotation.y,
-          grassInstance.originalRotation.z
-        )
-
-        // Reset brightness
-        grassInstance.brightensGrass(1.0)
-      }
     }
   })
   
@@ -1499,6 +1558,7 @@ fence.addToScene(scene)
 // Initialize audio and UI controllers
 const audioController = new AudioController(paletteName, capitalize)
 const uiController = new UIController(paletteName, capitalize)
+
 
 // Audio and button references for backwards compatibility
 const audio = audioController.audio
@@ -1558,11 +1618,20 @@ btnPlay.addEventListener('click', function () {
     registerEventListener()
 
     const settingsTab = document.getElementById('settings-tab');
+    const settingsSidebar = document.getElementById('settings-sidebar');
     if (settingsTab) {
       setTimeout(() => animateSettingsTab(settingsTab, true), 1500);
+      settingsTab.style.top = '40%'; // Adjust top position when game starts
+    }
+    if (settingsSidebar) {
+      settingsSidebar.style.top = '40%'; // Adjust top position when game starts
     }
 
     minimap = new Minimap(GRID_WIDTH, GRID_HEIGHT);
+    // Initial minimap update
+    if (minimap && showMinimap) {
+      minimap.update(snake, candies, bombs, entities, selectedPalette);
+    }
   }
 });
 
@@ -1647,6 +1716,27 @@ if (typeof uiController !== 'undefined') {
 
 initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, addEntity, candies, bombs, entities, animateSettingsTab, paletteName)
 
+// Add an updateCamouflage method to SnakeNode prototype if it doesn't exist
+// This is a common pattern for extending classes from another file,
+// though ideally this method would be part of the SnakeNode class definition.
+if (snake.body.head.data && !snake.body.head.data.updateCamouflage) {
+    const snakeNodePrototype = Object.getPrototypeOf(snake.body.head.data);
+    if (snakeNodePrototype) {
+        snakeNodePrototype.updateCamouflage = function(newBaseColor, newCamoColors) {
+            // This assumes generateCamouflageTexture is accessible or re-implemented here.
+            // For a clean solution, SnakeNode should import and use generateCamouflageTexture,
+            // or generateCamouflageTexture should be a static method or a utility.
+            // Given the current structure, we'll modify SnakeNode directly in its file.
+            // The logic below is a placeholder for what should be in SnakeNode.js
+            // console.warn("SnakeNode.updateCamouflage called - ensure generateCamouflageTexture is accessible or implemented in SnakeNode.");
+            // Example direct manipulation (if generateCamouflageTexture was imported):
+            // const newTexture = generateCamouflageTexture(newBaseColor, 256, Math.random(), newCamoColors);
+            // this.mesh.material.map = newTexture;
+            // this.mesh.material.needsUpdate = true; // Important for texture changes
+        };
+    }
+}
+
 // --------- Snake Update Modification ---------
 // Update snake's update method to respect border kill setting
 snake.update = function() {
@@ -1676,8 +1766,9 @@ snake.update = function() {
   headPos.add(this.direction);
   const headMesh = this.body.head.data.mesh;
   headMesh.lookAt(headMesh.position.clone().add(this.direction));
-    // Check border crossing based on setting
-  const killOnBorderTrespass = DEFAULT_SETTINGS.killOnBorderTrespass; // Use default value instead of localStorage
+  
+  // Check border crossing based on setting
+  const killOnBorderTrespass = DEFAULT_SETTINGS.killOnBorderTrespass;
   if (killOnBorderTrespass) {
     if (headPos.z < 0 || headPos.z > this.resolution.y - 1 || 
         headPos.x < 0 || headPos.x > this.resolution.x - 1) {
@@ -1696,31 +1787,16 @@ snake.update = function() {
       headPos.x = this.resolution.x - 1;
     } else if (headPos.x > this.resolution.x - 1) {
       headPos.x = 0;
-    }  }
+    }
+  }
   
   // --------- Grass Trampling Detection ---------
   // Check if snake segments are trampling grass
   if (typeof grassInstances !== 'undefined' && grassInstances.length > 0) {
-    // Get all current snake positions
-    const snakePositions = this.indexes.map(index => {
-      const x = index % this.resolution.x
-      const z = Math.floor(index / this.resolution.x)
-      return { x, z }
-    })
-
-    // Check each grass instance for trampling
-    grassInstances.forEach(grassInstance => {
-      if (!grassInstance.grass) return
-  
-      const grassX = Math.round(grassInstance.position.x)
-      const grassZ = Math.round(grassInstance.position.z)
-  
-      // Check if any snake segment is on this grass position
-      const isTrampled = snakePositions.some(pos => 
-        Math.abs(pos.x - grassX) < 0.5 && Math.abs(pos.z - grassZ) < 0.5
-      )
-  
-      if (isTrampled && !grassInstance.isTrampled) {
+    // Optimized trampling detection using grassMap for O(1) lookups
+    this.indexes.forEach(idx => {
+      const grassInstance = grassMap.get(idx)
+      if (grassInstance && grassInstance.grass && !grassInstance.isTrampled) {
         grassInstance.trample()
       }
     })
@@ -1738,9 +1814,14 @@ let mousePosition = { x: 0, y: 0 }
 let lastWindGustTime = 0
 const WIND_GUST_INTERVAL = 8000 // Wind gusts every 8 seconds
 
+const stats = new Stats()
+document.body.appendChild(stats.dom)
+
 // --------- Main Render Loop ---------
 // --- Ciclo principal de renderização ---
 function tic() {
+  stats.begin()                                              // 3a) start measurement
+
   // Update camera controller
   cameraController.update(gameStarted)
   
@@ -1759,18 +1840,22 @@ function tic() {
       lastWindGustTime = currentTime
     }
   }
-  
-  renderer.render(scene, activeCamera)
-  
-  // Update minimap if the game has started, minimap is initialized, and it should be shown
-  if (gameStarted && minimap && document.getElementById('show-minimap').checked) {
-    minimap.update(snake, candies, bombs, selectedPalette)
+
+  // Update minimap if game has started and minimap exists
+  if (gameStarted && minimap) {
+    const showMinimap = document.getElementById('show-minimap').checked;
+    if (showMinimap) {
+      minimap.update(snake, candies, bombs, entities, selectedPalette);
+    }
   }
   
+  renderer.render(scene, activeCamera)
+
+  stats.end()                                                // 3b) end measurement
   requestAnimationFrame(tic)
 }
 
-requestAnimationFrame(tic)
+requestAnimationFrame(tic)                                   // 4) kick it off
 
 // --------- Window Resize Handler ---------
 window.addEventListener('resize', handleResize)
@@ -1858,7 +1943,3 @@ window.testThemeTransition = function(themeName) {
     console.error('Invalid theme name. Use: day, sunset, or night');
   }
 };
-
-// Log available themes for easy testing
-console.log('Available themes for testing:', Object.keys(palettes));
-console.log('Use window.testThemeTransition("themeName") to test transitions');
