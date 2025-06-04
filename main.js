@@ -73,8 +73,7 @@ const transitionDuration = 0.5; // Duration in seconds
 // Function to create smooth transitions between themes
 function transitionToTheme(newThemeName) {
   if (isTransitioning || paletteName === newThemeName) return;
-  
-  console.log(`Starting theme transition from ${paletteName} to ${newThemeName}`);
+
   isTransitioning = true;
   const oldPalette = palettes[paletteName];
   const newPalette = palettes[newThemeName];
@@ -125,7 +124,6 @@ function transitionToTheme(newThemeName) {
         ease: "power2.out",        onComplete: () => {
           document.body.removeChild(transitionOverlay);
           isTransitioning = false;
-          console.log(`Theme transition to ${newThemeName} completed`);
         }
       });
     }
@@ -153,7 +151,6 @@ function hexToRgb(hex) {
 
 // Function to animate color transitions for all scene elements
 function animateColorTransitions(oldPalette, newPalette) {
-  console.log(`Animating color transitions for ${entities.length} entities`);
     // Animate rock colors
   entities.filter((e) => e instanceof Rock).forEach((rock) => {
     try {
@@ -413,8 +410,6 @@ function transitionLighting(themeName) {
     console.warn(`No palette found for theme: ${themeName}`);
     return;
   }
-
-  console.log(`Transitioning lighting to ${themeName} theme`);
 
   // Animate ambient light
   if (ambLight) {
@@ -704,19 +699,6 @@ let skyBox // Global reference to the skybox for updates
 let skyboxOverlay // Global reference to the dark overlay
 let firstSkyboxUpdate = true; // <-- New flag to track initial skybox update
 
-// Set up loading manager callbacks
-skyboxLoadingManager.onLoad = () => {
-  console.log('All skybox textures loaded successfully')
-}
-
-skyboxLoadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
-  console.log(`Loading skybox textures: ${itemsLoaded}/${itemsTotal} - ${url}`)
-}
-
-skyboxLoadingManager.onError = (url) => {
-  console.error(`Failed to load skybox texture: ${url}`)
-}
-
 // Function to preload all skybox textures
 function preloadSkyboxTextures() {
   if (skyboxLoadingPromise) return skyboxLoadingPromise
@@ -733,7 +715,6 @@ function preloadSkyboxTextures() {
   
           // Cache the texture
           skyboxTextureCache[theme] = texture
-          console.log(`Skybox texture cached: ${theme}`)
           resolve(texture)
         },
         undefined, // onProgress
@@ -828,7 +809,6 @@ function updateSkyboxLighting() {
 
 // Start preloading skybox textures immediately
 preloadSkyboxTextures().then(() => {
-  console.log('All skybox textures preloaded and ready for instant switching')
   // Initialize skybox with default theme once textures are loaded
   updateSkybox(paletteName)
 }).catch((error) => {
@@ -1031,12 +1011,6 @@ function registerEventListener() {
     const keyCode = e.code;
     const isMovementKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD'].includes(keyCode);
     const settingsSidebar = document.getElementById('settings-sidebar');
-      // Manual wind gust trigger (G key)
-    if (keyCode === 'KeyG' && gameStarted) {
-      triggerWindGust()
-      console.log('🌬️ Manual wind gust triggered! Watch the grass sway.')
-      return
-    }
 
     // If settings are open, ignore key input for settings changes
     if (settingsSidebar && settingsSidebar.classList.contains('open')) {
@@ -1493,44 +1467,6 @@ function generateGrass() {
       grassMap.set(index, grassInstance)
     }
   }
-    console.log(`Generated ${grassInstances.length} grass instances for complete ground coverage`)
-}
-
-// --------- Grass Management Functions ---------
-// Function to trigger wind gust across all grass instances
-function triggerWindGust() {
-  if (!grassInstances || grassInstances.length === 0) return
-  
-  const windDirection = {
-    x: (Math.random() - 0.5) * 2,
-    z: (Math.random() - 0.5) * 2
-  }
-  const windStrength = 0.8 + Math.random() * 0.4
-  
-  grassInstances.forEach(grassInstance => {
-    grassInstance.windGust(windDirection, windStrength)
-  })
-  
-  console.log(`Wind gust triggered: direction(${windDirection.x.toFixed(2)}, ${windDirection.z.toFixed(2)}), strength: ${windStrength.toFixed(2)}`)
-}
-
-// Function to update all grass hover interactions
-function updateGrassHoverInteractions() {
-  if (!grassInstances || grassInstances.length === 0 || !gameStarted) return
-  
-  // Performance optimization: only update if mouse has moved significantly
-  const mouseMoveThreshold = 5 // pixels
-  if (mousePosition.lastX !== undefined && mousePosition.lastY !== undefined) {
-    const deltaX = Math.abs(mousePosition.x - mousePosition.lastX)
-    const deltaY = Math.abs(mousePosition.y - mousePosition.lastY)
-    if (deltaX < mouseMoveThreshold && deltaY < mouseMoveThreshold) {
-      return // Skip update if mouse hasn't moved enough
-    }
-  }
-  
-  // Store last mouse position for next frame
-  mousePosition.lastX = mousePosition.x
-  mousePosition.lastY = mousePosition.y
 }
 
 // Function to reset all grass instances to their original state
@@ -1544,8 +1480,6 @@ function resetGrassStates() {
       grassInstance.isHovered = false
     }
   })
-  
-  console.log(`Reset ${grassInstances.length} grass instances to original state`)
 }
 
 generateGrass()
@@ -1811,8 +1745,6 @@ applyPalette(paletteName)
 
 // --------- Grass Interaction Variables ---------
 let mousePosition = { x: 0, y: 0 }
-let lastWindGustTime = 0
-const WIND_GUST_INTERVAL = 8000 // Wind gusts every 8 seconds
 
 const stats = new Stats()
 document.body.appendChild(stats.dom)
@@ -1827,19 +1759,6 @@ function tic() {
   
   // Update active camera reference
   activeCamera = cameraController.activeCamera
-  
-  // Update grass interactions if game has started
-  if (gameStarted && grassInstances.length > 0) {
-    // Handle mouse hover interactions
-    updateGrassHoverInteractions()
-
-    // Handle periodic wind gusts
-    const currentTime = Date.now()
-    if (currentTime - lastWindGustTime > WIND_GUST_INTERVAL) {
-      triggerWindGust()
-      lastWindGustTime = currentTime
-    }
-  }
 
   // Update minimap if game has started and minimap exists
   if (gameStarted && minimap) {
@@ -1912,34 +1831,3 @@ function preventDragging() {
 
 // Call the function after the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', preventDragging);
-
-// Test function to verify grass system integration (for debugging)
-function testGrassSystem() {
-  console.log('🌱 Grass System Integration Test')
-  console.log(`- Grass instances created: ${grassInstances.length}`)
-  console.log(`- Mouse position tracking: ${mousePosition.x}, ${mousePosition.y}`)
-  console.log(`- Game started: ${gameStarted}`)
-  console.log(`- Wind gust interval: ${WIND_GUST_INTERVAL}ms`)
-  
-  if (grassInstances.length > 0) {
-    const sampleGrass = grassInstances[0]
-    console.log(`- Sample grass loaded: ${sampleGrass.grass !== null}`)
-    console.log(`- Sample grass trampled: ${sampleGrass.isTrampled}`)
-    console.log(`- Sample grass hovered: ${sampleGrass.isHovered}`)
-  }
-  
-  console.log('✅ Grass system integration test complete')
-}
-
-// Make test function available globally for console testing
-window.testGrassSystem = testGrassSystem
-
-// Test function for manual theme transitions (accessible from browser console)
-window.testThemeTransition = function(themeName) {
-  console.log(`Testing transition to: ${themeName}`);
-  if (['day', 'sunset', 'night'].includes(themeName)) {
-    transitionToTheme(themeName);
-  } else {
-    console.error('Invalid theme name. Use: day, sunset, or night');
-  }
-};

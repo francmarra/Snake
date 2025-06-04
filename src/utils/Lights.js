@@ -116,7 +116,6 @@ function createFireflies(scene) {
       scene.add(fireflyMesh)
     }
   })
-  
   console.log(`Created ${fireflies.length} fireflies`)
 }
 
