@@ -23,24 +23,25 @@ export class AudioController {
   constructor(paletteName, capitalize) {
     this.audio = document.getElementById('audio')
     this.btnVolume = document.getElementById('btn-volume')
+    this.btnVolumeImg = document.getElementById('btn-volume-img') // Cache the image element
     this.paletteName = paletteName
     this.capitalize = capitalize
+    this.defaultVolume = 0.7 // Define a default unmuted volume
+
+    // Pause audio initially before setting volume
+    this.audio.pause() 
 
     // Load audio state from browser's cache (localStorage)
     const storedAudioState = localStorage.getItem('snakeGameAudio') // "on" or "off"
     if (storedAudioState === 'off') {
       this.audio.volume = 0
+      this.updateVolumeIcon(true) // Update icon to muted
     } else {
-      this.audio.volume = 0.7
+      // Default to 'on' if no state is stored or if it's 'on'
+      this.audio.volume = this.defaultVolume
+      this.updateVolumeIcon(false) // Update icon to unmuted
     }
-    this.initialVolume = this.audio.volume
-    this.audio.pause() // Ensure it's paused initially
-
-    // Initialize volume state
-    const userVolume = 'on' // Default value, not loaded from localStorage
-    if (userVolume === 'off') {
-      this.muteVolume()
-    }
+    // Removed redundant initial volume state logic using 'userVolume'
 
     this.setupVolumeButton()
   }
@@ -74,32 +75,52 @@ export class AudioController {
     try {
       // Check if user muted audio
       if (this.audio.volume !== 0) {
-        await this.audio.play()
-        // Update the icon just to be safe
-        this.updateVolumeIcon(false)
+        await this.audio.play();
+        // Update the icon just to be safe, though it should be correct
+        this.updateVolumeIcon(false);
       } else {
-        this.updateVolumeIcon(true)
+        // Ensure icon is muted if volume is 0
+        // This also ensures audio remains paused if it started muted
+        if (this.audio.paused === false) { // Only pause if it was somehow playing at volume 0
+            this.audio.pause();
+        }
+        this.updateVolumeIcon(true);
       }
     } catch (error) {
-      console.log('Audio play failed:', error)
+      console.log('Audio play failed:', error);
     }
   }
   
   muteVolume() {
-    muteVolume(this.audio, document.getElementById('btn-volume-img'), this.paletteName, this.capitalize)
-    localStorage.setItem('snakeGameAudio', 'off')
+    gsap.to(this.audio, {
+      volume: 0,
+      duration: 0.3,
+      onComplete: () => {
+        this.audio.pause(); // Explicitly pause the audio
+      }
+    });
+    this.updateVolumeIcon(true); // Update icon to muted
+    localStorage.setItem('snakeGameAudio', 'off');
   }
   
   unmuteVolume() {
-    unmuteVolume(this.audio, document.getElementById('btn-volume-img'), this.paletteName, this.initialVolume, this.capitalize)
-    localStorage.setItem('snakeGameAudio', 'on')
+    gsap.to(this.audio, { volume: this.defaultVolume, duration: 0.3 });
+    this.updateVolumeIcon(false); // Update icon to unmuted
+    localStorage.setItem('snakeGameAudio', 'on');
+
+    // Attempt to play the audio.
+    // This will start it if it was paused (e.g. by muteVolume or if game started muted)
+    // or resume if it was "playing" at volume 0.
+    this.audio.play().catch(error => {
+      console.log('Audio play failed on unmute:', error);
+    });
   }
   
   updateVolumeIcon(isMuted) {
-    const btnVolumeImg = document.getElementById('btn-volume-img')
-    if (btnVolumeImg) {
-      const audioState = isMuted ? 'NoAudio' : 'Audio'
-      btnVolumeImg.src = `/assets/images/themes/${this.paletteName.toLowerCase()}/${this.capitalize(this.paletteName)}${audioState}.svg`
+    if (this.btnVolumeImg) {
+      gsap.killTweensOf(this.btnVolumeImg); // Stop any existing animation on the icon
+      const audioState = isMuted ? 'NoAudio' : 'Audio';
+      this.btnVolumeImg.src = `/assets/images/themes/${this.paletteName.toLowerCase()}/${this.capitalize(this.paletteName)}${audioState}.svg`;
     }
   }
   

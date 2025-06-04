@@ -91,7 +91,7 @@ html, body {
   position: fixed;
   right: -16.5rem; /* Start offscreen */
   left: auto;
-  top: 45%; /* Moved up for less overlap */
+  top: 50%; /* Default position */
   transform: translateY(-50%);  width: 16rem;
   height: auto;
   max-height: calc(100% - 5rem);
@@ -112,7 +112,7 @@ html, body {
 /* Settings Tab */
 .settings-tab {
   position: fixed;
-  top: 45%; /* Moved up for less overlap */
+  top: 50%; /* Default position */
   right: 0;
   transform: translateY(-50%);  width: 1.5rem;
   height: 8rem;

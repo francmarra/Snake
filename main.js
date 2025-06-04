@@ -1192,10 +1192,16 @@ function resetGame() {
   
     // Show settings tab after reset
   const settingsTab = document.getElementById('settings-tab');
+  const settingsSidebar = document.getElementById('settings-sidebar');
+
   if (settingsTab) {
     settingsTab.classList.remove('theme-green', 'theme-lilac', 'theme-orange');
     settingsTab.classList.add(`theme-${paletteName.toLowerCase()}`);
     animateSettingsTab(settingsTab, true);
+    settingsTab.style.top = '50%'; // Reset top position
+  }
+  if (settingsSidebar) {
+    settingsSidebar.style.top = '50%'; // Reset top position
   }
     // Update minimap visibility based on settings
   const showMinimap = document.getElementById('show-minimap').checked;
@@ -1612,8 +1618,13 @@ btnPlay.addEventListener('click', function () {
     registerEventListener()
 
     const settingsTab = document.getElementById('settings-tab');
+    const settingsSidebar = document.getElementById('settings-sidebar');
     if (settingsTab) {
       setTimeout(() => animateSettingsTab(settingsTab, true), 1500);
+      settingsTab.style.top = '40%'; // Adjust top position when game starts
+    }
+    if (settingsSidebar) {
+      settingsSidebar.style.top = '40%'; // Adjust top position when game starts
     }
 
     minimap = new Minimap(GRID_WIDTH, GRID_HEIGHT);
