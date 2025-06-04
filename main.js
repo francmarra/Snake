@@ -51,6 +51,15 @@ import Stats from 'three/examples/jsm/libs/stats.module.js'
 // Carrega a fonte para o texto da pontuação
 const loader = new FontLoader()
 let font
+// Import generateCamouflageTexture from Snake.js to be used in main.js
+// NOTE: This is a simplified approach. Ideally, texture regeneration would be a method
+// on the SnakeNode or Snake class itself to avoid direct import of a non-exported function.
+// For this solution, we'll assume direct regeneration logic in main.js for brevity,
+// but in a larger refactor, this utility should be properly encapsulated and exposed.
+// As generateCamouflageTexture is not exported, we'll replicate its core idea or
+// modify SnakeNode to have an updateTexture method.
+// For now, we will proceed by adding a method to SnakeNode.
+
 loader.load(fontSrc, (loadedFont) => {
   font = loadedFont
   printScore()
@@ -330,17 +339,34 @@ function animateColorTransitions(oldPalette, newPalette) {
     });
   }  // Animate snake colors
   if (snake && snake.body && snake.body.head && snake.body.head.data && snake.body.head.data.mesh && snake.body.head.data.mesh.material && snake.body.head.data.mesh.material.color) {
-    const currentSnakeColor = snake.body.head.data.mesh.material.color;
-    const targetSnakeColor = new THREE.Color(newPalette.snakeColor);
+    const targetSnakeColorTHREE = new THREE.Color(newPalette.snakeColor);
 
-    gsap.to(currentSnakeColor, {
-      r: targetSnakeColor.r,
-      g: targetSnakeColor.g,
-      b: targetSnakeColor.b,
-      duration: transitionDuration,
-      ease: "power2.inOut",
-      onUpdate: updateSnakeSegmentsUI
-    });
+    // Update base color and camoColors for new segments and for regeneration
+    snake.baseColor = newPalette.snakeColor;
+    snake.camoColors = newPalette.camoColors || null;
+
+    // Regenerate textures and animate colors for existing segments
+    let currentSegmentNode = snake.body.head;
+    while (currentSegmentNode) {
+      if (currentSegmentNode.data.mesh && currentSegmentNode.data.mesh.material) {
+        // Regenerate camouflage texture for the segment
+        // Assuming SnakeNode has a method to update its texture, or we do it directly
+        // For this example, let's assume a method `updateCamouflage` on SnakeNode's data
+        if (typeof currentSegmentNode.data.updateCamouflage === 'function') {
+            currentSegmentNode.data.updateCamouflage(newPalette.snakeColor, newPalette.camoColors);
+        }
+        // Animate the base color of this segment's material
+        gsap.to(currentSegmentNode.data.mesh.material.color, {
+          r: targetSnakeColorTHREE.r,
+          g: targetSnakeColorTHREE.g,
+          b: targetSnakeColorTHREE.b,
+          duration: transitionDuration,
+          ease: "power2.inOut"
+        });
+      }
+      currentSegmentNode = currentSegmentNode.next;
+    }
+    updateSnakeSegmentsUI(); // Reflects new baseColor in UI
 
     if (snake.mouth && snake.mouth.material && snake.mouth.material.color) {
       const currentMouthColor = snake.mouth.material.color;
@@ -354,6 +380,18 @@ function animateColorTransitions(oldPalette, newPalette) {
         ease: "power2.inOut"
       });
     }
+  }
+
+  // Animate score text color
+  if (scoreEntity && scoreEntity.mesh && scoreEntity.mesh.material && scoreEntity.mesh.material.color) {
+    const targetScoreColor = new THREE.Color(newPalette.scoreColor || newPalette.snakeColor); // Fallback to snakeColor if scoreColor is not defined
+    gsap.to(scoreEntity.mesh.material.color, {
+      r: targetScoreColor.r,
+      g: targetScoreColor.g,
+      b: targetScoreColor.b,
+      duration: transitionDuration,
+      ease: "power2.inOut"
+    });
   }
 
   // Animate fog color transition
@@ -517,7 +555,9 @@ function applyPalette(name) {
     flowerPetalColor,
     flowerCenterColor,
     mushroomCapColor,
-    mushroomSpotColor
+    mushroomSpotColor,
+    camoColors, // Destructure camoColors
+    scoreColor // Destructure scoreColor
   } = palette
     // Update island materials if the island is loaded
   if (island) {
@@ -592,9 +632,32 @@ function applyPalette(name) {
   }
   
   candies[0].mesh.material.color.set(fruitColor)
-  snake.body.head.data.mesh.material.color.set(snakeColor)
+  
+  // Update snake's baseColor and camoColors properties
+  snake.baseColor = snakeColor; 
+  snake.camoColors = camoColors || null; 
+
+  // Update existing snake segments
+  let currentSegmentNode = snake.body.head;
+  while (currentSegmentNode) {
+    if (currentSegmentNode.data.mesh && currentSegmentNode.data.mesh.material) {
+      // Regenerate camouflage texture for the segment
+      if (typeof currentSegmentNode.data.updateCamouflage === 'function') {
+        currentSegmentNode.data.updateCamouflage(snakeColor, camoColors);
+      }
+      // Set the base color of this segment's material
+      currentSegmentNode.data.mesh.material.color.set(snakeColor);
+    }
+    currentSegmentNode = currentSegmentNode.next;
+  }
+  
   snake.mouth.material.color.set(mouthColor)
   updateSnakeSegmentsUI()
+
+  // Update score text color
+  if (scoreEntity && scoreEntity.mesh && scoreEntity.mesh.material) {
+    scoreEntity.mesh.material.color.set(scoreColor || snakeColor); // Fallback to snakeColor
+  }
 
   btnPlayImg.src = `/assets/images/themes/${name.toLowerCase()}/${capitalize(name)}Play.svg`;    // Update minimap theme and colors
   const minimapContainer = document.getElementById('minimap-container');
@@ -814,6 +877,7 @@ const snake = new Snake({
   resolution,
   color: selectedPalette.snakeColor,
   mouthColor: selectedPalette.mouthColor,
+  camoColors: selectedPalette.camoColors || null, // Pass camoColors
 })
 
 snake.addEventListener('updated', function () {
@@ -879,13 +943,22 @@ function updateSnakeSegmentsUI() {
   const counter = document.getElementById('segments-counter')
 
   container.innerHTML = ''
-  const hex = '#' + snake.body.head.data.mesh.material.color.getHexString()
+  // Get the base color without the camouflage pattern for UI consistency
+  const hex = '#' + snake.baseColor.toString(16).padStart(6, '0')
   const count = snake.indexes.length
 
   for (let i = 0; i < count; i++) {
     const cube = document.createElement('div')
     cube.className = 'w-4 h-4 rounded-sm'
     cube.style.backgroundColor = hex
+    
+    // Add a subtle pattern overlay to UI elements to hint at camouflage
+    cube.style.backgroundImage = `
+      radial-gradient(circle at 20% 30%, rgba(0,0,0,0.1) 2px, transparent 3px),
+      radial-gradient(circle at 70% 60%, rgba(0,0,0,0.1) 1px, transparent 2px),
+      radial-gradient(circle at 40% 80%, rgba(255,255,255,0.1) 1px, transparent 2px)
+    `
+    
     container.appendChild(cube)
   }
   counter.textContent = count
@@ -927,7 +1000,13 @@ function printScore() {
 
   geometry.center()
 
-  const mesh = new THREE.Mesh(geometry, snake.body.head.data.mesh.material)
+  // Create a new, independent material for the score text
+  // Use the specific scoreColor from the selectedPalette, or fallback to snakeColor
+  const scoreMaterial = new THREE.MeshStandardMaterial({
+    color: selectedPalette.scoreColor || selectedPalette.snakeColor 
+  });
+
+  const mesh = new THREE.Mesh(geometry, scoreMaterial); // Use the new independent material
 
   mesh.position.x = resolution.x / 2 - 0.5
   mesh.position.z = -4
@@ -1474,6 +1553,7 @@ fence.addToScene(scene)
 const audioController = new AudioController(paletteName, capitalize)
 const uiController = new UIController(paletteName, capitalize)
 
+
 // Audio and button references for backwards compatibility
 const audio = audioController.audio
 const btnVolume = audioController.btnVolume
@@ -1621,6 +1701,28 @@ if (typeof uiController !== 'undefined') {
 
 initializeSettings(DEFAULT_SETTINGS, scene, addFruit, addBomb, addEntity, candies, bombs, entities, animateSettingsTab, paletteName)
 
+// Add an updateCamouflage method to SnakeNode prototype if it doesn't exist
+// This is a common pattern for extending classes from another file,
+// though ideally this method would be part of the SnakeNode class definition.
+if (snake.body.head.data && !snake.body.head.data.updateCamouflage) {
+    const snakeNodePrototype = Object.getPrototypeOf(snake.body.head.data);
+    if (snakeNodePrototype) {
+        snakeNodePrototype.updateCamouflage = function(newBaseColor, newCamoColors) {
+            // This assumes generateCamouflageTexture is accessible or re-implemented here.
+            // For a clean solution, SnakeNode should import and use generateCamouflageTexture,
+            // or generateCamouflageTexture should be a static method or a utility.
+            // Given the current structure, we'll modify SnakeNode directly in its file.
+            // The logic below is a placeholder for what should be in SnakeNode.js
+            // console.warn("SnakeNode.updateCamouflage called - ensure generateCamouflageTexture is accessible or implemented in SnakeNode.");
+            // Example direct manipulation (if generateCamouflageTexture was imported):
+            // const newTexture = generateCamouflageTexture(newBaseColor, 256, Math.random(), newCamoColors);
+            // this.mesh.material.map = newTexture;
+            // this.mesh.material.needsUpdate = true; // Important for texture changes
+        };
+    }
+}
+
+
 // --------- Snake Update Modification ---------
 // Update snake's update method to respect border kill setting
 snake.update = function() {
@@ -1650,8 +1752,9 @@ snake.update = function() {
   headPos.add(this.direction);
   const headMesh = this.body.head.data.mesh;
   headMesh.lookAt(headMesh.position.clone().add(this.direction));
-    // Check border crossing based on setting
-  const killOnBorderTrespass = DEFAULT_SETTINGS.killOnBorderTrespass; // Use default value instead of localStorage
+  
+  // Check border crossing based on setting
+  const killOnBorderTrespass = DEFAULT_SETTINGS.killOnBorderTrespass;
   if (killOnBorderTrespass) {
     if (headPos.z < 0 || headPos.z > this.resolution.y - 1 || 
         headPos.x < 0 || headPos.x > this.resolution.x - 1) {
@@ -1670,18 +1773,12 @@ snake.update = function() {
       headPos.x = this.resolution.x - 1;
     } else if (headPos.x > this.resolution.x - 1) {
       headPos.x = 0;
-    }  }
+    }
+  }
   
   // --------- Grass Trampling Detection ---------
   // Check if snake segments are trampling grass
   if (typeof grassInstances !== 'undefined' && grassInstances.length > 0) {
-    // Get all current snake positions
-    const snakePositions = this.indexes.map(index => {
-      const x = index % this.resolution.x
-      const z = Math.floor(index / this.resolution.x)
-      return { x, z }
-    })
-
     // Optimized trampling detection using grassMap for O(1) lookups
     this.indexes.forEach(idx => {
       const grassInstance = grassMap.get(idx)
