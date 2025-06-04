@@ -493,7 +493,7 @@ function transitionUIElements(themeName) {
   // Update minimap with new palette colors if it exists
   if (minimap && gameStarted) {
     setTimeout(() => {
-      minimap.update(snake, candies, bombs, selectedPalette);
+      minimap.update(snake, candies, bombs, entities, selectedPalette);
     }, transitionDuration * 1000);
   }
 }
@@ -667,7 +667,7 @@ function applyPalette(name) {
   }
     // Update minimap with new palette colors if it exists
   if (minimap && gameStarted) {
-    minimap.update(snake, candies, bombs, selectedPalette);
+    minimap.update(snake, candies, bombs, entities, selectedPalette);
   }
 }
 
@@ -1617,6 +1617,10 @@ btnPlay.addEventListener('click', function () {
     }
 
     minimap = new Minimap(GRID_WIDTH, GRID_HEIGHT);
+    // Initial minimap update
+    if (minimap && showMinimap) {
+      minimap.update(snake, candies, bombs, entities, selectedPalette);
+    }
   }
 });
 
@@ -1722,7 +1726,6 @@ if (snake.body.head.data && !snake.body.head.data.updateCamouflage) {
     }
 }
 
-
 // --------- Snake Update Modification ---------
 // Update snake's update method to respect border kill setting
 snake.update = function() {
@@ -1824,6 +1827,14 @@ function tic() {
     if (currentTime - lastWindGustTime > WIND_GUST_INTERVAL) {
       triggerWindGust()
       lastWindGustTime = currentTime
+    }
+  }
+
+  // Update minimap if game has started and minimap exists
+  if (gameStarted && minimap) {
+    const showMinimap = document.getElementById('show-minimap').checked;
+    if (showMinimap) {
+      minimap.update(snake, candies, bombs, entities, selectedPalette);
     }
   }
   

@@ -13,7 +13,7 @@ export const CAMERA_FAR = 1000
 export const COLOR_PALETTES = {
 	day: {
 		// --- Snake ---
-		snakeColor: 0x1d5846,
+		snakeColor: 0x2b9348,
 		mouthColor: 0x39c09f,
 
 		// --- Snake Camouflage Colors ---
