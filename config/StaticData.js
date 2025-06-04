@@ -16,8 +16,19 @@ export const COLOR_PALETTES = {
 		snakeColor: 0x1d5846,
 		mouthColor: 0x39c09f,
 
+		// --- Snake Camouflage Colors ---
+		camoColors: {
+			dark: 0x386641,
+			medium: 0x40916c,
+			light: 0xd9ed92,
+			accent: 0x34a0a4 // para teste -> 0x2d5016
+		},
+
 		// --- Fruit ---
 		fruitColor: 0x57cc99,
+
+		// --- Score ---
+		scoreColor: 0x386641, // A light parchment/beige color for good contrast
 
 		// --- Ground ---
 		groundColor: 0x56f854,
@@ -47,8 +58,19 @@ export const COLOR_PALETTES = {
 		snakeColor: 0xff470a,
 		mouthColor: 0xb35069,
 
+		// --- Snake Camouflage Colors ---
+		camoColors: {
+			dark: 0x992a06,
+			medium: 0xcc3808,
+			light: 0xff570c,
+			accent: 0x8b4513
+		},
+
 		// --- Fruit ---
 		fruitColor: 0x614bdd,
+
+		// --- Score ---
+		scoreColor: 0xcc3808, // A light, warm orange/moccasin color
 
 		// --- Ground ---
 		groundColor: 0xaf4e69,
@@ -78,14 +100,25 @@ export const COLOR_PALETTES = {
 		snakeColor: 0xff2ed2,
 		mouthColor: 0x614bdd,
 
+		// --- Snake Camouflage Colors ---
+		camoColors: {
+			dark: 0x3c096c,
+			medium: 0x7b2cbf,
+			light: 0xc77dff,
+			accent: 0xe0aaff
+		},
+
 		// --- Fruit ---
 		fruitColor: 0x9900ff,
+
+		// --- Score ---
+		scoreColor: 0xff51eb, // A light lavender/ghost white for night theme
 
 		// --- Ground ---
 		groundColor: 0xBC6595,
 		grassColor: 0x184e77,
 		dirtColor: 0xa5756d,
-		fogColor: 0xb04ce6,
+		fogColor: 0xe0aaff,
 
 		// --- Objects ---
 		treeColor: 0x347f83,
@@ -191,4 +224,24 @@ export const MUSHROOM_DATA = [
 	[21, 0, 3, 1.0],
 	[24, 0, 13, 0.9],
 	[-14, 0, 20, 1.2],	[14, 0, -2, 0.7],
+]
+
+// Fireflies: [startX, startY, startZ, patternType, speed, radius]
+// patternType: 'circular', 'figure8', 'random', 'vertical'
+export const FIREFLY_DATA = [
+	[5, 3, 8, 'circular', 0.8, 2.5],
+	[15, 4, 12, 'figure8', 1.2, 3.0],
+	[8, 2.5, 18, 'random', 0.6, 1.8],
+	[22, 3.5, 6, 'vertical', 1.0, 2.0],
+	[12, 2, 3, 'circular', 0.9, 2.2],
+	[3, 4.5, 15, 'figure8', 0.7, 2.8],
+	[18, 3, 20, 'random', 1.1, 2.4],
+	[7, 2.8, 25, 'vertical', 0.5, 1.5],
+	[25, 3.2, 14, 'circular', 1.3, 3.2],
+	[11, 4, 7, 'figure8', 0.8, 2.0],
+	[16, 2.2, 22, 'random', 0.9, 2.6],
+	[4, 3.8, 4, 'vertical', 1.1, 1.9],
+	[20, 2.5, 9, 'circular', 0.6, 2.1],
+	[14, 3.5, 16, 'figure8', 1.0, 2.7],
+	[9, 4.2, 11, 'random', 0.7, 2.3]
 ]
