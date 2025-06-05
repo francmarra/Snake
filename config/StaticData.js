@@ -67,20 +67,20 @@ export const COLOR_PALETTES = {
 		},
 
 		// --- Fruit ---
-		fruitColor: 0x614bdd,
+		fruitColor: 0xffea00,
 
 		// --- Score ---
 		scoreColor: 0xcc3808, // A light, warm orange/moccasin color
 
 		// --- Ground ---
 		groundColor: 0xaf4e69,
-		grassColor: 0xf9c74f,
+		grassColor: 0x795c24,
 		dirtColor: 0xa5756d,
 		fogColor: 0xffac38,
 
 		// --- Objects ---
 		treeColor: 0x795c24,
-		rockColor: 0x7a454b,
+		rockColor: 0x7f7f7f,
 		flowerPetalColor: 0xf48c06,
 		flowerCenterColor: 0xffea00,
 		mushroomCapColor: 0xe5383b,
